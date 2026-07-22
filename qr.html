@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code · Polaroid Wedding</title>
+
+  <!-- Tailwind CSS melalui CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Pustaka QR (jana di client, tiada data dihantar ke pihak ketiga) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    body {
+      background: linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
+      color: #5a4a42;
+      min-height: 100vh;
+    }
+    .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
+    .font-tangan { font-family: 'Caveat', cursive; }
+
+    /* Kad cetak — bahagian yang akan dicetak */
+    .kad-cetak {
+      background: #fffdf9;
+      border: 1px solid #eaddd2;
+      box-shadow: 0 20px 50px -20px rgba(90,74,66,.4);
+    }
+
+    /* Kawalan yang disembunyikan semasa cetak */
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; }
+      .kad-cetak { box-shadow: none; border: none; }
+      @page { margin: 1cm; }
+    }
+    .btn-utama {
+      background: linear-gradient(135deg, #c07f89 0%, #b76e79 100%);
+      color: #fff;
+      transition: transform .15s ease, box-shadow .2s ease;
+      box-shadow: 0 8px 20px -6px rgba(183,110,121,.6);
+    }
+    .btn-utama:hover { transform: translateY(-1px); }
+  </style>
+</head>
+
+<body class="antialiased">
+  <div class="mx-auto w-full max-w-md px-5 py-8">
+
+    <!-- Kawalan (tidak dicetak) -->
+    <div class="no-print mb-6 space-y-3">
+      <label class="block text-sm font-medium">
+        URL halaman upload
+        <input
+          id="input-url"
+          type="url"
+          class="mt-1 w-full rounded-xl border border-[#e5d5ca] bg-white px-4 py-2.5 text-sm focus:border-[#b76e79] focus:outline-none"
+          placeholder="https://laman-anda.netlify.app/index.html"
+        />
+      </label>
+      <label class="block text-sm font-medium">
+        Nama pengantin (pilihan)
+        <input
+          id="input-nama-pengantin"
+          type="text"
+          class="mt-1 w-full rounded-xl border border-[#e5d5ca] bg-white px-4 py-2.5 text-sm focus:border-[#b76e79] focus:outline-none"
+          placeholder="cth. Aisyah &amp; Danial"
+        />
+      </label>
+      <button id="butang-cetak" class="btn-utama w-full rounded-xl py-3 font-medium">
+        🖨️ Cetak Kad QR
+      </button>
+    </div>
+
+    <!-- KAD CETAK -->
+    <div class="kad-cetak rounded-3xl px-8 py-10 text-center">
+      <p class="font-tangan text-3xl text-[#b76e79]">Majlis Perkahwinan</p>
+      <h1 id="tajuk-nama" class="font-serif-elegan text-4xl font-semibold my-2">
+        Aisyah &amp; Danial
+      </h1>
+      <div class="mx-auto my-6 h-px w-24 bg-[#e0cfc2]"></div>
+
+      <h2 class="font-serif-elegan text-2xl font-medium mb-1">Kongsi Gambar Anda</h2>
+      <p class="text-sm text-[#8a7a70] mb-6 leading-relaxed">
+        Imbas kod QR ini untuk memuat naik gambar<br />anda ke galeri polaroid kami
+      </p>
+
+      <!-- QR dijana di sini -->
+      <div class="flex justify-center">
+        <div id="qrcode" class="rounded-xl bg-white p-4 shadow-sm"></div>
+      </div>
+
+      <p class="mt-6 font-tangan text-2xl text-[#b76e79]">Terima kasih! 💐</p>
+    </div>
+
+    <p class="no-print mt-4 text-center text-xs text-[#a09088]">
+      Petua: letakkan kad ini di atas setiap meja tetamu.
+    </p>
+  </div>
+
+  <script type="module">
+    import { NAMA_PENGANTIN } from "./js/config.js";
+
+    const inputUrl = document.getElementById("input-url");
+    const inputNama = document.getElementById("input-nama-pengantin");
+    const tajukNama = document.getElementById("tajuk-nama");
+    const zonQr = document.getElementById("qrcode");
+
+    // URL lalai = halaman upload di lokasi semasa.
+    // Sokong ?e=<eventId> supaya QR yang dijana sah untuk sistem
+    // multi-majlis (tanpa ?e=, index.html tidak tahu majlis mana).
+    const eid = (new URLSearchParams(location.search).get("e") || "").trim();
+    const urlLalai = new URL(
+      "index.html" + (eid ? `?e=${encodeURIComponent(eid)}` : ""),
+      window.location.href
+    ).href;
+    inputUrl.value = urlLalai;
+
+    // Nama pengantin lalai dari config (jika diubah)
+    if (NAMA_PENGANTIN && NAMA_PENGANTIN !== "Pengantin") {
+      inputNama.value = NAMA_PENGANTIN;
+      tajukNama.textContent = NAMA_PENGANTIN;
+    }
+
+    let qr = null;
+    function janaQr(teks) {
+      zonQr.innerHTML = "";
+      qr = new QRCode(zonQr, {
+        text: teks,
+        width: 220,
+        height: 220,
+        colorDark: "#5a4a42",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    }
+
+    // Jana awal + kemas kini bila URL berubah
+    janaQr(inputUrl.value.trim() || urlLalai);
+    inputUrl.addEventListener("input", () => {
+      const t = inputUrl.value.trim();
+      if (t) janaQr(t);
+    });
+
+    // Kemas kini nama pengantin secara langsung (guna textContent = selamat)
+    inputNama.addEventListener("input", () => {
+      tajukNama.textContent = inputNama.value.trim() || "Aisyah & Danial";
+    });
+
+    document.getElementById("butang-cetak").addEventListener("click", () => {
+      window.print();
+    });
+  </script>
+</body>
+</html>

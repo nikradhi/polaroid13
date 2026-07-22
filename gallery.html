@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Galeri Polaroid · Wedding</title>
+
+  <!-- Tailwind CSS melalui CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Cormorant Garamond + Caveat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* --tema diset oleh terapTema() (js/majlis.js) ikut themeColor majlis.
+       Nilai di sini hanyalah lalai sebelum majlis dimuat. */
+    :root { --tema: #b76e79; }
+    body {
+      background:
+        radial-gradient(1200px 600px at 50% -10%, #fbeef0 0%, transparent 60%),
+        linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
+      color: #5a4a42;
+      min-height: 100vh;
+    }
+    .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
+    .font-tangan { font-family: 'Caveat', cursive; }
+
+    /* Masonry guna CSS columns — ringkas & minimakan reflow */
+    .masonry {
+      column-gap: 1.25rem;
+      column-count: 1;
+    }
+    @media (min-width: 480px)  { .masonry { column-count: 2; } }
+    @media (min-width: 768px)  { .masonry { column-count: 3; } }
+    @media (min-width: 1100px) { .masonry { column-count: 4; } }
+    .masonry-item {
+      break-inside: avoid;
+      margin-bottom: 1.75rem;
+    }
+
+    .btn-utama {
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--tema) 82%, #fff) 0%, var(--tema) 100%);
+      color: #fff;
+      transition: transform .15s ease, box-shadow .2s ease, opacity .2s;
+      box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--tema) 60%, transparent);
+    }
+    .btn-utama:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-utama:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Bar reaksi ❤️ + muat turun ⬇️ */
+    .reaksi-bar {
+      display: flex; justify-content: center; gap: .5rem;
+      margin-top: -0.5rem;
+    }
+    .reaksi {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.7); border: 1px solid #eaddd2;
+      border-radius: 999px; padding: 4px 12px; font-size: .95rem;
+      color: #8a7a70; cursor: pointer; transition: transform .12s ease, background .2s;
+    }
+    .reaksi:hover { background: #fff; transform: translateY(-1px); }
+    .reaksi .hati { color: #d8c2b6; font-size: 1.05rem; transition: color .2s, transform .2s; }
+    .reaksi.disukai { color: var(--tema); cursor: default; }
+    .reaksi.disukai .hati { color: #e0526b; transform: scale(1.15); }
+    /* Butang simpan — ikon diwarnakan sama gaya seperti ♥ */
+    .reaksi .ikon {
+      color: #d8c2b6; font-size: 1.05rem; line-height: 1; font-weight: 700;
+      transition: color .2s;
+    }
+    .reaksi:hover .ikon { color: var(--tema); }
+    /* Maklum balas selepas muat turun (muat turun berlaku senyap) */
+    .reaksi.selesai { color: #2f7a45; border-color: #b8e0c2; background: #eef8f1; }
+    .reaksi.selesai .ikon { color: #2f7a45; }
+    .reaksi.gagal   { color: #a13a3a; border-color: #f0c4c4; background: #fbe4e4; }
+    .reaksi.gagal .ikon { color: #a13a3a; }
+
+    /* Lightbox */
+    #lightbox {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(40, 26, 32, .92);
+      display: flex; align-items: center; justify-content: center;
+      padding: 4vh 2vw;
+      animation: lbMasuk .25s ease both;
+    }
+    /* Pemilih ID mengatasi kelas .hidden, jadi sembunyi secara eksplisit */
+    #lightbox.hidden { display: none; }
+    @keyframes lbMasuk { from { opacity: 0; } to { opacity: 1; } }
+    #lb-img {
+      max-width: 88vw; max-height: 74vh; object-fit: contain;
+      border-radius: 6px; background: #fffdf9; padding: 10px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .lb-kandungan { text-align: center; max-width: 92vw; }
+    #lb-nama { font-family: 'Caveat', cursive; font-size: 2rem; color: #fff; margin-top: 14px; }
+    #lb-ucapan { font-family: 'Caveat', cursive; font-size: 1.5rem; color: #f0d9dd; margin-top: 2px; word-break: break-word; }
+    .lb-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,.15); color: #fff; border: none;
+      width: 52px; height: 52px; border-radius: 999px; font-size: 2rem; line-height: 1;
+      cursor: pointer; transition: background .2s;
+    }
+    .lb-btn:hover { background: rgba(255,255,255,.3); }
+    #lb-prev { left: 2vw; }
+    #lb-next { right: 2vw; }
+    #lb-tutup {
+      position: absolute; top: 3vh; right: 3vw;
+      background: rgba(255,255,255,.15); color: #fff; border: none;
+      width: 46px; height: 46px; border-radius: 999px; font-size: 1.8rem; line-height: 1;
+      cursor: pointer; transition: background .2s;
+    }
+    #lb-tutup:hover { background: rgba(255,255,255,.3); }
+    @media (max-width: 640px) {
+      .lb-btn { width: 42px; height: 42px; font-size: 1.6rem; }
+      #lb-img { max-height: 66vh; }
+    }
+
+    /* Kotak carian */
+    .kotak-cari {
+      width: 100%; max-width: 22rem; margin: 0 auto;
+      border: 1px solid #e5d5ca; background: rgba(255,255,255,.7);
+      border-radius: 999px; padding: 10px 18px; text-align: center;
+    }
+    .kotak-cari:focus { outline: none; border-color: var(--tema); }
+  </style>
+</head>
+
+<body class="antialiased">
+  <main class="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
+
+    <!-- Tajuk -->
+    <header class="text-center mb-10">
+      <p id="nama-majlis" class="font-tangan text-2xl text-[color:var(--tema)] mb-1">Kenangan Manis</p>
+      <h1 class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">
+        Galeri Polaroid
+      </h1>
+      <p class="mt-3 text-sm text-[#8a7a70]">Detik indah yang dikongsi oleh tetamu kami</p>
+      <a href="index.html" class="inline-block mt-4 font-tangan text-xl text-[color:var(--tema)] hover:underline">
+        + Tambah gambar anda
+      </a>
+    </header>
+
+    <!-- Kotak carian -->
+    <div class="mb-8">
+      <input id="input-cari" type="search" class="kotak-cari"
+        placeholder="🔍 Cari ikut nama tetamu…" aria-label="Cari ikut nama" />
+      <p id="zon-tiada-carian" class="hidden mt-3 text-center text-sm text-[#a09088]">
+        Tiada nama sepadan dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".
+      </p>
+    </div>
+
+    <!-- Keadaan memuat -->
+    <div id="zon-memuat" class="text-center py-16">
+      <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#e5d5ca] border-t-[color:var(--tema)]"></div>
+      <p class="mt-3 text-sm text-[#a09088]">Sedang memuatkan galeri…</p>
+    </div>
+
+    <!-- Kotak ralat -->
+    <div id="kotak-ralat" class="hidden mx-auto max-w-md rounded-xl bg-[#fbe4e4] px-4 py-3 text-center text-[#a13a3a]" role="alert">
+      Maaf, gagal memuatkan galeri. Sila muat semula halaman.
+    </div>
+
+    <!-- Keadaan kosong -->
+    <div id="zon-kosong" class="hidden text-center py-16">
+      <div class="text-6xl mb-4">📷</div>
+      <h2 class="font-serif-elegan text-3xl font-semibold mb-2">Belum Ada Gambar Lagi</h2>
+      <p class="text-[#8a7a70] mb-6">Jadilah yang pertama berkongsi kenangan indah!</p>
+      <a href="index.html" class="btn-utama inline-block rounded-xl px-8 py-3.5 font-medium">
+        Kongsi Gambar Pertama
+      </a>
+    </div>
+
+    <!-- Galeri masonry -->
+    <section id="zon-galeri" class="masonry" aria-label="Galeri gambar polaroid tetamu"></section>
+
+    <!-- Butang muat lebih -->
+    <div class="text-center mt-8">
+      <button id="butang-muat-lebih" class="btn-utama hidden rounded-xl px-8 py-3.5 font-medium">
+        Muat Lebih Banyak
+      </button>
+    </div>
+  </main>
+
+  <!-- Lightbox (papar gambar penuh) -->
+  <div id="lightbox" class="hidden" role="dialog" aria-modal="true" aria-label="Papar gambar penuh">
+    <button id="lb-tutup" aria-label="Tutup">×</button>
+    <button id="lb-prev" class="lb-btn" aria-label="Sebelumnya">‹</button>
+    <div class="lb-kandungan">
+      <img id="lb-img" alt="Gambar tetamu" />
+      <p id="lb-nama"></p>
+      <p id="lb-ucapan" class="hidden"></p>
+    </div>
+    <button id="lb-next" class="lb-btn" aria-label="Seterusnya">›</button>
+  </div>
+
+  <script type="module" src="js/gallery.js"></script>
+</body>
+</html>

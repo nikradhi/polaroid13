@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Wall · Wedding</title>
+
+  <!-- Tailwind CSS melalui CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body {
+      /* Latar gelap romantik supaya polaroid putih menonjol di projektor */
+      background:
+        radial-gradient(1400px 900px at 50% 28%, #4a3540 0%, #33242c 55%, #241820 100%);
+      color: #f3e7e0;
+      font-family: 'Cormorant Garamond', serif;
+    }
+    body.melahu { cursor: none; }
+    .font-tangan { font-family: 'Caveat', cursive; }
+
+    /* Pentas — kawasan tengah tempat polaroid besar dipaparkan */
+    #pentas { width: clamp(300px, 40vw, 560px); }
+    #pentas .polaroid {
+      background: #fffdf9;
+      box-shadow: 0 30px 70px -20px rgba(0,0,0,.6), 0 8px 20px rgba(0,0,0,.35);
+    }
+    #pentas .polaroid__img { max-height: 58vh; object-fit: contain; background: #f2ede8; }
+    #pentas .polaroid__message { font-size: clamp(1.6rem, 3.2vh, 2.6rem); }
+    #pentas .polaroid__name { font-size: clamp(1.3rem, 2.6vh, 2.1rem); }
+
+    /* Lencana "Baru dihantar!" */
+    #lencana-baru {
+      background: linear-gradient(135deg, #e6b56a, #d98f7a);
+      color: #3a2a20;
+      box-shadow: 0 8px 24px rgba(217,143,122,.5);
+      animation: pop .5s cubic-bezier(.2,.8,.3,1.2) both, apung 2.5s ease-in-out infinite .5s;
+    }
+    @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes apung { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+    #kawalan { transition: opacity .4s ease; }
+  </style>
+</head>
+
+<body class="antialiased">
+
+  <!-- Header -->
+  <header id="kawalan" class="fixed top-0 inset-x-0 z-20 flex items-center justify-between px-6 py-4">
+    <div>
+      <h1 id="tajuk-nama" class="font-serif text-2xl sm:text-3xl font-semibold tracking-wide" style="font-family:'Cormorant Garamond',serif;">Majlis Kami</h1>
+      <p class="font-tangan text-lg sm:text-xl text-[#e6b56a]">Kenangan tetamu · <span id="kiraan">0</span> gambar</p>
+    </div>
+    <button id="butang-penuh" class="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm hover:bg-white/20 transition backdrop-blur">
+      ⛶ Skrin Penuh
+    </button>
+  </header>
+
+  <!-- Kandungan tengah -->
+  <main class="relative h-full w-full flex items-center justify-center">
+
+    <!-- Lencana baru dihantar -->
+    <div id="lencana-baru" class="hidden absolute top-[12%] z-10 rounded-full px-6 py-2 font-tangan text-2xl font-bold">
+      ✨ Baru dihantar!
+    </div>
+
+    <!-- Pentas polaroid -->
+    <div id="pentas" class="hidden"></div>
+
+    <!-- Keadaan kosong -->
+    <div id="zon-kosong" class="hidden text-center px-6">
+      <div class="text-7xl mb-6">📸</div>
+      <h2 class="font-serif text-4xl sm:text-5xl font-semibold mb-3" style="font-family:'Cormorant Garamond',serif;">Menunggu Gambar Pertama…</h2>
+      <p class="font-tangan text-3xl text-[#e6b56a]">Imbas kod QR di meja untuk kongsi gambar anda 💕</p>
+    </div>
+
+    <!-- Zon ralat -->
+    <div id="zon-ralat" class="hidden absolute bottom-6 mx-auto max-w-lg rounded-xl bg-red-900/60 px-4 py-3 text-center text-red-100" role="alert"></div>
+  </main>
+
+  <!-- Nota kaki -->
+  <footer id="kawalan-bawah" class="fixed bottom-0 inset-x-0 z-20 text-center pb-4">
+    <p class="font-tangan text-xl text-white/60">Kongsi gambar anda — imbas kod QR di meja majlis</p>
+  </footer>
+
+  <script type="module" src="js/wall.js"></script>
+</body>
+</html>

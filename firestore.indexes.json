@@ -1,0 +1,42 @@
+{
+  "//": "Composite indexes untuk query event-scoped (multi-tenant).",
+  "//_cara": "Cara mudah: buka halaman kali pertama, tekan F12 > Console, klik pautan 'Create index' yang Firestore papar. Cara manual: Firestore > Indexes > Composite > Add index ikut senarai di bawah.",
+  "indexes": [
+    {
+      "//": "gallery.js / wall.js / muat-turun.js: where(eventId) + where(approved) + orderBy(created_at desc)",
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "eventId", "order": "ASCENDING" },
+        { "fieldPath": "approved", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "admin.js per-event: where(eventId) + orderBy(created_at desc) (semua status)",
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "eventId", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "tetapan.js: senarai event milik pelanggan. where(ownerUid) + orderBy(createdAt desc)",
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "//_fieldOverrides": "Firestore auto-indeks SETIAP medan (satu indeks ASC + satu DESC). Untuk image_url — string base64 gambar — indeks itu tidak pernah diguna oleh mana-mana query, tetapi tetap memakan storan & melambatkan tulisan. Kecualikan ia. Cara manual (tiada Firebase CLI dalam projek ini): Firestore Database > Indexes > tab 'Single field' > 'Add exemption' > Collection ID: photos, Field path: image_url > matikan Ascending, Descending & Array contains.",
+  "fieldOverrides": [
+    {
+      "collectionGroup": "photos",
+      "fieldPath": "image_url",
+      "indexes": []
+    }
+  ]
+}

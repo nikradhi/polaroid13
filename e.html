@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Majlis Perkahwinan · Polaroid Wedding</title>
+
+  <!-- Tailwind CSS melalui CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root { --tema: #b76e79; }
+    body {
+      background:
+        radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--tema) 18%, transparent) 0%, transparent 60%),
+        linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
+      color: #5a4a42;
+      min-height: 100vh;
+    }
+    .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
+    .font-tangan { font-family: 'Caveat', cursive; }
+    .btn-tema {
+      background: var(--tema);
+      color: #fff;
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s;
+      box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--tema) 60%, transparent);
+    }
+    .btn-tema:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    .btn-garis {
+      border: 1px solid var(--tema);
+      color: var(--tema);
+      transition: background .2s;
+    }
+    .btn-garis:hover { background: color-mix(in srgb, var(--tema) 8%, transparent); }
+    .teks-tema { color: var(--tema); }
+  </style>
+</head>
+
+<body class="antialiased">
+
+  <!-- Memuat -->
+  <div id="zon-memuat" class="min-h-screen flex flex-col items-center justify-center">
+    <div class="h-8 w-8 animate-spin rounded-full border-4 border-[#e5d5ca] border-t-[#b76e79]"></div>
+    <p class="mt-3 text-sm text-[#a09088]">Memuatkan majlis…</p>
+  </div>
+
+  <!-- Ralat / tidak aktif -->
+  <div id="zon-ralat" class="hidden min-h-screen flex flex-col items-center justify-center px-6 text-center">
+    <div class="text-5xl mb-3">💌</div>
+    <h1 class="font-serif-elegan text-3xl font-semibold mb-2" id="ralat-tajuk">Majlis tidak dijumpai</h1>
+    <p class="text-[#8a7a70] max-w-sm" id="ralat-mesej">Pautan ini mungkin salah atau majlis telah tamat.</p>
+  </div>
+
+  <!-- Landing majlis -->
+  <main id="zon-landing" class="hidden mx-auto w-full max-w-md px-5 py-10 sm:py-16">
+    <div class="text-center">
+      <p class="font-tangan text-2xl teks-tema mb-2">Kami Menjemput Anda</p>
+      <h1 id="l-nama" class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">Majlis Perkahwinan</h1>
+      <p id="l-tarikh" class="mt-2 text-sm text-[#8a7a70]"></p>
+
+      <div class="mx-auto my-6 h-px w-24" style="background: var(--tema); opacity:.4"></div>
+
+      <p id="l-welcome" class="text-[#6a5a52] leading-relaxed mb-8"></p>
+
+      <div class="space-y-3">
+        <a id="l-upload" href="#" class="btn-tema block rounded-xl py-4 text-lg font-medium">📸 Muat Naik Gambar</a>
+        <a id="l-galeri" href="#" class="btn-garis block rounded-xl py-3.5 font-medium">🖼️ Lihat Galeri</a>
+        <a id="l-wall" href="#" class="btn-garis hidden block rounded-xl py-3.5 font-medium">📺 Live Wall</a>
+      </div>
+
+      <p class="mt-10 font-tangan text-2xl teks-tema">Terima kasih! 💐</p>
+    </div>
+  </main>
+
+  <!-- Laluan root-absolut supaya berfungsi walaupun guna URL cantik /e/<slug> -->
+  <!--
+    Halaman ini boleh dihidang melalui DUA bentuk URL:
+      (a) .../e.html?e=<slug>   — semua hos (GitHub Pages, Netlify, Vercel)
+      (b) .../e/<slug>          — URL cantik melalui rewrite (Netlify/Vercel)
+
+    Dalam kes (b) URL pelayar kekal ".../e/<slug>" walaupun fail sebenar ialah
+    e.html di root, jadi src relatif "js/e.js" akan tersalah tuju ke
+    "/e/js/e.js". Sebab itu src dikira di sini dan tag skrip disuntik secara
+    dinamik — tag statik akan ditemui oleh "preload scanner" pelayar dan
+    diselesaikan terlalu awal (tag <base> pun tidak sempat membantu).
+
+    Laluan root-absolut "/js/e.js" TIDAK digunakan kerana ia memecahkan
+    hosting dalam sub-direktori, cth GitHub Pages project site
+    (username.github.io/nama-repo/).
+
+    Skrip ini berada di HUJUNG <body> supaya DOM sudah siap sebelum modul
+    (yang membaca getElementById pada aras atas) dilaksanakan.
+  -->
+  <script>
+    (function () {
+      var m = location.pathname.match(/^(.*\/)e\/[^/]*$/);
+      var s = document.createElement("script");
+      s.type = "module";
+      s.src = (m ? m[1] : "") + "js/e.js";
+      document.body.appendChild(s);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+// ============================================================
+//  FIRESTORE SECURITY RULES — Polaroid Wedding (SaaS multi-tenant)
+// ------------------------------------------------------------
+//  Salin kandungan fail ini ke:
+//    Firebase Console > Firestore Database > tab "Rules" > Publish
+//
+//  Model data:
+//    admins/{uid}            -> wujud = super-admin (owner). Diset MANUAL di Console.
+//    events/{eventId}        -> satu majlis: ownerUid, slug, pakej, status,
+//                               expiresAt, photoLimit/photoCount, dll.
+//    eventsPrivate/{eventId} -> maklumat peribadi pelanggan (emel). Admin sahaja.
+//    slugs/{slug}            -> doc id = slug (URL unik) -> { eventId }
+//    photos/{id}             -> gambar + eventId (skop tenant) + likes
+//
+//  TIADA koleksi "subscribers" berasingan: langganan pelanggan diwakili
+//  oleh events.ownerUid (akaun Firebase Auth) + status + expiresAt + package.
+//  Pengesahan pemilik dibuat guna request.auth.uid — TIDAK boleh dipalsukan
+//  dari browser console (berbeza dengan "ID pelanggan" yang ditaip).
+//
+//  Dasar keselamatan (ringkas):
+//    - Admin (owner) boleh baca/tulis semua.
+//    - Pelanggan (pemilik event) urus event & foto milik sendiri sahaja.
+//    - Tetamu (belum log masuk) hanya nampak event "active" dan boleh
+//      INSERT foto ke event aktif yang belum luput & belum penuh.
+//    - Gating pakej: had foto (photoLimit) & tarikh luput (expiresAt)
+//      dikuatkuasa DI SINI (bukan frontend sahaja).
+//
+//  SKOP: galeri majlis memang AWAM (tetamu perlu lihat tanpa log masuk),
+//  jadi gambar approved=true boleh dibaca sesiapa yang tahu eventId. Gate
+//  muat turun ZIP dalam tetapan.html ialah gate CIRI/LANGGANAN (Premium +
+//  tempoh tangguh), bukan gate kerahsiaan. Yang dikuatkuasa di sini ialah
+//  pemilikan: gambar tersembunyi & operasi tulis milik pemilik sahaja.
+// ============================================================
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Fungsi bantuan ----------
+
+    // Adakah pengguna semasa seorang super-admin (owner)?
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Data event SEBELUM tulisan (untuk semakan status/luput/kaunter)
+    function ev(eid) {
+      return get(/databases/$(database)/documents/events/$(eid)).data;
+    }
+
+    // Data event SELEPAS tulisan dalam commit yang sama (untuk sahkan kaunter)
+    function evAfter(eid) {
+      return getAfter(/databases/$(database)/documents/events/$(eid)).data;
+    }
+
+    // ---------- admins/{uid} ----------
+    // Hanya admin boleh baca. TIADA sesiapa boleh tulis dari client
+    // (elak orang lantik diri sendiri jadi admin). Urus di Console sahaja.
+    match /admins/{uid} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ---------- events/{eventId} ----------
+    match /events/{eventId} {
+
+      // Baca: admin; ATAU pemilik event; ATAU sesiapa jika event "active"
+      // (tetamu perlu baca event aktif untuk papar landing/galeri).
+      allow read: if isAdmin()
+        || (request.auth != null && resource.data.ownerUid == request.auth.uid)
+        || resource.data.status == 'active';
+
+      // Cipta & padam event: admin (owner) sahaja.
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+
+      // Kemas kini: tiga jalur berasingan.
+      allow update: if
+        // (1) Admin — boleh ubah apa sahaja (pakej, status, tarikh luput, dll).
+        isAdmin()
+
+        // (2) Pemilik event — hanya boleh customize medan tertentu.
+        //     TIDAK boleh ubah pakej/status/luput/had/kaunter/pemilik.
+        || (
+          request.auth != null
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['coupleName', 'weddingDate', 'themeColor',
+                        'welcomeMessage', 'slug', 'preModeration'])
+        )
+
+        // (3) Tetamu — hanya menaikkan kaunter foto (+1) semasa upload.
+        //     Ini pintu penguatkuasaan had pakej.
+        || (
+          request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['photoCount'])
+          && request.resource.data.photoCount == resource.data.photoCount + 1
+          && request.resource.data.photoCount <= resource.data.photoLimit
+          && resource.data.status == 'active'
+          && request.time < resource.data.expiresAt
+        );
+    }
+
+    // ---------- eventsPrivate/{eventId} ----------
+    // Maklumat PERIBADI pelanggan (cth emel). Diasingkan daripada
+    // events kerana events boleh dibaca awam (tetamu perlu baca event
+    // aktif untuk papar landing). HANYA admin boleh baca/tulis di sini.
+    match /eventsPrivate/{eventId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ---------- slugs/{slug} ----------
+    // Doc id = slug. Baca awam (perlu untuk resolusi landing).
+    // Cipta: pengguna log masuk; GAGAL jika slug sudah wujud (jamin unik).
+    // Ubah/padam: admin sahaja.
+    match /slugs/{slug} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && !exists(/databases/$(database)/documents/slugs/$(slug))
+        && request.resource.data.eventId is string;
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- photos/{id} ----------
+    match /photos/{docId} {
+
+      // Baca:
+      //   - Awam (tetamu) nampak gambar approved=true SAHAJA.
+      //   - Gambar TERSEMBUNYI (approved=false) hanya boleh dibaca oleh
+      //     super-admin ATAU pemilik majlis gambar itu.
+      // Nota: klausa approved didahulukan supaya query galeri awam
+      // (where approved==true) tidak mencetuskan get() tambahan.
+      allow read: if resource.data.approved == true
+        || isAdmin()
+        || (request.auth != null
+            && ev(resource.data.eventId).ownerUid == request.auth.uid);
+
+      // Cipta: awam & tervalidasi + terikat pada event aktif yang belum luput
+      // & belum penuh. Kaunter event WAJIB naik +1 dalam commit yang sama.
+      allow create: if
+        request.resource.data.keys().hasOnly(
+          ['name', 'message', 'image_url', 'approved', 'likes', 'created_at', 'eventId']
+        )
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60
+        && (request.resource.data.message == null
+            || (request.resource.data.message is string
+                && request.resource.data.message.size() <= 120))
+        && request.resource.data.image_url is string
+        && request.resource.data.image_url.size() > 0
+        && request.resource.data.image_url.size() < 1000000
+        && request.resource.data.approved is bool
+        && request.resource.data.likes == 0
+        && request.resource.data.eventId is string
+        // --- Gating tenant + pakej ---
+        && ev(request.resource.data.eventId).status == 'active'
+        && request.time < ev(request.resource.data.eventId).expiresAt
+        // Kaunter mesti naik tepat +1 dan tidak melebihi had pakej
+        && evAfter(request.resource.data.eventId).photoCount
+             == ev(request.resource.data.eventId).photoCount + 1
+        && evAfter(request.resource.data.eventId).photoCount
+             <= ev(request.resource.data.eventId).photoLimit;
+
+      // Kemas kini:
+      //   - admin (apa sahaja)
+      //   - pemilik event foto ini (moderasi: approve/hide)
+      //   - tetamu untuk `likes` sahaja (reaksi ❤️)
+      allow update: if
+        isAdmin()
+        || (
+          request.auth != null
+          && ev(resource.data.eventId).ownerUid == request.auth.uid
+        )
+        || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+          && request.resource.data.likes is int
+          && request.resource.data.likes >= resource.data.likes
+        );
+
+      // Padam: admin ATAU pemilik event foto ini.
+      allow delete: if
+        isAdmin()
+        || (
+          request.auth != null
+          && ev(resource.data.eventId).ownerUid == request.auth.uid
+        );
+    }
+  }
+}

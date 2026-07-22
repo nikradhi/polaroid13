@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Admin · Polaroid Wedding SaaS</title>
+
+  <!-- Tailwind CSS melalui CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    body {
+      background:
+        radial-gradient(1200px 600px at 50% -10%, #fbeef0 0%, transparent 60%),
+        linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
+      color: #5a4a42;
+      min-height: 100vh;
+    }
+    .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
+    .font-tangan { font-family: 'Caveat', cursive; }
+    .btn-utama {
+      background: linear-gradient(135deg, #c07f89 0%, #b76e79 100%);
+      color: #fff;
+      transition: transform .15s ease, box-shadow .2s ease, opacity .2s;
+      box-shadow: 0 8px 20px -6px rgba(183,110,121,.6);
+    }
+    .btn-utama:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-utama:disabled { opacity: .6; cursor: not-allowed; }
+    .kotak-ralat { background: #fbe4e4; color: #a13a3a; border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
+    .kotak-jaya { background: #e4f7e8; color: #2f7a43; border-radius: 12px; padding: 10px 14px; font-size: .9rem; }
+    .input-elok {
+      width: 100%;
+      border-radius: 0.75rem;
+      border: 1px solid #e5d5ca;
+      background: rgba(255,255,255,0.7);
+      padding: 0.65rem 0.9rem;
+    }
+    .input-elok:focus { border-color: #b76e79; outline: none; box-shadow: 0 0 0 2px rgba(217,165,172,.5); }
+  </style>
+</head>
+
+<body class="antialiased">
+
+  <!-- ============ LOG MASUK ============ -->
+  <section id="zon-login" class="mx-auto w-full max-w-sm px-5 py-16">
+    <header class="text-center mb-8">
+      <p class="font-tangan text-2xl text-[#b76e79] mb-1">Panel Pemilik</p>
+      <h1 class="font-serif-elegan text-4xl font-semibold tracking-wide">Super Admin</h1>
+      <p class="mt-2 text-sm text-[#8a7a70]">Urus akaun pelanggan &amp; pakej</p>
+    </header>
+
+    <form id="form-login" class="space-y-4">
+      <div>
+        <label for="input-emel" class="block text-sm font-medium mb-1.5">Emel</label>
+        <input id="input-emel" type="email" required autocomplete="username" class="input-elok" />
+      </div>
+      <div>
+        <label for="input-kata-laluan" class="block text-sm font-medium mb-1.5">Kata laluan</label>
+        <input id="input-kata-laluan" type="password" required autocomplete="current-password" class="input-elok" />
+      </div>
+      <div id="ralat-login" class="hidden kotak-ralat" role="alert"></div>
+      <button id="butang-login" type="submit" class="btn-utama w-full rounded-xl py-3.5 font-medium">Log Masuk</button>
+    </form>
+
+    <p class="mt-6 text-center text-xs text-[#a09088] leading-relaxed">
+      Hanya akaun yang disenaraikan dalam koleksi <code>admins</code> boleh masuk.
+    </p>
+  </section>
+
+  <!-- ============ PANEL SUPER ADMIN ============ -->
+  <section id="zon-panel" class="hidden mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
+
+    <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div>
+        <h1 class="font-serif-elegan text-3xl font-semibold">Pengurusan Pelanggan</h1>
+        <p class="text-sm text-[#8a7a70]">Log masuk sebagai <span id="emel-admin" class="font-medium"></span></p>
+      </div>
+      <button id="butang-keluar" class="rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">Log Keluar</button>
+    </header>
+
+    <!-- Statistik ringkas -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+      <div class="rounded-xl bg-white/70 border border-[#e5d5ca] p-4 text-center">
+        <div id="stat-semua" class="text-2xl font-semibold">0</div>
+        <div class="text-xs text-[#a09088]">Jumlah majlis</div>
+      </div>
+      <div class="rounded-xl bg-white/70 border border-[#e5d5ca] p-4 text-center">
+        <div id="stat-aktif" class="text-2xl font-semibold text-green-600">0</div>
+        <div class="text-xs text-[#a09088]">Aktif</div>
+      </div>
+      <div class="rounded-xl bg-white/70 border border-[#e5d5ca] p-4 text-center">
+        <div id="stat-premium" class="text-2xl font-semibold text-[#b76e79]">0</div>
+        <div class="text-xs text-[#a09088]">Premium</div>
+      </div>
+    </div>
+
+    <!-- Indikator storan Firestore (global — semua majlis) -->
+    <div class="rounded-xl bg-white/70 border border-[#e5d5ca] p-4 mb-6">
+      <div class="flex items-center justify-between text-sm mb-2">
+        <span class="font-medium">📦 Storan Firestore (semua majlis)</span>
+        <span id="storan-teks" class="text-[#8a7a70]">≈ 0 MB / 1024 MB (0%)</span>
+      </div>
+      <div class="h-2.5 rounded-full bg-[#e0cfc2] overflow-hidden">
+        <div id="storan-bar" class="h-full rounded-full bg-green-500 transition-all" style="width:0%"></div>
+      </div>
+      <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <p id="storan-nota" class="text-xs text-[#a09088]">
+          Anggaran dari kaunter gambar. Tekan “Kira tepat” untuk angka sebenar. Had percuma Firestore = 1 GB.
+        </p>
+        <button id="butang-kira-storan" type="button"
+          class="shrink-0 rounded-lg border border-[#d9a5ac] px-3 py-1.5 text-xs font-medium text-[#b76e79] hover:bg-white/60 transition">
+          Kira tepat
+        </button>
+      </div>
+    </div>
+
+    <!-- ====== Penyelenggaraan storan ====== -->
+    <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
+      <h2 class="font-serif-elegan text-2xl font-semibold mb-1">🧹 Penyelenggaraan Storan</h2>
+      <p class="text-xs text-[#a09088] mb-4">
+        Gambar disimpan terus dalam Firestore, jadi saiz gambar = saiz pangkalan data.
+        Alat ini mengecilkan gambar lama dan membuang gambar majlis yang sudah tamat.
+      </p>
+
+      <div class="grid sm:grid-cols-2 gap-3">
+        <div class="rounded-xl border border-[#e5d5ca] bg-white/60 p-4">
+          <p class="font-medium text-sm mb-1">🗜️ Mampat semula gambar lama</p>
+          <p class="text-xs text-[#a09088] mb-3">
+            Tukar gambar sedia ada kepada WebP 720px (~60 KB). Gambar yang sudah kecil
+            dilangkau, jadi selamat dijalankan berulang kali. <b>Tidak boleh dipulihkan.</b>
+          </p>
+          <button id="butang-mampat" type="button"
+            class="rounded-lg border border-[#d9a5ac] px-3 py-1.5 text-xs font-medium text-[#b76e79] hover:bg-white/60 transition">
+            Mampat semula
+          </button>
+        </div>
+
+        <div class="rounded-xl border border-[#e5d5ca] bg-white/60 p-4">
+          <p class="font-medium text-sm mb-1">🗑️ Padam gambar majlis tamat</p>
+          <p class="text-xs text-[#a09088] mb-3">
+            Buang gambar majlis yang sudah lepas tempoh tangguh 30 hari. Ini satu-satunya
+            operasi yang benar-benar <b>menurunkan</b> storan.
+          </p>
+          <button id="butang-purge" type="button"
+            class="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition">
+            Semak &amp; padam
+          </button>
+        </div>
+      </div>
+
+      <div id="selenggara-log" class="hidden mt-4 rounded-xl bg-[#fdf6ef] border border-[#e5d5ca] p-3 text-xs text-[#6a5a52] whitespace-pre-line" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- ====== Borang cipta pelanggan baharu ====== -->
+    <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
+      <h2 class="font-serif-elegan text-2xl font-semibold mb-1">➕ Cipta Akaun Pelanggan</h2>
+      <p class="text-xs text-[#a09088] mb-4">Isi selepas pelanggan sahkan bayaran. Akaun &amp; majlis akan dicipta terus.</p>
+
+      <form id="form-cipta" class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Emel pelanggan</label>
+          <input id="c-emel" type="email" required autocomplete="off" class="input-elok" placeholder="pelanggan@emel.com" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Kata laluan sementara</label>
+          <input id="c-kata-laluan" type="text" required minlength="6" autocomplete="off" class="input-elok" placeholder="min. 6 aksara" />
+          <p class="text-[11px] text-[#a09088] mt-1">Beritahu pelanggan kata laluan ini. Mereka boleh tukar kemudian.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Nama pasangan (boleh diubah pelanggan)</label>
+          <input id="c-nama" type="text" class="input-elok" placeholder="cth: Ali &amp; Siti" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Pakej</label>
+          <select id="c-pakej" class="input-elok">
+            <option value="basic">Basic — 100 gambar, 14 hari</option>
+            <option value="premium">Premium — tanpa had, Live Wall + ZIP, 30 hari</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <div id="cipta-ralat" class="hidden kotak-ralat mb-3" role="alert"></div>
+          <div id="cipta-jaya" class="hidden kotak-jaya mb-3" role="status"></div>
+          <button id="butang-cipta" type="submit" class="btn-utama rounded-xl px-6 py-3 font-medium">Cipta Akaun &amp; Majlis</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ====== Senarai pelanggan ====== -->
+    <h2 class="font-serif-elegan text-2xl font-semibold mb-3">Senarai Majlis</h2>
+
+    <div id="zon-memuat" class="hidden text-center py-12">
+      <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#e5d5ca] border-t-[#b76e79]"></div>
+      <p class="mt-3 text-sm text-[#a09088]">Memuatkan…</p>
+    </div>
+    <div id="zon-kosong" class="hidden text-center py-12">
+      <div class="text-5xl mb-3">🗂️</div>
+      <p class="text-[#8a7a70]">Belum ada pelanggan. Cipta yang pertama di atas.</p>
+    </div>
+
+    <!-- Kad (mobile) + jadual (desktop) diisi oleh JS -->
+    <div id="senarai" class="space-y-3"></div>
+  </section>
+
+  <script type="module" src="js/super-admin.js"></script>
+</body>
+</html>

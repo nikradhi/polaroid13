@@ -1,0 +1,6 @@
+{
+  "//": "Vercel — URL cantik untuk landing majlis (PILIHAN). Rewrite mengekalkan URL /e/<slug> dan hidangkan e.html. e.html kira laluan skrip sendiri & e.js guna import.meta.url, jadi aset tidak 404 sama ada di root, sub-direktori, atau melalui rewrite ini.",
+  "rewrites": [
+    { "source": "/e/:slug", "destination": "/e.html" }
+  ]
+}

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tetapan Majlis · Polaroid Wedding</title>
+
+  <!-- Tailwind CSS melalui CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Pustaka QR (jana di client) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- JSZip (bina fail ZIP di client untuk muat turun gambar) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    body {
+      /* Corak bunga (fail tunggal, bukan jubin seamless -> cover, jangan repeat).
+         Gradient krim kekal sebagai lapisan sandaran jika imej gagal dimuatkan. */
+      background:
+        url("img/latar-bunga.jpeg") center / cover no-repeat fixed,
+        linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
+      background-color: #fdf8f3;
+      color: #5a4a42;
+      min-height: 100vh;
+    }
+    .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
+    .font-tangan { font-family: 'Caveat', cursive; }
+    .btn-utama {
+      background: linear-gradient(135deg, #c07f89 0%, #b76e79 100%);
+      color: #fff;
+      transition: transform .15s ease, box-shadow .2s ease, opacity .2s;
+      box-shadow: 0 8px 20px -6px rgba(183,110,121,.6);
+    }
+    .btn-utama:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-utama:disabled { opacity: .6; cursor: not-allowed; }
+    .kotak-ralat { background: #fbe4e4; color: #a13a3a; border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
+    .kotak-jaya { background: #e4f7e8; color: #2f7a43; border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
+    .kotak-amaran { background: #fdf1e7; color: #8a5a3a; border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
+    .input-elok {
+      width: 100%;
+      border-radius: 0.75rem;
+      border: 1px solid #e5d5ca;
+      background: rgba(255,255,255,0.7);
+      padding: 0.65rem 0.9rem;
+    }
+    .input-elok:focus { border-color: #b76e79; outline: none; box-shadow: 0 0 0 2px rgba(217,165,172,.5); }
+    .swatch { width: 2rem; height: 2rem; border-radius: 9999px; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5d5ca; cursor: pointer; }
+    .swatch.terpilih { box-shadow: 0 0 0 2px #5a4a42; }
+
+    /* Kotak status & bar progres muat turun */
+    .kotak-status { border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
+    .kotak-status--info    { background: #fdf1e7; color: #8a5a3a; }
+    .kotak-status--gagal   { background: #fbe4e4; color: #a13a3a; }
+    .kotak-status--berjaya { background: #e4f7e8; color: #2f7a43; }
+    .bar-luar { background: #efe0d6; border-radius: 999px; height: 10px; overflow: hidden; }
+    .bar-dalam { background: linear-gradient(90deg, #d9a5ac, #b76e79); height: 100%; width: 0%; transition: width .2s ease; }
+
+    /* Kad cetak: tersembunyi di skrin, hanya muncul semasa cetak */
+    .cetak-sahaja { display: none; }
+
+    @media print {
+      .no-print { display: none !important; }
+      /* Cetak KAD sahaja — bukan seluruh panel pelanggan */
+      #zon-login, #zon-panel { display: none !important; }
+      .cetak-sahaja { display: block !important; }
+
+      body { background: #fff; }   /* latar bunga datang dari kad, bukan body */
+
+      #kad-cetak {
+        background: url("img/latar-bunga.jpeg") center / cover no-repeat, #fdf8f3;
+        height: 100vh;             /* 100vh semasa cetak = tinggi 1 muka surat A4 */
+        padding: 16mm 14mm;
+        box-sizing: border-box;
+        overflow: hidden;          /* jangan sesekali tumpah ke muka surat kedua */
+        /* !important perlu: ia mengatasi `.cetak-sahaja { display: block !important }` di atas */
+        display: flex !important;  /* kandungan ditengahkan menegak pada A4 */
+        flex-direction: column;
+        justify-content: center;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact; /* kekalkan corak bunga & warna tema */
+      }
+      /* Bleed penuh: margin @page tidak boleh diwarnakan, jadi ia diganti
+         padding di dalam #kad-cetak. */
+      @page { size: A4; margin: 0; }
+    }
+  </style>
+</head>
+
+<body class="antialiased">
+
+  <!-- ============ LOG MASUK ============ -->
+  <section id="zon-login" class="mx-auto w-full max-w-sm px-5 py-16">
+    <header class="text-center mb-8">
+      <p class="font-tangan text-2xl text-[#b76e79] mb-1">Selamat Datang</p>
+      <h1 class="font-serif-elegan text-4xl font-semibold tracking-wide">Tetapan Majlis</h1>
+      <p class="mt-2 text-sm text-[#8a7a70]">Log masuk untuk sesuaikan majlis anda</p>
+    </header>
+
+    <form id="form-login" class="space-y-4">
+      <div>
+        <label for="input-emel" class="block text-sm font-medium mb-1.5">Emel</label>
+        <input id="input-emel" type="email" required autocomplete="username" class="input-elok" />
+      </div>
+      <div>
+        <label for="input-kata-laluan" class="block text-sm font-medium mb-1.5">Kata laluan</label>
+        <input id="input-kata-laluan" type="password" required autocomplete="current-password" class="input-elok" />
+      </div>
+      <div id="ralat-login" class="hidden kotak-ralat" role="alert"></div>
+      <button id="butang-login" type="submit" class="btn-utama w-full rounded-xl py-3.5 font-medium">Log Masuk</button>
+    </form>
+
+    <p class="mt-6 text-center text-xs text-[#a09088] leading-relaxed">
+      Emel &amp; kata laluan diberikan oleh admin selepas bayaran disahkan.
+    </p>
+  </section>
+
+  <!-- ============ PANEL PELANGGAN ============ -->
+  <section id="zon-panel" class="hidden mx-auto w-full max-w-lg px-4 sm:px-6 py-8">
+
+    <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div>
+        <h1 class="font-serif-elegan text-3xl font-semibold">Tetapan Majlis</h1>
+        <p class="text-sm text-[#8a7a70]"><span id="emel-pelanggan" class="font-medium"></span></p>
+      </div>
+      <button id="butang-keluar" class="rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">Log Keluar</button>
+    </header>
+
+    <!-- Tiada majlis -->
+    <div id="zon-tiada-majlis" class="hidden text-center py-16">
+      <div class="text-5xl mb-3">🔎</div>
+      <p class="text-[#8a7a70]">Tiada majlis untuk akaun ini. Sila hubungi admin.</p>
+    </div>
+
+    <!-- Kandungan majlis -->
+    <div id="zon-majlis" class="hidden space-y-6">
+
+      <!-- Info pakej -->
+      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-4">
+        <div class="grid grid-cols-3 gap-2 text-center text-sm">
+          <div><span class="block text-xs text-[#a09088]">Pakej</span><span id="info-pakej" class="font-medium">—</span></div>
+          <div><span class="block text-xs text-[#a09088]">Status</span><span id="info-status" class="font-medium">—</span></div>
+          <div><span class="block text-xs text-[#a09088]">Tamat</span><span id="info-tamat" class="font-medium">—</span></div>
+        </div>
+        <div id="amaran-majlis" class="hidden kotak-amaran mt-3"></div>
+      </div>
+
+      <!-- Borang customize -->
+      <form id="form-tetapan" class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 space-y-5">
+
+        <!-- URL unik -->
+        <div>
+          <label class="block text-sm font-medium mb-1.5">URL unik majlis anda</label>
+          <div class="flex items-center gap-1 text-sm">
+            <span class="text-[#a09088]">.../e/</span>
+            <input id="c-slug" type="text" class="input-elok" placeholder="cth: ali-siti" autocomplete="off" />
+          </div>
+          <p id="slug-status" class="mt-1 text-xs h-4"></p>
+          <p class="text-[11px] text-[#a09088]">Huruf kecil, nombor &amp; tanda '-' sahaja. Contoh: <b>ali-siti</b></p>
+        </div>
+
+        <!-- Nama pasangan -->
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Nama pasangan</label>
+          <input id="c-nama" type="text" maxlength="80" class="input-elok" placeholder="cth: Ali &amp; Siti" />
+        </div>
+
+        <!-- Tarikh majlis -->
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Tarikh majlis</label>
+          <input id="c-tarikh" type="date" class="input-elok" />
+        </div>
+
+        <!-- Tema warna -->
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Tema warna</label>
+          <div id="swatches" class="flex flex-wrap items-center gap-2 mb-2"></div>
+          <div class="flex items-center gap-2">
+            <input id="c-tema" type="color" value="#b76e79" class="h-9 w-14 rounded-lg border border-[#e5d5ca] bg-white cursor-pointer" />
+            <span class="text-xs text-[#a09088]">Atau pilih warna sendiri</span>
+          </div>
+        </div>
+
+        <!-- Mesej aluan -->
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Mesej aluan <span class="text-[#a09088] font-normal">(pilihan)</span></label>
+          <textarea id="c-welcome" rows="2" maxlength="200" class="input-elok resize-none" placeholder="cth: Terima kasih meraikan hari istimewa kami"></textarea>
+        </div>
+
+        <div id="simpan-ralat" class="hidden kotak-ralat" role="alert"></div>
+        <div id="simpan-jaya" class="hidden kotak-jaya" role="status"></div>
+        <button id="butang-simpan" type="submit" class="btn-utama w-full rounded-xl py-3.5 font-medium">Simpan Tetapan</button>
+      </form>
+
+      <!-- Pautan pantas -->
+      <div class="grid grid-cols-2 gap-3">
+        <a id="link-galeri" href="#" class="rounded-xl border border-[#d9a5ac] py-3 text-center text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">Lihat Galeri</a>
+        <a id="link-moderasi" href="#" class="rounded-xl border border-[#d9a5ac] py-3 text-center text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">Panel Moderasi</a>
+      </div>
+
+      <!-- Kad Muat Turun Gambar (Premium) -->
+      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 text-center">
+        <div class="text-4xl mb-2">📦</div>
+        <h2 class="font-serif-elegan text-2xl font-semibold mb-1">Muat Turun Gambar</h2>
+        <p class="text-xs text-[#a09088] mb-4 leading-relaxed">
+          Semua gambar tetamu dimampatkan jadi satu fail ZIP,
+          termasuk <strong>senarai-ucapan.csv</strong>.
+        </p>
+
+        <!-- Mesej berkunci (Basic / tidak aktif / tamat tempoh tangguh) -->
+        <div id="mt-kunci" class="hidden kotak-amaran mb-3"></div>
+
+        <!-- Nyahdaya secara LALAI (gagal-tertutup): hanya kemasKiniGateMuatTurun()
+             dalam tetapan.js yang mendayakannya selepas kelayakan disahkan. -->
+        <button id="butang-muat-turun" disabled class="btn-utama w-full rounded-xl py-3.5 font-medium">
+          ⬇️ Muat Turun Semua Gambar
+        </button>
+
+        <!-- Bar progres -->
+        <div id="mt-bar-luar" class="bar-luar hidden mt-4">
+          <div id="mt-bar-dalam" class="bar-dalam"></div>
+        </div>
+
+        <!-- Kotak status -->
+        <div id="mt-status" class="kotak-status hidden mt-3" role="status" aria-live="polite"></div>
+
+        <!-- Pautan sandaran: jika pelayar menyekat muat turun automatik -->
+        <div id="mt-sandaran" class="hidden mt-3 text-sm">
+          <p class="text-xs text-[#a09088] mb-1.5">Fail tidak turun sendiri?</p>
+          <a id="mt-pautan" href="#" download
+             class="inline-block rounded-xl border border-[#d9a5ac] px-4 py-2 font-medium text-[#b76e79] hover:bg-white/60 transition">
+            ⬇️ Klik di sini untuk simpan fail
+          </a>
+        </div>
+
+        <p class="mt-3 text-[11px] text-[#a09088] leading-relaxed">
+          Untuk set gambar yang besar, mampatan mungkin ambil sedikit masa.
+          Biarkan tab ini terbuka sehingga selesai.
+        </p>
+      </div>
+
+      <!-- Kad QR -->
+      <div id="zon-qr" class="hidden rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 text-center">
+        <h2 class="font-serif-elegan text-2xl font-semibold mb-1">Kod QR Majlis</h2>
+        <p class="text-xs text-[#a09088] mb-4">Tetamu imbas untuk muat naik gambar</p>
+        <div class="flex justify-center">
+          <div id="qrcode" class="rounded-xl bg-white p-4 shadow-sm"></div>
+        </div>
+        <p id="qr-url" class="mt-3 text-xs text-[#8a7a70] break-all"></p>
+        <button id="butang-cetak" class="no-print btn-utama mt-4 rounded-xl px-5 py-2.5 text-sm font-medium">🖨️ Cetak Kad QR</button>
+        <p class="no-print mt-2 text-[11px] text-[#a09088] leading-relaxed">
+          Dalam dialog cetak, tandakan <b>“Background graphics”</b> / <b>“Grafik latar”</b>
+          supaya corak bunga turut dicetak.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ KAD CETAK (hanya muncul semasa @media print) ============ -->
+  <!-- Diisi oleh isiKadCetak() dalam js/tetapan.js -->
+  <section id="kad-cetak" class="cetak-sahaja text-center">
+    <p class="font-tangan text-3xl text-[#b76e79]">Majlis Perkahwinan</p>
+    <h1 id="cetak-nama" class="font-serif-elegan text-5xl font-semibold my-3"></h1>
+    <p id="cetak-tarikh" class="font-serif-elegan text-xl text-[#8a7a70]"></p>
+    <div id="cetak-garis" class="mx-auto my-8 h-px w-32 bg-[#e0cfc2]"></div>
+
+    <h2 class="font-serif-elegan text-3xl font-medium mb-1">Kongsi Gambar Anda</h2>
+    <p class="text-sm text-[#8a7a70] mb-6">Imbas kod QR ini untuk muat naik gambar &amp; ucapan anda</p>
+
+    <!-- Tagline utama kad -->
+    <p id="cetak-tagline" class="font-serif-elegan text-lg font-semibold uppercase tracking-[.35em] mb-5">
+      Imbas &amp; Raikan
+    </p>
+
+    <!-- QR MESTI atas petak putih pejal — zon senyap putih itu yang
+         menjamin kod boleh diimbas di atas corak bunga. -->
+    <div class="flex justify-center">
+      <div id="cetak-qrcode" class="rounded-2xl bg-white p-5 shadow-sm"></div>
+    </div>
+
+    <p id="cetak-url" class="mt-5 text-xs text-[#8a7a70] break-all"></p>
+    <p class="mt-8 font-tangan text-2xl text-[#b76e79]">Terima kasih! 💐</p>
+  </section>
+
+  <script type="module" src="js/tetapan.js"></script>
+</body>
+</html>

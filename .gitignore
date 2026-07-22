@@ -1,0 +1,14 @@
+# Sistem OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Fail sementara
+*.log
+*.tmp
+node_modules/

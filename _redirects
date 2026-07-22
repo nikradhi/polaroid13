@@ -1,0 +1,6 @@
+# Netlify — URL cantik untuk landing majlis (PILIHAN).
+# Rewrite (status 200) mengekalkan URL /e/<slug> tetapi hidangkan e.html.
+# JANGAN guna 301/302 — itu akan tukar URL di pelayar.
+# e.html kira laluan skrip sendiri & e.js guna import.meta.url, jadi aset
+# tidak 404 sama ada di root, sub-direktori, atau melalui rewrite ini.
+/e/*   /e.html   200

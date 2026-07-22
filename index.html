@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kongsi Gambar Anda · Polaroid Wedding</title>
+
+  <!-- Tailwind CSS melalui CDN (tiada langkah build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Cormorant Garamond (tajuk serif) + Caveat (tulisan tangan) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* Semua warna & font halaman ini datang daripada CSS variable
+       (--warna-*, --font-*) yang diset oleh js/tema.js melalui
+       terapTema() dalam js/majlis.js. Nilai LALAI (tema "Rose Gold")
+       disuntik oleh pasangGayaAsasTema() sebagai <style id="gaya-tema">,
+       jadi halaman tetap bergaya sebelum majlis selesai dimuat.
+
+       Nama lama dikekalkan sebagai alias supaya CSS di bawah dan
+       kelas Tailwind arbitrary dalam markup tidak perlu diubah. */
+    :root {
+      --krim: var(--warna-latar);
+      --gading: var(--warna-latar-2);
+      --rosegold: var(--warna-utama);
+      --rosegold-lembut: var(--warna-aksen);
+      --coklat: var(--warna-teks);
+    }
+    body {
+      background:
+        radial-gradient(1200px 600px at 50% -10%, var(--warna-cahaya) 0%, transparent 60%),
+        linear-gradient(180deg, var(--warna-latar) 0%, var(--warna-latar-2) 100%);
+      color: var(--warna-teks);
+      font-family: var(--font-teks);
+      min-height: 100vh;
+    }
+    .font-serif-elegan { font-family: var(--font-tajuk); }
+    .font-tangan { font-family: var(--font-tangan); }
+
+    /* Kotak status mesej */
+    .kotak-status {
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+    .kotak-status--info  { background: #fdf1e7; color: #8a5a3a; }
+    .kotak-status--gagal { background: #fbe4e4; color: #a13a3a; }
+    .kotak-status--berjaya { background: #e6f4ea; color: #2f7a45; }
+
+    /* Butang utama */
+    .btn-utama {
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--tema) 82%, #fff) 0%, var(--tema) 100%);
+      color: #fff;
+      transition: transform .15s ease, box-shadow .2s ease, opacity .2s;
+      box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--tema) 60%, transparent);
+    }
+    .btn-utama:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-utama:active:not(:disabled) { transform: translateY(0); }
+    .btn-utama:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Zon pilih fail */
+    .zon-fail {
+      border: 2px dashed var(--rosegold-lembut);
+      background: rgba(255,255,255,.5);
+      transition: border-color .2s, background .2s;
+    }
+    .zon-fail:hover { border-color: var(--rosegold); background: rgba(255,255,255,.8); }
+
+    /* Butang sekunder (ambil semula / galeri) */
+    .btn-kedua {
+      border: 1px solid var(--rosegold-lembut);
+      background: rgba(255,255,255,.7);
+      color: var(--tema);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: .95rem;
+      font-weight: 500;
+      transition: background .2s, border-color .2s, opacity .2s;
+    }
+    .btn-kedua:hover:not(:disabled) { background: #fff; border-color: var(--rosegold); }
+    .btn-kedua:disabled, .zon-fail:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Butang buang — teks kecil sahaja */
+    .btn-buang {
+      color: #a1897f;
+      font-size: .85rem;
+      transition: color .2s, opacity .2s;
+    }
+    .btn-buang:hover:not(:disabled) { color: #a13a3a; }
+    .btn-buang:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Cincin fokus ikut tema (ganti cincin hitam lalai pelayar) */
+    .zon-fail:focus-visible,
+    .btn-kedua:focus-visible,
+    .btn-buang:focus-visible {
+      outline: 2px solid var(--tema);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+
+<body class="antialiased">
+  <main class="mx-auto w-full max-w-md px-5 py-8 sm:py-12">
+
+    <!-- Tajuk -->
+    <header class="text-center mb-8">
+      <p id="nama-majlis" class="font-tangan text-2xl text-[color:var(--tema)] mb-1">Selamat Datang ke Majlis Kami</p>
+      <h1 class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">
+        Kongsi Gambar Anda
+      </h1>
+      <p class="mt-3 text-sm text-[#8a7a70] leading-relaxed">
+        Abadikan detik indah bersama kami. Muat naik gambar &amp; tinggalkan ucapan —
+        ia akan dipaparkan dalam galeri polaroid kami.
+      </p>
+    </header>
+
+    <!-- Ralat majlis: pautan tidak sah / belum aktif / tamat tempoh / kuota penuh -->
+    <div id="zon-majlis-ralat" class="hidden text-center py-12">
+      <div class="text-5xl mb-3">💌</div>
+      <h2 id="majlis-ralat-tajuk" class="font-serif-elegan text-2xl font-semibold mb-2">Majlis tidak dijumpai</h2>
+      <p id="majlis-ralat-mesej" class="text-[#8a7a70] leading-relaxed"></p>
+    </div>
+
+    <!-- BORANG UPLOAD -->
+    <form id="form-upload" class="space-y-5" novalidate>
+
+      <!-- Pilih / ambil gambar -->
+      <div>
+        <!-- Placeholder: kelihatan hanya bila TIADA gambar dipilih -->
+        <button type="button" id="zon-pilih-fail" class="zon-fail block w-full rounded-2xl p-6 text-center">
+          <svg class="mx-auto mb-2 h-10 w-10 text-[color:var(--tema)]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+          </svg>
+          <span id="teks-pilih-fail" class="block font-medium text-[#5a4a42]">Pilih atau ambil gambar</span>
+          <!-- <span>, bukan <p> — <button> hanya benarkan kandungan frasa -->
+          <span class="mt-1 block text-xs text-[#a09088]">Ketik untuk buka kamera, atau pilih dari galeri di bawah</span>
+        </button>
+
+        <!-- Preview polaroid — menggantikan placeholder bila ADA gambar -->
+        <div id="zon-preview" class="hidden max-w-[240px] mx-auto"></div>
+
+        <!-- Bar tindakan — SENTIASA kelihatan, sebelum & selepas ada gambar.
+             Butang yang sama diguna untuk ambil kali pertama dan ambil semula. -->
+        <div id="zon-tindakan-imej" class="mt-3">
+          <div class="flex gap-2">
+            <button type="button" id="butang-kamera" class="btn-kedua flex-1">
+              📷 <span id="teks-butang-kamera">Ambil gambar</span>
+            </button>
+            <button type="button" id="butang-galeri" class="btn-kedua flex-1">
+              🖼️ Galeri
+            </button>
+          </div>
+          <button type="button" id="butang-buang" class="btn-buang hidden mt-2 w-full py-1">
+            ✕ Buang gambar
+          </button>
+        </div>
+
+        <!-- Dua input berasingan: capture="environment" memaksa kamera belakang,
+             jadi galeri perlukan input tersendiri TANPA capture. -->
+        <input
+          id="input-kamera"
+          name="fail-kamera"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          class="sr-only"
+        />
+        <input
+          id="input-galeri"
+          name="fail-galeri"
+          type="file"
+          accept="image/*"
+          class="sr-only"
+        />
+      </div>
+
+      <!-- Nama (wajib) -->
+      <div>
+        <label for="input-nama" class="block text-sm font-medium mb-1.5">
+          Nama anda <span class="text-[color:var(--tema)]">*</span>
+        </label>
+        <input
+          id="input-nama"
+          name="nama"
+          type="text"
+          required
+          autocomplete="name"
+          maxlength="60"
+          placeholder="cth. Aisyah &amp; Danial"
+          class="w-full rounded-xl border border-[#e5d5ca] bg-white/70 px-4 py-3 text-base focus:border-[color:var(--tema)] focus:ring-2 focus:ring-[#d9a5ac]/50 focus:outline-none"
+        />
+      </div>
+
+      <!-- Ucapan (optional) -->
+      <div>
+        <label for="input-ucapan" class="block text-sm font-medium mb-1.5">
+          Ucapan ringkas <span class="text-[#a09088] font-normal">(pilihan)</span>
+        </label>
+        <textarea
+          id="input-ucapan"
+          name="ucapan"
+          rows="2"
+          placeholder="cth. Semoga bahagia ke akhir hayat!"
+          class="w-full resize-none rounded-xl border border-[#e5d5ca] bg-white/70 px-4 py-3 text-base focus:border-[color:var(--tema)] focus:ring-2 focus:ring-[#d9a5ac]/50 focus:outline-none"
+        ></textarea>
+        <div id="kaunter-ucapan" class="mt-1 text-right text-xs text-[#a09088]">0/120</div>
+      </div>
+
+      <!-- Perangkap bot (honeypot) — tersembunyi daripada manusia.
+           Jangan isi. Jika bot mengisinya, hantaran akan diabaikan. -->
+      <div aria-hidden="true" style="position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;">
+        <label for="input-web">Laman web (biarkan kosong)</label>
+        <input id="input-web" name="web" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+
+      <!-- Kotak status -->
+      <div id="kotak-status" class="kotak-status hidden" role="status" aria-live="polite"></div>
+
+      <!-- Butang hantar -->
+      <button
+        id="butang-hantar"
+        type="submit"
+        class="btn-utama w-full rounded-xl py-4 text-lg font-medium"
+      >
+        Hantar Gambar
+      </button>
+    </form>
+
+    <!-- ZON TERIMA KASIH (selepas berjaya) -->
+    <div id="zon-terima-kasih" class="hidden text-center py-10">
+      <div class="text-5xl mb-3">💐</div>
+      <h2 class="font-serif-elegan text-3xl font-semibold mb-2">Terima Kasih!</h2>
+      <p class="text-[#8a7a70] mb-6 leading-relaxed">
+        Gambar anda telah berjaya dihantar dan akan muncul dalam galeri kami.
+        Terima kasih kerana meraikan hari istimewa ini bersama kami.
+      </p>
+      <div class="flex flex-col gap-3">
+        <button id="butang-hantar-lagi" class="btn-utama rounded-xl py-3.5 font-medium">
+          Hantar Gambar Lagi
+        </button>
+        <a href="gallery.html" class="rounded-xl border border-[color:var(--rosegold-lembut)] py-3.5 font-medium text-[color:var(--tema)] hover:bg-white/60 transition">
+          Lihat Galeri
+        </a>
+      </div>
+    </div>
+
+    <!-- Pautan galeri di bawah borang -->
+    <footer class="mt-8 text-center">
+      <a href="gallery.html" class="font-tangan text-xl text-[color:var(--tema)] hover:underline">
+        Lihat galeri gambar tetamu →
+      </a>
+    </footer>
+  </main>
+
+  <!-- Logik upload (ES module) -->
+  <script type="module" src="js/upload.js"></script>
+</body>
+</html>
