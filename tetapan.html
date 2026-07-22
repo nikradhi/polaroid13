@@ -24,15 +24,19 @@
 
   <style>
     body {
-      /* Corak bunga (fail tunggal, bukan jubin seamless -> cover, jangan repeat).
-         Gradient krim kekal sebagai lapisan sandaran jika imej gagal dimuatkan. */
-      background:
-        url("img/latar-bunga.jpeg") center / cover no-repeat fixed,
-        linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
+      background: linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
       background-color: #fdf8f3;
       color: #5a4a42;
       min-height: 100vh;
     }
+    /* Corak bunga kini datang daripada lapisan kongsi body[data-corak]::before
+       yang disuntik oleh js/tema.js — bukan lagi background-attachment: fixed,
+       yang tersekat-sekat/pecah semasa menatal pada iOS Safari.
+
+       Panel pelanggan ini bukan halaman tema, jadi corak dipaparkan PENUH
+       (kelegapan 1) — rupanya kekal sama seperti sebelum ini. Halaman tetamu
+       pula memakai kelegapan rendah supaya warna tema masih menembusi. */
+    body[data-corak="penuh"] { --corak-opacity: 1; --corak-tapis: none; }
     .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
     .font-tangan { font-family: 'Caveat', cursive; }
     .btn-utama {
@@ -96,7 +100,7 @@
   </style>
 </head>
 
-<body class="antialiased">
+<body class="antialiased" data-corak="penuh">
 
   <!-- ============ LOG MASUK ============ -->
   <section id="zon-login" class="mx-auto w-full max-w-sm px-5 py-16">

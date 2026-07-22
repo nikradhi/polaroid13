@@ -1,9 +1,0 @@
-- main [ref=e2]:
-  - generic [ref=e3]:
-    - paragraph [ref=e4]: Selamat Datang ke Majlis Kami
-    - heading "Kongsi Gambar Anda" [level=1] [ref=e5]
-    - paragraph [ref=e6]: Abadikan detik indah bersama kami. Muat naik gambar & tinggalkan ucapan — ia akan dipaparkan dalam galeri polaroid kami.
-  - generic [ref=e7]:
-    - generic [ref=e8]: 💌
-    - heading "Pautan tidak lengkap" [level=2] [ref=e9]
-    - paragraph [ref=e10]: Sila imbas kod QR majlis untuk muat naik gambar.

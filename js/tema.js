@@ -54,6 +54,26 @@ const FONT_STATIK = ["Cormorant Garamond", "Caveat"];
 export const FONT_TANGAN = "Caveat";
 
 // ------------------------------------------------------------
+//  CORAK LATAR (kertas dinding bunga)
+// ------------------------------------------------------------
+//  URL dikira daripada import.meta.url, BUKAN ditulis sebagai
+//  "img/latar-bunga.jpeg" dalam CSS halaman. Sebabnya:
+//
+//    e.html boleh dihidang sebagai URL cantik "/e/<slug>" melalui
+//    rewrite. url() dalam <style> inline diselesaikan relatif kepada
+//    URL DOKUMEN, jadi ia akan tertuju ke "/e/img/latar-bunga.jpeg"
+//    dan gagal 404 — corak hilang senyap pada URL cantik sahaja.
+//
+//    Laluan root-absolut "/img/..." pula memecahkan hosting dalam
+//    sub-direktori (GitHub Pages project site).
+//
+//  Modul ini berada di <root>/js/, jadi "../img/" sentiasa betul
+//  untuk ketiga-tiga bentuk hosting. Corak sama diguna oleh js/e.js
+//  untuk menyelesaikan pautan sub-halaman.
+// ------------------------------------------------------------
+export const URL_CORAK = new URL("../img/latar-bunga.jpeg", import.meta.url).href;
+
+// ------------------------------------------------------------
 //  PASANGAN FONT (pilihan terhad untuk pelanggan Premium)
 // ------------------------------------------------------------
 //  Sengaja terhad: kebebasan penuh mudah merosakkan reka bentuk.
@@ -95,6 +115,8 @@ export const TEMA_PRASET = [
     sempadan: "#e5d5ca",
     polaroidTeks: "#4a3f3a",
     polaroidNama: "#9a6a5a",
+    corakOpacity: ".22",
+    corakTapis: "none",
     font: "klasik-elegan",
   },
   {
@@ -113,6 +135,8 @@ export const TEMA_PRASET = [
     sempadan: "#d8e2d3",
     polaroidTeks: "#3a423a",
     polaroidNama: "#6d8064",
+    corakOpacity: ".14",
+    corakTapis: "grayscale(1)",
     font: "klasik-elegan",
   },
   {
@@ -131,6 +155,8 @@ export const TEMA_PRASET = [
     sempadan: "#dcdcdc",
     polaroidTeks: "#1f1f1f",
     polaroidNama: "#5e5e5e",
+    corakOpacity: ".10",
+    corakTapis: "grayscale(1)",
     font: "moden-mewah",
   },
   {
@@ -149,6 +175,8 @@ export const TEMA_PRASET = [
     sempadan: "#ebd9de",
     polaroidTeks: "#4d3f44",
     polaroidNama: "#a37f8c",
+    corakOpacity: ".20",
+    corakTapis: "none",
     font: "klasik-elegan",
   },
   {
@@ -167,6 +195,8 @@ export const TEMA_PRASET = [
     sempadan: "#ded8c9",
     polaroidTeks: "#23303f",
     polaroidNama: "#a5843a",
+    corakOpacity: ".12",
+    corakTapis: "grayscale(1)",
     font: "moden-mewah",
   },
   {
@@ -185,6 +215,8 @@ export const TEMA_PRASET = [
     sempadan: "#ebd8c9",
     polaroidTeks: "#4a3a34",
     polaroidNama: "#a3634a",
+    corakOpacity: ".16",
+    corakTapis: "none",
     font: "klasik-elegan",
   },
 ];
@@ -271,6 +303,11 @@ export function bacaTema(ev) {
     sempadan: praset.sempadan,
     polaroidTeks: praset.polaroidTeks,
     polaroidNama: praset.polaroidNama,
+    // Corak bunga: kelegapan & tapis warna ikut tema. Tema berwarna
+    // sejuk (sage/navy/mono) menyahwarnakan ros supaya corak jadi
+    // tekstur neutral, bukan bunga merah jambu yang bercanggah.
+    corakOpacity: praset.corakOpacity ?? ".18",
+    corakTapis: praset.corakTapis ?? "none",
     fontTajuk,
     fontTeks,
   };
@@ -305,12 +342,57 @@ export function pasangGayaAsasTema() {
       --warna-sempadan: ${t.sempadan};
       --warna-polaroid-teks: ${t.polaroidTeks};
       --warna-polaroid-nama: ${t.polaroidNama};
+      --corak-opacity: ${t.corakOpacity};
+      --corak-tapis: ${t.corakTapis};
       --font-tajuk: ${tumpukFont(t.fontTajuk)};
       --font-teks: ${tumpukFont(t.fontTeks)};
       --font-tangan: ${tumpukFont(FONT_TANGAN)};
       /* Alias lama — dirujuk oleh ~20 kelas Tailwind arbitrary
          (text-[color:var(--tema)]) merentasi halaman awam. */
       --tema: var(--warna-utama);
+    }
+
+    /* ---- Corak latar (kertas dinding bunga) ----
+       OPT-IN melalui atribut pada <body>. Dua mod:
+         data-corak="halus" — halaman tetamu: kelegapan rendah supaya
+                              warna tema masih menembusi corak.
+         data-corak="penuh" — panel pelanggan (tetapan.html): corak penuh,
+                              tiada tema untuk ditembusi.
+       wall.html sengaja TIADA atribut (latar gelap projektor).
+
+       Lapisan berasingan, bukan lapisan dalam background body, sebab
+       shorthand background tidak boleh beri opacity per-lapisan —
+       imej JPEG legap akan menutup terus warna latar tema.
+
+       position:fixed pada pseudo-element, BUKAN background-attachment:
+       fixed — attachment fixed tersekat-sekat/pecah pada iOS Safari.
+
+       z-index:-1 melukis di atas latar kanvas tetapi di bawah kandungan
+       aliran. Syarat: <body> tidak boleh mencipta stacking context
+       (jangan tambah opacity/transform/filter pada body). */
+    body[data-corak]::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: url("${URL_CORAK}") center / cover no-repeat;
+      opacity: calc(var(--corak-opacity) * var(--corak-skala, 1));
+      filter: var(--corak-tapis, none);
+      pointer-events: none;
+    }
+    /* Imej ini potret (750x1280). Pada skrin lebar, 'cover' membesarkannya
+       ~1.7x jadi motif nampak besar; kurangkan kelegapan supaya ia kekal
+       sebagai tekstur, bukan subjek. (Jubin bukan pilihan — fail ini
+       bukan jubin seamless, sambungannya kelihatan.)
+       Mod "penuh" dikecualikan: di sana corak MEMANG subjeknya. */
+    @media (min-width: 768px) {
+      body[data-corak="halus"]::before { --corak-skala: .65; }
+    }
+    /* Jangan cetak corak latar. Elemen position:fixed tetap dilukis pada
+       muka surat pertama, jadi tanpa ini kad QR cetak (tetapan.html) akan
+       terkena lapisan bunga di atasnya. Kad itu ada corak sendiri. */
+    @media print {
+      body[data-corak]::before { display: none !important; }
     }
   `;
   document.head.appendChild(style);
@@ -375,6 +457,8 @@ export function terapTema(tema, sasaran = document.documentElement) {
   s.setProperty("--warna-sempadan", tema.sempadan);
   s.setProperty("--warna-polaroid-teks", tema.polaroidTeks);
   s.setProperty("--warna-polaroid-nama", tema.polaroidNama);
+  s.setProperty("--corak-opacity", tema.corakOpacity);
+  s.setProperty("--corak-tapis", tema.corakTapis);
   s.setProperty("--font-tajuk", tumpukFont(tema.fontTajuk));
   s.setProperty("--font-teks", tumpukFont(tema.fontTeks));
   s.setProperty("--font-tangan", tumpukFont(FONT_TANGAN));
