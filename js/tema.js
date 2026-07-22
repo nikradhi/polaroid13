@@ -285,6 +285,7 @@ export function bacaTema(ev) {
 //  warna hitam/tanpa gaya semasa halaman mula-mula dibuka.
 // ------------------------------------------------------------
 export function pasangGayaAsasTema() {
+  if (typeof document === "undefined") return;
   if (document.getElementById("gaya-tema")) return;
 
   const t = bacaTema(null); // = rose-gold, rupa asal sistem
@@ -313,6 +314,12 @@ export function pasangGayaAsasTema() {
     }
   `;
   document.head.appendChild(style);
+
+  // Muat juga font LALAI. Tanpa ini --font-teks mengisytiharkan 'Lato'
+  // tetapi fail font tidak pernah diminta, jadi halaman jatuh ke
+  // sans-serif sistem sehingga majlis selesai dibaca dari Firestore
+  // (dan terus begitu jika majlis gagal dimuat).
+  muatFontTema(t.fontTajuk, t.fontTeks, FONT_TANGAN);
 }
 
 // ------------------------------------------------------------
@@ -373,6 +380,14 @@ export function terapTema(tema, sasaran = document.documentElement) {
   s.setProperty("--font-tangan", tumpukFont(FONT_TANGAN));
   return tema;
 }
+
+// Pasang gaya asas SERTA-MERTA semasa modul dimuat, bukan tunggu
+// majlis selesai dibaca dari Firestore. Modul ES dijalankan selepas
+// HTML selesai dihurai, jadi <head> sudah wujud — dan halaman terus
+// bergaya penuh (tiada kelipan teks tanpa font/warna) semasa menunggu
+// rangkaian. terapTemaMajlis() memanggilnya semula kemudian; fungsi
+// itu keluar awal jika sudah dipasang.
+pasangGayaAsasTema();
 
 // ------------------------------------------------------------
 //  Kemudahan: baca + pasang gaya asas + muat font + terap.

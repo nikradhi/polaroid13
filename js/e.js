@@ -9,7 +9,7 @@
 // ============================================================
 
 import { db, doc, getDoc } from "./firebase.js";
-import { formatTarikhMajlis } from "./majlis.js";
+import { formatTarikhMajlis, terapTema } from "./majlis.js";
 
 const HAD_TANPA_HAD = 100000;
 
@@ -91,7 +91,7 @@ function paparRalat(tajuk, mesej) {
     }
 
     // 4) Terap tema + kandungan
-    document.documentElement.style.setProperty("--tema", ev.themeColor || "#b76e79");
+    terapTema(ev);
     lNama.textContent = ev.coupleName || "Majlis Perkahwinan";
     const tarikh = formatTarikhMajlis(ev.weddingDate);
     lTarikh.textContent = tarikh ? `✦ ${tarikh} ✦` : "";

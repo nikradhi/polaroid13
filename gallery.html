@@ -17,18 +17,19 @@
   />
 
   <style>
-    /* --tema diset oleh terapTema() (js/majlis.js) ikut themeColor majlis.
-       Nilai di sini hanyalah lalai sebelum majlis dimuat. */
-    :root { --tema: #b76e79; }
+    /* Warna & font datang daripada CSS variable (--warna-*, --font-*)
+       yang diset oleh js/tema.js melalui terapTema() dalam js/majlis.js.
+       Nilai lalai disuntik sebagai <style id="gaya-tema"> oleh modul itu. */
     body {
       background:
-        radial-gradient(1200px 600px at 50% -10%, #fbeef0 0%, transparent 60%),
-        linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
-      color: #5a4a42;
+        radial-gradient(1200px 600px at 50% -10%, var(--warna-cahaya) 0%, transparent 60%),
+        linear-gradient(180deg, var(--warna-latar) 0%, var(--warna-latar-2) 100%);
+      color: var(--warna-teks);
+      font-family: var(--font-teks);
       min-height: 100vh;
     }
-    .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
-    .font-tangan { font-family: 'Caveat', cursive; }
+    .font-serif-elegan { font-family: var(--font-tajuk); }
+    .font-tangan { font-family: var(--font-tangan); }
 
     /* Masonry guna CSS columns — ringkas & minimakan reflow */
     .masonry {
@@ -60,17 +61,17 @@
     }
     .reaksi {
       display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(255,255,255,.7); border: 1px solid #eaddd2;
+      background: rgba(255,255,255,.7); border: 1px solid var(--warna-sempadan);
       border-radius: 999px; padding: 4px 12px; font-size: .95rem;
-      color: #8a7a70; cursor: pointer; transition: transform .12s ease, background .2s;
+      color: var(--warna-teks-lembut); cursor: pointer; transition: transform .12s ease, background .2s;
     }
     .reaksi:hover { background: #fff; transform: translateY(-1px); }
-    .reaksi .hati { color: #d8c2b6; font-size: 1.05rem; transition: color .2s, transform .2s; }
+    .reaksi .hati { color: var(--warna-sempadan); font-size: 1.05rem; transition: color .2s, transform .2s; }
     .reaksi.disukai { color: var(--tema); cursor: default; }
     .reaksi.disukai .hati { color: #e0526b; transform: scale(1.15); }
     /* Butang simpan — ikon diwarnakan sama gaya seperti ♥ */
     .reaksi .ikon {
-      color: #d8c2b6; font-size: 1.05rem; line-height: 1; font-weight: 700;
+      color: var(--warna-sempadan); font-size: 1.05rem; line-height: 1; font-weight: 700;
       transition: color .2s;
     }
     .reaksi:hover .ikon { color: var(--tema); }
@@ -93,12 +94,12 @@
     @keyframes lbMasuk { from { opacity: 0; } to { opacity: 1; } }
     #lb-img {
       max-width: 88vw; max-height: 74vh; object-fit: contain;
-      border-radius: 6px; background: #fffdf9; padding: 10px;
+      border-radius: 6px; background: var(--warna-kad); padding: 10px;
       box-shadow: 0 20px 60px rgba(0,0,0,.5);
     }
     .lb-kandungan { text-align: center; max-width: 92vw; }
-    #lb-nama { font-family: 'Caveat', cursive; font-size: 2rem; color: #fff; margin-top: 14px; }
-    #lb-ucapan { font-family: 'Caveat', cursive; font-size: 1.5rem; color: #f0d9dd; margin-top: 2px; word-break: break-word; }
+    #lb-nama { font-family: var(--font-tangan); font-size: 2rem; color: #fff; margin-top: 14px; }
+    #lb-ucapan { font-family: var(--font-tangan); font-size: 1.5rem; color: #f0d9dd; margin-top: 2px; word-break: break-word; }
     .lb-btn {
       position: absolute; top: 50%; transform: translateY(-50%);
       background: rgba(255,255,255,.15); color: #fff; border: none;
@@ -123,7 +124,7 @@
     /* Kotak carian */
     .kotak-cari {
       width: 100%; max-width: 22rem; margin: 0 auto;
-      border: 1px solid #e5d5ca; background: rgba(255,255,255,.7);
+      border: 1px solid var(--warna-sempadan); background: rgba(255,255,255,.7);
       border-radius: 999px; padding: 10px 18px; text-align: center;
     }
     .kotak-cari:focus { outline: none; border-color: var(--tema); }
@@ -139,7 +140,7 @@
       <h1 class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">
         Galeri Polaroid
       </h1>
-      <p class="mt-3 text-sm text-[#8a7a70]">Detik indah yang dikongsi oleh tetamu kami</p>
+      <p class="mt-3 text-sm text-[color:var(--warna-teks-lembut)]">Detik indah yang dikongsi oleh tetamu kami</p>
       <a href="index.html" class="inline-block mt-4 font-tangan text-xl text-[color:var(--tema)] hover:underline">
         + Tambah gambar anda
       </a>
@@ -149,15 +150,15 @@
     <div class="mb-8">
       <input id="input-cari" type="search" class="kotak-cari"
         placeholder="🔍 Cari ikut nama tetamu…" aria-label="Cari ikut nama" />
-      <p id="zon-tiada-carian" class="hidden mt-3 text-center text-sm text-[#a09088]">
+      <p id="zon-tiada-carian" class="hidden mt-3 text-center text-sm text-[color:var(--warna-teks-samar)]">
         Tiada nama sepadan dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".
       </p>
     </div>
 
     <!-- Keadaan memuat -->
     <div id="zon-memuat" class="text-center py-16">
-      <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#e5d5ca] border-t-[color:var(--tema)]"></div>
-      <p class="mt-3 text-sm text-[#a09088]">Sedang memuatkan galeri…</p>
+      <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[color:var(--warna-sempadan)] border-t-[color:var(--tema)]"></div>
+      <p class="mt-3 text-sm text-[color:var(--warna-teks-samar)]">Sedang memuatkan galeri…</p>
     </div>
 
     <!-- Kotak ralat -->
@@ -169,7 +170,7 @@
     <div id="zon-kosong" class="hidden text-center py-16">
       <div class="text-6xl mb-4">📷</div>
       <h2 class="font-serif-elegan text-3xl font-semibold mb-2">Belum Ada Gambar Lagi</h2>
-      <p class="text-[#8a7a70] mb-6">Jadilah yang pertama berkongsi kenangan indah!</p>
+      <p class="text-[color:var(--warna-teks-lembut)] mb-6">Jadilah yang pertama berkongsi kenangan indah!</p>
       <a href="index.html" class="btn-utama inline-block rounded-xl px-8 py-3.5 font-medium">
         Kongsi Gambar Pertama
       </a>

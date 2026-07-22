@@ -19,19 +19,27 @@
   <style>
     html, body { height: 100%; margin: 0; overflow: hidden; }
     body {
-      /* Latar gelap romantik supaya polaroid putih menonjol di projektor */
+      /* LATAR SENGAJA KEKAL GELAP — tidak mengikut tema majlis.
+         Live Wall dipancar ke skrin besar/projektor; latar cerah akan
+         melenyapkan polaroid putih. Hanya AKSEN dan FONT yang bertukar
+         ikut tema (--warna-aksen, --font-tajuk). */
       background:
         radial-gradient(1400px 900px at 50% 28%, #4a3540 0%, #33242c 55%, #241820 100%);
       color: #f3e7e0;
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-tajuk);
     }
     body.melahu { cursor: none; }
-    .font-tangan { font-family: 'Caveat', cursive; }
+    .font-serif-elegan { font-family: var(--font-tajuk); }
+    .font-tangan { font-family: var(--font-tangan); }
+    /* Aksen dicerahkan sedikit: --warna-aksen ditala untuk latar CERAH,
+       tetapi di sini ia duduk atas latar gelap. Tanpa ini, tema seperti
+       "Klasik Hitam-Putih" (aksen kelabu) jadi terlalu malap di projektor. */
+    .teks-aksen { color: color-mix(in srgb, var(--warna-aksen) 75%, #fff); }
 
     /* Pentas — kawasan tengah tempat polaroid besar dipaparkan */
     #pentas { width: clamp(300px, 40vw, 560px); }
     #pentas .polaroid {
-      background: #fffdf9;
+      background: var(--warna-kad, #fffdf9);
       box-shadow: 0 30px 70px -20px rgba(0,0,0,.6), 0 8px 20px rgba(0,0,0,.35);
     }
     #pentas .polaroid__img { max-height: 58vh; object-fit: contain; background: #f2ede8; }
@@ -40,9 +48,9 @@
 
     /* Lencana "Baru dihantar!" */
     #lencana-baru {
-      background: linear-gradient(135deg, #e6b56a, #d98f7a);
-      color: #3a2a20;
-      box-shadow: 0 8px 24px rgba(217,143,122,.5);
+      background: color-mix(in srgb, var(--warna-aksen) 82%, #fff);
+      color: #241820;
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--warna-aksen) 45%, transparent);
       animation: pop .5s cubic-bezier(.2,.8,.3,1.2) both, apung 2.5s ease-in-out infinite .5s;
     }
     @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -57,8 +65,8 @@
   <!-- Header -->
   <header id="kawalan" class="fixed top-0 inset-x-0 z-20 flex items-center justify-between px-6 py-4">
     <div>
-      <h1 id="tajuk-nama" class="font-serif text-2xl sm:text-3xl font-semibold tracking-wide" style="font-family:'Cormorant Garamond',serif;">Majlis Kami</h1>
-      <p class="font-tangan text-lg sm:text-xl text-[#e6b56a]">Kenangan tetamu · <span id="kiraan">0</span> gambar</p>
+      <h1 id="tajuk-nama" class="font-serif-elegan text-2xl sm:text-3xl font-semibold tracking-wide">Majlis Kami</h1>
+      <p class="font-tangan text-lg sm:text-xl teks-aksen">Kenangan tetamu · <span id="kiraan">0</span> gambar</p>
     </div>
     <button id="butang-penuh" class="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm hover:bg-white/20 transition backdrop-blur">
       ⛶ Skrin Penuh
@@ -79,8 +87,8 @@
     <!-- Keadaan kosong -->
     <div id="zon-kosong" class="hidden text-center px-6">
       <div class="text-7xl mb-6">📸</div>
-      <h2 class="font-serif text-4xl sm:text-5xl font-semibold mb-3" style="font-family:'Cormorant Garamond',serif;">Menunggu Gambar Pertama…</h2>
-      <p class="font-tangan text-3xl text-[#e6b56a]">Imbas kod QR di meja untuk kongsi gambar anda 💕</p>
+      <h2 class="font-serif-elegan text-4xl sm:text-5xl font-semibold mb-3">Menunggu Gambar Pertama…</h2>
+      <p class="font-tangan text-3xl teks-aksen">Imbas kod QR di meja untuk kongsi gambar anda 💕</p>
     </div>
 
     <!-- Zon ralat -->

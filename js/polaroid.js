@@ -91,9 +91,13 @@ export function pasangGayaPolaroid() {
   const style = document.createElement("style");
   style.id = "polaroid-style";
   style.textContent = `
+    /* Warna & font di bawah merujuk variable tema (js/tema.js).
+       Setiap var() ada nilai sandaran supaya komponen ini kekal
+       "plug & play" pada halaman yang tidak memuatkan modul tema
+       (cth panel moderasi). */
     .polaroid {
       --rot: 0deg;
-      background: #fffdf9;
+      background: var(--warna-kad, #fffdf9);
       padding: 14px 14px 0 14px;
       border-radius: 6px;
       box-shadow: 0 10px 25px -8px rgba(80, 50, 40, 0.35),
@@ -136,17 +140,17 @@ export function pasangGayaPolaroid() {
       text-align: center;
     }
     .polaroid__message {
-      font-family: 'Caveat', cursive;
+      font-family: var(--font-tangan, 'Caveat', cursive);
       font-size: 1.4rem;
       line-height: 1.2;
-      color: #4a3f3a;
+      color: var(--warna-polaroid-teks, #4a3f3a);
       margin: 0 0 6px 0;
       word-break: break-word;
     }
     .polaroid__name {
-      font-family: 'Caveat', cursive;
+      font-family: var(--font-tangan, 'Caveat', cursive);
       font-size: 1.15rem;
-      color: #9a6a5a;
+      color: var(--warna-polaroid-nama, #9a6a5a);
       margin: 0;
       word-break: break-word;
     }

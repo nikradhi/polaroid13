@@ -17,16 +17,18 @@
   />
 
   <style>
-    :root { --tema: #b76e79; }
+    /* Warna & font datang daripada CSS variable (--warna-*, --font-*)
+       yang diset oleh js/tema.js. Lihat terapTema() dalam js/majlis.js. */
     body {
       background:
-        radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--tema) 18%, transparent) 0%, transparent 60%),
-        linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
-      color: #5a4a42;
+        radial-gradient(1200px 600px at 50% -10%, var(--warna-cahaya) 0%, transparent 60%),
+        linear-gradient(180deg, var(--warna-latar) 0%, var(--warna-latar-2) 100%);
+      color: var(--warna-teks);
+      font-family: var(--font-teks);
       min-height: 100vh;
     }
-    .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
-    .font-tangan { font-family: 'Caveat', cursive; }
+    .font-serif-elegan { font-family: var(--font-tajuk); }
+    .font-tangan { font-family: var(--font-tangan); }
     .btn-tema {
       background: var(--tema);
       color: #fff;
@@ -48,15 +50,15 @@
 
   <!-- Memuat -->
   <div id="zon-memuat" class="min-h-screen flex flex-col items-center justify-center">
-    <div class="h-8 w-8 animate-spin rounded-full border-4 border-[#e5d5ca] border-t-[#b76e79]"></div>
-    <p class="mt-3 text-sm text-[#a09088]">Memuatkan majlis…</p>
+    <div class="h-8 w-8 animate-spin rounded-full border-4 border-[color:var(--warna-sempadan)] border-t-[color:var(--warna-utama)]"></div>
+    <p class="mt-3 text-sm text-[color:var(--warna-teks-samar)]">Memuatkan majlis…</p>
   </div>
 
   <!-- Ralat / tidak aktif -->
   <div id="zon-ralat" class="hidden min-h-screen flex flex-col items-center justify-center px-6 text-center">
     <div class="text-5xl mb-3">💌</div>
     <h1 class="font-serif-elegan text-3xl font-semibold mb-2" id="ralat-tajuk">Majlis tidak dijumpai</h1>
-    <p class="text-[#8a7a70] max-w-sm" id="ralat-mesej">Pautan ini mungkin salah atau majlis telah tamat.</p>
+    <p class="text-[color:var(--warna-teks-lembut)] max-w-sm" id="ralat-mesej">Pautan ini mungkin salah atau majlis telah tamat.</p>
   </div>
 
   <!-- Landing majlis -->
@@ -64,11 +66,11 @@
     <div class="text-center">
       <p class="font-tangan text-2xl teks-tema mb-2">Kami Menjemput Anda</p>
       <h1 id="l-nama" class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">Majlis Perkahwinan</h1>
-      <p id="l-tarikh" class="mt-2 text-sm text-[#8a7a70]"></p>
+      <p id="l-tarikh" class="mt-2 text-sm text-[color:var(--warna-teks-lembut)]"></p>
 
       <div class="mx-auto my-6 h-px w-24" style="background: var(--tema); opacity:.4"></div>
 
-      <p id="l-welcome" class="text-[#6a5a52] leading-relaxed mb-8"></p>
+      <p id="l-welcome" class="text-[color:var(--warna-teks-lembut)] leading-relaxed mb-8"></p>
 
       <div class="space-y-3">
         <a id="l-upload" href="#" class="btn-tema block rounded-xl py-4 text-lg font-medium">📸 Muat Naik Gambar</a>
