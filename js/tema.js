@@ -97,6 +97,12 @@ export const PASANGAN_FONT = [
 //    aksen  — aksen kedua; jika tiada, diterbitkan daripada `utama`.
 //    cahaya — pancaran radial di bahagian atas body; jika tiada,
 //             diterbitkan daripada `utama`.
+//
+//  NOTA: pada halaman tetamu, `latar`/`latar2`/`cahaya` tertutup oleh
+//  corak bunga yang dipapar penuh. Ia DIKEKALKAN kerana masih dipakai
+//  sebagai sandaran jika imej corak gagal dimuat, dan oleh pratonton
+//  tema. Identiti visual tema dibawa oleh `corakTapis` + `utama` +
+//  warna teks + font.
 // ------------------------------------------------------------
 export const TEMA_PRASET = [
   {
@@ -115,7 +121,7 @@ export const TEMA_PRASET = [
     sempadan: "#e5d5ca",
     polaroidTeks: "#4a3f3a",
     polaroidNama: "#9a6a5a",
-    corakOpacity: ".22",
+    corakOpacity: "1",
     corakTapis: "none",
     font: "klasik-elegan",
   },
@@ -135,8 +141,8 @@ export const TEMA_PRASET = [
     sempadan: "#d8e2d3",
     polaroidTeks: "#3a423a",
     polaroidNama: "#6d8064",
-    corakOpacity: ".14",
-    corakTapis: "grayscale(1)",
+    corakOpacity: "1",
+    corakTapis: "grayscale(1) sepia(.35) hue-rotate(52deg) saturate(.75) brightness(1.04)",
     font: "klasik-elegan",
   },
   {
@@ -155,8 +161,8 @@ export const TEMA_PRASET = [
     sempadan: "#dcdcdc",
     polaroidTeks: "#1f1f1f",
     polaroidNama: "#5e5e5e",
-    corakOpacity: ".10",
-    corakTapis: "grayscale(1)",
+    corakOpacity: "1",
+    corakTapis: "grayscale(1) brightness(1.03)",
     font: "moden-mewah",
   },
   {
@@ -175,7 +181,7 @@ export const TEMA_PRASET = [
     sempadan: "#ebd9de",
     polaroidTeks: "#4d3f44",
     polaroidNama: "#a37f8c",
-    corakOpacity: ".20",
+    corakOpacity: "1",
     corakTapis: "none",
     font: "klasik-elegan",
   },
@@ -195,8 +201,8 @@ export const TEMA_PRASET = [
     sempadan: "#ded8c9",
     polaroidTeks: "#23303f",
     polaroidNama: "#a5843a",
-    corakOpacity: ".12",
-    corakTapis: "grayscale(1)",
+    corakOpacity: "1",
+    corakTapis: "grayscale(1) sepia(.30) hue-rotate(175deg) saturate(.85) brightness(1.02)",
     font: "moden-mewah",
   },
   {
@@ -215,8 +221,8 @@ export const TEMA_PRASET = [
     sempadan: "#ebd8c9",
     polaroidTeks: "#4a3a34",
     polaroidNama: "#a3634a",
-    corakOpacity: ".16",
-    corakTapis: "none",
+    corakOpacity: "1",
+    corakTapis: "grayscale(1) sepia(.75) hue-rotate(-22deg) saturate(1.5) brightness(.97)",
     font: "klasik-elegan",
   },
 ];
@@ -303,10 +309,10 @@ export function bacaTema(ev) {
     sempadan: praset.sempadan,
     polaroidTeks: praset.polaroidTeks,
     polaroidNama: praset.polaroidNama,
-    // Corak bunga: kelegapan & tapis warna ikut tema. Tema berwarna
-    // sejuk (sage/navy/mono) menyahwarnakan ros supaya corak jadi
-    // tekstur neutral, bukan bunga merah jambu yang bercanggah.
-    corakOpacity: praset.corakOpacity ?? ".18",
+    // Corak bunga dipapar PENUH; setiap tema mewarnakan imej yang sama
+    // guna filter CSS. Tanpa itu tema Sage/Navy/Mono dapat kertas
+    // dinding merah jambu yang bercanggah dengan warna teksnya.
+    corakOpacity: praset.corakOpacity ?? "1",
     corakTapis: praset.corakTapis ?? "none",
     fontTajuk,
     fontTeks,
@@ -353,16 +359,16 @@ export function pasangGayaAsasTema() {
     }
 
     /* ---- Corak latar (kertas dinding bunga) ----
-       OPT-IN melalui atribut pada <body>. Dua mod:
-         data-corak="halus" — halaman tetamu: kelegapan rendah supaya
-                              warna tema masih menembusi corak.
-         data-corak="penuh" — panel pelanggan (tetapan.html): corak penuh,
-                              tiada tema untuk ditembusi.
+       OPT-IN: halaman yang meletak atribut data-corak pada <body>.
        wall.html sengaja TIADA atribut (latar gelap projektor).
 
+       Corak dipaparkan PENUH — ia latar halaman, bukan sekadar tekstur.
+       Kerana itu warna latar tema (--warna-latar) tidak lagi kelihatan
+       pada halaman tetamu; identiti tema dibawa oleh WARNA CORAK
+       (--corak-tapis), aksen, warna teks dan font.
+
        Lapisan berasingan, bukan lapisan dalam background body, sebab
-       shorthand background tidak boleh beri opacity per-lapisan —
-       imej JPEG legap akan menutup terus warna latar tema.
+       shorthand background tidak boleh beri opacity/filter per-lapisan.
 
        position:fixed pada pseudo-element, BUKAN background-attachment:
        fixed — attachment fixed tersekat-sekat/pecah pada iOS Safari.
@@ -376,17 +382,12 @@ export function pasangGayaAsasTema() {
       inset: 0;
       z-index: -1;
       background: url("${URL_CORAK}") center / cover no-repeat;
-      opacity: calc(var(--corak-opacity) * var(--corak-skala, 1));
+      /* Satu-satunya tombol kalau corak dirasa terlalu kuat kemudian. */
+      opacity: var(--corak-opacity);
+      /* Mewarnakan imej yang SAMA ikut tema — satu fail JPEG, enam rupa.
+         Tanpa ini tema Sage/Navy dapat kertas dinding merah jambu. */
       filter: var(--corak-tapis, none);
       pointer-events: none;
-    }
-    /* Imej ini potret (750x1280). Pada skrin lebar, 'cover' membesarkannya
-       ~1.7x jadi motif nampak besar; kurangkan kelegapan supaya ia kekal
-       sebagai tekstur, bukan subjek. (Jubin bukan pilihan — fail ini
-       bukan jubin seamless, sambungannya kelihatan.)
-       Mod "penuh" dikecualikan: di sana corak MEMANG subjeknya. */
-    @media (min-width: 768px) {
-      body[data-corak="halus"]::before { --corak-skala: .65; }
     }
     /* Jangan cetak corak latar. Elemen position:fixed tetap dilukis pada
        muka surat pertama, jadi tanpa ini kad QR cetak (tetapan.html) akan

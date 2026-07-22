@@ -29,14 +29,14 @@
       color: #5a4a42;
       min-height: 100vh;
     }
-    /* Corak bunga kini datang daripada lapisan kongsi body[data-corak]::before
+    /* Corak bunga datang daripada lapisan kongsi body[data-corak]::before
        yang disuntik oleh js/tema.js — bukan lagi background-attachment: fixed,
        yang tersekat-sekat/pecah semasa menatal pada iOS Safari.
 
-       Panel pelanggan ini bukan halaman tema, jadi corak dipaparkan PENUH
-       (kelegapan 1) — rupanya kekal sama seperti sebelum ini. Halaman tetamu
-       pula memakai kelegapan rendah supaya warna tema masih menembusi. */
-    body[data-corak="penuh"] { --corak-opacity: 1; --corak-tapis: none; }
+       Panel pelanggan ini bukan halaman bertema: ia tidak memuatkan majlis
+       sesiapa, jadi corak biar warna asalnya. Halaman tetamu pula mewarnakan
+       imej yang sama ikut tema majlis mereka. */
+    body[data-corak] { --corak-tapis: none; }
     .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
     .font-tangan { font-family: 'Caveat', cursive; }
     .btn-utama {
@@ -100,7 +100,7 @@
   </style>
 </head>
 
-<body class="antialiased" data-corak="penuh">
+<body class="antialiased" data-corak>
 
   <!-- ============ LOG MASUK ============ -->
   <section id="zon-login" class="mx-auto w-full max-w-sm px-5 py-16">
