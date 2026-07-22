@@ -31,6 +31,9 @@
       --rosegold: var(--warna-utama);
       --rosegold-lembut: var(--warna-aksen);
       --coklat: var(--warna-teks);
+      /* Cincin fokus lut sinar — Tailwind tidak boleh menyuntik alfa ke
+         dalam var(), jadi warna separa-lut disediakan di sini. */
+      --cincin-fokus: color-mix(in srgb, var(--warna-aksen) 50%, transparent);
     }
     body {
       background:
