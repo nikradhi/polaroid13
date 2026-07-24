@@ -1,0 +1,91 @@
+- generic [ref=f1e16]:
+  - generic [ref=f1e17]:
+    - generic [ref=f1e18]:
+      - heading "Tetapan Majlis" [level=1] [ref=f1e19]
+      - paragraph [ref=f1e20]: abu@gmail.com
+    - button "Log Keluar" [ref=f1e21] [cursor=pointer]
+  - generic [ref=f1e22]:
+    - generic [ref=f1e24]:
+      - generic [ref=f1e25]:
+        - generic [ref=f1e26]: Pakej
+        - text: Premium
+      - generic [ref=f1e27]:
+        - generic [ref=f1e28]: Status
+        - text: Aktif
+      - generic [ref=f1e29]:
+        - generic [ref=f1e30]: Tamat
+        - text: 2026-08-04
+    - generic [ref=f1e31]:
+      - generic [ref=f1e32]:
+        - generic [ref=f1e33]: URL unik majlis anda
+        - generic [ref=f1e34]:
+          - generic [ref=f1e35]: .../e/
+          - 'textbox "cth: ali-siti" [ref=f1e36]': ali-aminah
+        - paragraph [ref=f1e37]: ✓ URL semasa anda
+        - paragraph [ref=f1e38]: "Huruf kecil, nombor & tanda '-' sahaja. Contoh: ali-siti"
+      - generic [ref=f1e39]:
+        - generic [ref=f1e40]: Nama pasangan
+        - 'textbox "cth: Ali & Siti" [ref=f1e41]': Ali & Aminahg
+      - generic [ref=f1e42]:
+        - generic [ref=f1e43]: Tarikh majlis
+        - textbox [ref=f1e44]: 2026-07-22
+      - generic [ref=f1e45]:
+        - generic [ref=f1e46]: Tema warna
+        - generic [ref=f1e47]:
+          - button "Rose Gold" [ref=f1e48] [cursor=pointer]
+          - button "Sage" [active] [ref=f1e49] [cursor=pointer]
+          - button "Biru Debu" [ref=f1e50] [cursor=pointer]
+          - button "Lavender" [ref=f1e51] [cursor=pointer]
+          - button "Emas" [ref=f1e52] [cursor=pointer]
+          - button "Terracotta" [ref=f1e53] [cursor=pointer]
+        - generic [ref=f1e54]:
+          - textbox [ref=f1e55] [cursor=pointer]: "#7c9070"
+          - generic [ref=f1e56]: Atau pilih warna sendiri
+      - generic [ref=f1e57]:
+        - generic [ref=f1e58]: Corak latar
+        - generic [ref=f1e59]:
+          - generic [ref=f1e103]:
+            - button "Bunga Klasik" [ref=f1e104] [cursor=pointer]
+            - generic [ref=f1e105]: Bunga Klasik
+          - generic [ref=f1e106]:
+            - button "Geometri" [ref=f1e107] [cursor=pointer]
+            - generic [ref=f1e108]: Geometri
+          - generic [ref=f1e109]:
+            - button "Titik Halus" [ref=f1e110] [cursor=pointer]
+            - generic [ref=f1e111]: Titik Halus
+          - generic [ref=f1e112]:
+            - button "Dedaun" [ref=f1e113] [cursor=pointer]
+            - generic [ref=f1e114]: Dedaun
+          - generic [ref=f1e115]:
+            - button "Hati Kecil" [ref=f1e116] [cursor=pointer]
+            - generic [ref=f1e117]: Hati Kecil
+          - generic [ref=f1e118]:
+            - button "Tiada Corak" [ref=f1e119] [cursor=pointer]
+            - generic [ref=f1e120]: Tiada Corak
+        - paragraph [ref=f1e78]: Corak diwarnakan ikut tema warna anda.
+      - generic [ref=f1e79]:
+        - generic [ref=f1e80]: Mesej aluan (pilihan)
+        - 'textbox "cth: Terima kasih meraikan hari istimewa kami" [ref=f1e81]'
+      - status [ref=f1e82]: ✓ Disimpan automatik
+    - generic [ref=f1e83]:
+      - link "Lihat Galeri" [ref=f1e84] [cursor=pointer]:
+        - /url: gallery.html?e=WUFQRW2mH4BmicaqelEV
+      - link "Panel Moderasi" [ref=f1e85] [cursor=pointer]:
+        - /url: admin.html?e=WUFQRW2mH4BmicaqelEV
+    - generic [ref=f1e86]:
+      - generic [ref=f1e87]: 📦
+      - heading "Muat Turun Gambar" [level=2] [ref=f1e88]
+      - paragraph [ref=f1e89]:
+        - text: Semua gambar tetamu dimampatkan jadi satu fail ZIP, termasuk
+        - strong [ref=f1e90]: senarai-ucapan.csv
+        - text: .
+      - button "⬇️ Muat Turun Semua Gambar" [ref=f1e91] [cursor=pointer]
+      - paragraph [ref=f1e92]: Untuk set gambar yang besar, mampatan mungkin ambil sedikit masa. Biarkan tab ini terbuka sehingga selesai.
+    - generic [ref=f1e93]:
+      - heading "Kod QR Majlis" [level=2] [ref=f1e94]
+      - paragraph [ref=f1e95]: Tetamu imbas untuk muat naik gambar
+      - generic "http://localhost:8000/e.html?e=ali-aminah" [ref=f1e97]
+      - link "http://localhost:8000/e.html?e=ali-aminah" [ref=f1e99] [cursor=pointer]:
+        - /url: http://localhost:8000/e.html?e=ali-aminah
+      - button "🖨️ Cetak Kad QR" [ref=f1e100] [cursor=pointer]
+      - paragraph [ref=f1e101]: Dalam dialog cetak, tandakan “Background graphics” / “Grafik latar” supaya corak bunga turut dicetak.

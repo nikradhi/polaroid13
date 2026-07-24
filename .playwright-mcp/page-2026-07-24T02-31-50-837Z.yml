@@ -1,0 +1,14 @@
+- generic [ref=f1e2]:
+  - generic [ref=f1e3]:
+    - paragraph [ref=f1e4]: Selamat Datang
+    - heading "Tetapan Majlis" [level=1] [ref=f1e5]
+    - paragraph [ref=f1e6]: Log masuk untuk sesuaikan majlis anda
+  - generic [ref=f1e7]:
+    - generic [ref=f1e8]:
+      - generic [ref=f1e9]: Emel
+      - textbox "Emel" [ref=f1e10]
+    - generic [ref=f1e11]:
+      - generic [ref=f1e12]: Kata laluan
+      - textbox "Kata laluan" [ref=f1e13]
+    - button "Log Masuk" [ref=f1e14] [cursor=pointer]
+  - paragraph [ref=f1e15]: Emel & kata laluan diberikan oleh admin selepas bayaran disahkan.

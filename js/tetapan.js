@@ -259,6 +259,7 @@ function isiBorang() {
   tandaSwatchTerpilih(cTema.value);
   latarDipilih = latarSah(eventData.latarId) || "bunga";
   binaJubinLatar();
+  pratontonLatar(); // papar corak tersimpan pada halaman sebaik dimuat
 
   // Jika slug sedia ada, anggap sah
   slugSah = !!eventData.slug;
@@ -376,6 +377,7 @@ TEMA_PILIHAN.forEach((t) => {
     cTema.value = t.warna;
     tandaSwatchTerpilih(t.warna);
     binaJubinLatar(); // corak SVG tertinta ikut warna baharu
+    pratontonLatar(); // latar halaman ikut warna baharu serta-merta
     autoSimpan();     // warna tema berubah -> simpan
   });
   swatches.appendChild(b);
@@ -388,6 +390,7 @@ function tandaSwatchTerpilih(warna) {
 cTema.addEventListener("input", () => {
   tandaSwatchTerpilih(cTema.value);
   binaJubinLatar(); // pratonton corak dikemas kini ikut warna dipilih
+  pratontonLatar(); // latar halaman ikut warna dipilih serta-merta
   autoSimpan();     // pemilih warna sendiri -> simpan (debounce)
 });
 
@@ -423,7 +426,8 @@ function binaJubinLatar() {
     btn.addEventListener("click", () => {
       latarDipilih = l.id;
       tandaLatarTerpilih();
-      autoSimpan(); // corak latar berubah -> simpan
+      pratontonLatar(); // terap kesan pada halaman serta-merta
+      autoSimpan();     // corak latar berubah -> simpan
     });
 
     const nama = document.createElement("div");
@@ -445,6 +449,24 @@ function tandaLatarTerpilih() {
     it.classList.toggle("terpilih", on);
     tile?.classList.toggle("terpilih", on);
   });
+}
+
+// ------------------------------------------------------------
+//  PRATONTON LATAR — terap corak pilihan pada BODY halaman tetapan
+//  secara langsung supaya pengguna nampak kesan sebenar sebaik memilih
+//  (bukan sekadar jubin mini). Guna gaya INLINE pada document.body:
+//  tetapan.html memaksa `body[data-corak] { --corak-tapis: none }`,
+//  dan gaya inline mengatasi peraturan stylesheet itu. Nilai dikira
+//  sama seperti jubin (gayaLatar dengan lalai) supaya pratonton dan
+//  jubin sentiasa sepadan.
+// ------------------------------------------------------------
+function pratontonLatar() {
+  const warna = cTema.value || "#b76e79";
+  const g = gayaLatar(latarDipilih, warna);
+  const b = document.body.style;
+  b.setProperty("--corak-imej", g.imej);
+  b.setProperty("--corak-tapis", g.tapis || "none");
+  b.setProperty("--corak-opacity", String(g.opacity ?? "1"));
 }
 
 // ------------------------------------------------------------
