@@ -31,6 +31,7 @@ import {
 } from "./firebase.js";
 import { bolehMuatTurun, formatTarikhMajlis } from "./majlis.js";
 import { muatTurunZipMajlis, mesejRalatMuatTurun } from "./muat-turun.js";
+import { LATAR_PILIHAN, gayaLatar, latarSah } from "./tema.js";
 
 const HAD_TANPA_HAD = 100000; // selaras dengan super-admin.js
 
@@ -72,10 +73,10 @@ const cNama = document.getElementById("c-nama");
 const cTarikh = document.getElementById("c-tarikh");
 const cTema = document.getElementById("c-tema");
 const swatches = document.getElementById("swatches");
+const latarPilihan = document.getElementById("latar-pilihan");
 const cWelcome = document.getElementById("c-welcome");
 const simpanRalat = document.getElementById("simpan-ralat");
-const simpanJaya = document.getElementById("simpan-jaya");
-const butangSimpan = document.getElementById("butang-simpan");
+const statusSimpan = document.getElementById("status-simpan");
 
 // --- DOM: muat turun ZIP ---
 const butangMuatTurun = document.getElementById("butang-muat-turun");
@@ -105,6 +106,7 @@ const cetakQrEl = document.getElementById("cetak-qrcode");
 let eventId = null;   // id majlis pengguna
 let eventData = null; // data majlis semasa
 let slugSah = false;  // adakah slug semasa dalam input sah & tersedia
+let latarDipilih = "bunga"; // id corak latar terpilih
 
 // ------------------------------------------------------------
 //  UTILITI
@@ -255,6 +257,8 @@ function isiBorang() {
   cTema.value = eventData.themeColor || "#b76e79";
   cWelcome.value = eventData.welcomeMessage || "";
   tandaSwatchTerpilih(cTema.value);
+  latarDipilih = latarSah(eventData.latarId) || "bunga";
+  binaJubinLatar();
 
   // Jika slug sedia ada, anggap sah
   slugSah = !!eventData.slug;
@@ -371,6 +375,8 @@ TEMA_PILIHAN.forEach((t) => {
   b.addEventListener("click", () => {
     cTema.value = t.warna;
     tandaSwatchTerpilih(t.warna);
+    binaJubinLatar(); // corak SVG tertinta ikut warna baharu
+    autoSimpan();     // warna tema berubah -> simpan
   });
   swatches.appendChild(b);
 });
@@ -379,7 +385,67 @@ function tandaSwatchTerpilih(warna) {
     s.classList.toggle("terpilih", s.dataset.warna?.toLowerCase() === warna?.toLowerCase());
   });
 }
-cTema.addEventListener("input", () => tandaSwatchTerpilih(cTema.value));
+cTema.addEventListener("input", () => {
+  tandaSwatchTerpilih(cTema.value);
+  binaJubinLatar(); // pratonton corak dikemas kini ikut warna dipilih
+  autoSimpan();     // pemilih warna sendiri -> simpan (debounce)
+});
+
+// ------------------------------------------------------------
+//  CORAK LATAR — jubin pratonton (tertinta warna tema semasa)
+// ------------------------------------------------------------
+//  Setiap jubin memaparkan corak sebenar yang akan dipapar pada
+//  halaman tetamu, diwarnakan guna warna dalam #c-tema. Dibina
+//  semula setiap kali warna berubah supaya "cantik ikut tema"
+//  kelihatan sebelum simpan.
+// ------------------------------------------------------------
+function binaJubinLatar() {
+  if (!latarPilihan) return;
+  const warna = cTema.value || "#b76e79";
+  latarPilihan.innerHTML = "";
+
+  LATAR_PILIHAN.forEach((l) => {
+    const item = document.createElement("div");
+    item.className = "latar-item";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "latar-tile";
+    btn.title = l.nama;
+    btn.dataset.latar = l.id;
+
+    const g = gayaLatar(l.id, warna);
+    // "Tiada Corak" (imej: none) -> pratonton basuhan warna tema yang halus.
+    btn.style.background = g.imej === "none" ? warna + "1f" : g.imej;
+    // Corak bunga diwarna via penapis tema; sapukan pada pratonton juga.
+    if (g.tapis && g.tapis !== "none") btn.style.filter = g.tapis;
+
+    btn.addEventListener("click", () => {
+      latarDipilih = l.id;
+      tandaLatarTerpilih();
+      autoSimpan(); // corak latar berubah -> simpan
+    });
+
+    const nama = document.createElement("div");
+    nama.className = "latar-nama";
+    nama.textContent = l.nama;
+
+    item.append(btn, nama);
+    latarPilihan.appendChild(item);
+  });
+
+  tandaLatarTerpilih();
+}
+
+function tandaLatarTerpilih() {
+  if (!latarPilihan) return;
+  latarPilihan.querySelectorAll(".latar-item").forEach((it) => {
+    const tile = it.querySelector(".latar-tile");
+    const on = tile?.dataset.latar === latarDipilih;
+    it.classList.toggle("terpilih", on);
+    tile?.classList.toggle("terpilih", on);
+  });
+}
 
 // ------------------------------------------------------------
 //  SEMAKAN SLUG LANGSUNG (debounce)
@@ -438,72 +504,121 @@ async function semakSlug(slug) {
 }
 
 // ------------------------------------------------------------
-//  SIMPAN TETAPAN
+//  AUTO-SAVE — perubahan disimpan sendiri (tiada butang simpan)
 // ------------------------------------------------------------
-formTetapan.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  simpanRalat.classList.add("hidden");
-  simpanJaya.classList.add("hidden");
+//  Medan biasa (nama, tarikh, warna, corak, mesej) disimpan melalui
+//  updateDoc yang dinyahlantun (debounce). SLUG dikendalikan berasingan
+//  pada peristiwa 'blur' kerana ia menempah dokumen slugs/{slug} yang
+//  tidak pernah dipadam — auto-save setiap ketukan akan mencipta banyak
+//  tempahan slug sampah yang mengunci nama selama-lamanya.
+// ------------------------------------------------------------
+const DEBOUNCE_SIMPAN = 800; // ms — gabung ketukan pantas jadi satu tulisan
+let pemasaSimpan = null;
 
-  if (!eventId) return;
+// Papar keadaan penunjuk auto-save: "menyimpan" | "jaya" | "gagal" | "".
+function tunjukStatusSimpan(keadaan) {
+  if (!statusSimpan) return;
+  const peta = {
+    menyimpan: ["Menyimpan…", "text-[#a09088]"],
+    jaya:      ["✓ Disimpan automatik", "text-green-600"],
+    gagal:     ["Gagal — cuba lagi", "text-red-500"],
+    "":        ["", "text-[#a09088]"],
+  };
+  const [teks, warna] = peta[keadaan] || peta[""];
+  statusSimpan.textContent = teks;
+  statusSimpan.className = `h-5 text-sm ${warna}`;
+}
 
-  const slugBaru = bersihkanSlug(cSlug.value);
-  if (!slugBaru || slugBaru.length < 3) {
-    simpanRalat.textContent = "Sila pilih URL yang sah (min. 3 aksara).";
-    simpanRalat.classList.remove("hidden");
-    return;
-  }
-  if (!slugSah) {
-    simpanRalat.textContent = "URL belum disahkan tersedia. Sila semak semula.";
-    simpanRalat.classList.remove("hidden");
-    return;
-  }
-
-  const medan = {
+// Kumpul nilai medan biasa semasa dari DOM (BUKAN slug).
+function kumpulMedan() {
+  return {
     coupleName: cNama.value.trim(),
     weddingDate: cTarikh.value || "",
     themeColor: cTema.value || "#b76e79",
     welcomeMessage: cWelcome.value.trim(),
+    latarId: latarSah(latarDipilih) || "bunga",
   };
+}
 
-  butangSimpan.disabled = true;
-  const teksAsal = butangSimpan.textContent;
-  butangSimpan.textContent = "Menyimpan…";
+// Cetuskan simpan medan biasa selepas debounce (untuk peristiwa 'input').
+function autoSimpan() {
+  clearTimeout(pemasaSimpan);
+  pemasaSimpan = setTimeout(simpanMedanBiasa, DEBOUNCE_SIMPAN);
+}
 
+// Simpan 5 medan biasa — updateDoc mudah. Tidak menyentuh slug.
+async function simpanMedanBiasa() {
+  clearTimeout(pemasaSimpan); // batalkan jadual tertunda (jika dipanggil terus)
+  if (!eventId) return;
+  simpanRalat.classList.add("hidden");
+  const medan = kumpulMedan();
+  tunjukStatusSimpan("menyimpan");
   try {
-    const slugLama = eventData.slug || "";
-    if (slugBaru !== slugLama) {
-      // Semak sekali lagi supaya tiada perlumbaan (race)
-      const semak = await getDoc(doc(db, "slugs", slugBaru));
-      if (semak.exists()) {
-        throw new Error("SLUG_DIAMBIL");
-      }
-      // Batch: cipta slug baharu + kemas kini event (atomik)
-      const batch = writeBatch(db);
-      batch.set(doc(db, "slugs", slugBaru), { eventId });
-      batch.update(doc(db, "events", eventId), { ...medan, slug: slugBaru });
-      await batch.commit();
-      // Nota: slug lama (jika ada) dibiarkan — hanya admin boleh padam.
-    } else {
-      // Slug tak berubah — kemas kini medan lain sahaja
-      await updateDoc(doc(db, "events", eventId), medan);
-    }
-
-    // Kemas kini cache tempatan
-    eventData = { ...eventData, ...medan, slug: slugBaru };
-    simpanJaya.textContent = "✓ Tetapan disimpan!";
-    simpanJaya.classList.remove("hidden");
+    await updateDoc(doc(db, "events", eventId), medan);
+    eventData = { ...eventData, ...medan };
     kemasKiniQr();
+    tunjukStatusSimpan("jaya");
   } catch (err) {
-    console.error("Ralat simpan:", err);
-    simpanRalat.textContent = err.message === "SLUG_DIAMBIL"
-      ? "Maaf, URL itu baru sahaja diambil orang lain. Cuba yang lain."
-      : "Gagal menyimpan. Semak sambungan / status majlis anda.";
-    simpanRalat.classList.remove("hidden");
-  } finally {
-    butangSimpan.disabled = false;
-    butangSimpan.textContent = teksAsal;
+    console.error("Ralat auto-simpan medan:", err);
+    tunjukStatusSimpan("gagal");
   }
+}
+
+// Simpan slug — dipanggil pada 'blur'. Guna laluan batch atomik:
+// tempah slugs/{slug} + kemas kini events. Membuat semakan getDoc sendiri
+// (autoritatif) supaya kekal betul walaupun semakan debounce belum selesai.
+async function simpanSlug() {
+  if (!eventId) return;
+  const slugBaru = bersihkanSlug(cSlug.value);
+  const slugLama = eventData?.slug || "";
+  if (!slugBaru || slugBaru.length < 3) return; // slugStatus sudah papar sebab
+  if (slugBaru === slugLama) return;             // tiada perubahan
+
+  simpanRalat.classList.add("hidden");
+  tunjukStatusSimpan("menyimpan");
+  slugStatus.textContent = "menyimpan…";
+  slugStatus.className = "mt-1 text-xs h-4 text-[#a09088]";
+  try {
+    // Semak sekali lagi supaya tiada perlumbaan (race)
+    const semak = await getDoc(doc(db, "slugs", slugBaru));
+    if (semak.exists()) throw new Error("SLUG_DIAMBIL");
+
+    // Sertakan medan biasa semasa juga — satu tulisan atomik & konsisten.
+    const medan = kumpulMedan();
+    const batch = writeBatch(db);
+    batch.set(doc(db, "slugs", slugBaru), { eventId });
+    batch.update(doc(db, "events", eventId), { ...medan, slug: slugBaru });
+    await batch.commit();
+    // Nota: slug lama (jika ada) dibiarkan — hanya admin boleh padam.
+
+    eventData = { ...eventData, ...medan, slug: slugBaru };
+    slugSah = true;
+    slugStatus.textContent = "✓ URL semasa anda";
+    slugStatus.className = "mt-1 text-xs h-4 text-green-600";
+    kemasKiniQr();
+    tunjukStatusSimpan("jaya");
+  } catch (err) {
+    console.error("Ralat simpan slug:", err);
+    slugSah = false;
+    slugStatus.textContent = err.message === "SLUG_DIAMBIL"
+      ? "✗ sudah diambil — cuba yang lain"
+      : "Gagal menyimpan URL. Cuba lagi.";
+    slugStatus.className = "mt-1 text-xs h-4 text-red-500";
+    tunjukStatusSimpan("gagal");
+  }
+}
+
+// --- Pasang pendengar auto-save ---
+cNama.addEventListener("input", autoSimpan);
+cWelcome.addEventListener("input", autoSimpan);
+cTarikh.addEventListener("change", simpanMedanBiasa); // pemilih tarikh -> simpan segera
+cSlug.addEventListener("blur", simpanSlug);            // slug: simpan bila keluar medan
+
+// Borang tiada butang simpan — halang submit (cth tekan Enter) & flush terus.
+formTetapan.addEventListener("submit", (e) => {
+  e.preventDefault();
+  simpanMedanBiasa();
+  simpanSlug();
 });
 
 // ------------------------------------------------------------
@@ -519,6 +634,7 @@ function kemasKiniQr() {
   const urlLanding = new URL(`e.html?e=${encodeURIComponent(eventData.slug)}`, window.location.href).href;
   zonQr.classList.remove("hidden");
   qrUrl.textContent = urlLanding;
+  qrUrl.href = urlLanding;
   qrcodeEl.innerHTML = "";
   qr = new QRCode(qrcodeEl, {
     text: urlLanding,

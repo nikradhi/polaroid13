@@ -50,6 +50,11 @@ Do **not** re-introduce a `photos_full` collection to get print-quality download
 ### `settings/majlis` — moderation mode toggle
 A single settings doc with `preModeration` (boolean). Admin toggles it ([js/admin.js](js/admin.js)); upload reads it to decide `approved: true` (post-moderation, the default — appears immediately) vs `false` (pre-moderation — hidden until approved). Public gallery/wall query `where('approved','==',true)`; admin queries with no filter to see everything.
 
+### Theme + background pattern — [js/tema.js](js/tema.js)
+Single source of truth for page look. All styling reads CSS custom properties (`--warna-*`, `--corak-*`, `--font-*`) injected once into `<head>`; changing theme = rewriting variable values, no markup change. The full-page background is a `body[data-corak]::before` fixed layer (opt-in per page via the `data-corak` attribute; `wall.html` deliberately omits it). Its `background` comes from `--corak-imej`.
+
+Customers pick a **background pattern** (`events.latarId`, default `"bunga"`) from `LATAR_PILIHAN`: the shared floral JPEG (`img/latar-bunga.jpeg`, recolored per theme via the `--corak-tapis` CSS filter) **or** an in-code **SVG pattern** tinted with the customer's `themeColor` (zero image files, zero quota — the whole reason SVG over bundled photos). `gayaLatar(latarId, warna)` maps a choice+color to `{imej, tapis, opacity}`. Only validated hex (`warnaSah()`) is ever injected into the SVG `url()`, and `latarSah()` whitelists the id — never inject raw Firestore values into CSS. Adding a new customer-editable field means also adding it to the `hasOnly([...])` allowlist in [firestore.rules](firestore.rules) **and publishing rules in the Console** (no Firebase CLI here).
+
 ### Firestore composite index (required)
 Gallery, wall, and export all query `where('approved','==',true) + orderBy('created_at','desc')`, which needs a composite index on `photos` (`approved` ASC, `created_at` DESC). Admin uses a single `orderBy` and needs no composite index. All read sites detect the "index" error string and show a Malay hint pointing at the console link.
 

@@ -115,7 +115,7 @@ Gambar di-compress di client dan disimpan sebagai **base64** dalam dokumen.
 | Koleksi | Kandungan | Siapa boleh baca |
 |---|---|---|
 | `admins/{uid}` | `{ role: "super" }` — wujud bermakna pemilik sistem | Admin sahaja |
-| `events/{eventId}` | Majlis: `ownerUid, slug, coupleName, weddingDate, themeColor, welcomeMessage, package, status, photoLimit, photoCount, preModeration, expiresAt, createdAt, createdBy` | Admin, pemilik, atau sesiapa jika `status == "active"` |
+| `events/{eventId}` | Majlis: `ownerUid, slug, coupleName, weddingDate, themeColor, latarId, welcomeMessage, package, status, photoLimit, photoCount, preModeration, expiresAt, createdAt, createdBy` | Admin, pemilik, atau sesiapa jika `status == "active"` |
 | `eventsPrivate/{eventId}` | `{ ownerEmail, ownerUid }` — maklumat peribadi pelanggan | **Admin sahaja** |
 | `slugs/{slug}` | `{ eventId }` — doc ID ialah slug, menjamin URL unik | Awam (perlu untuk landing) |
 | `photos/{id}` | `name, message, image_url` (base64), `approved, likes, created_at, **eventId**` | Awam jika `approved == true` |

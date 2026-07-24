@@ -74,6 +74,90 @@ export const FONT_TANGAN = "Caveat";
 export const URL_CORAK = new URL("../img/latar-bunga.jpeg", import.meta.url).href;
 
 // ------------------------------------------------------------
+//  PILIHAN CORAK LATAR (background)
+// ------------------------------------------------------------
+//  Selain corak bunga (imej JPEG kongsi), pelanggan boleh pilih
+//  corak SVG yang DIJANA dalam kod dan diwarnakan ikut warna tema
+//  mereka (themeColor). Kelebihan berbanding fail imej: sifar fail
+//  baharu, sifar kos kuota, dan sentiasa "cantik ikut tema" kerana
+//  warna disuntik masa apply — bukan warna tetap.
+//
+//  KESELAMATAN: warna yang disuntik ke SVG mesti sudah melalui
+//  warnaSah() (hanya #rgb/#rrggbb), jadi tiada aksara jahat masuk
+//  ke url(). id corak pula ditapis oleh latarSah().
+//
+//  Setiap corak `svg` ada:
+//    bina(warna)  — pulangkan rentetan <svg> jubin (tileable).
+//    saiz         — saiz jubin CSS (background-size), cth "120px".
+// ------------------------------------------------------------
+
+// Bungkus rentetan SVG jadi nilai background CSS jubin berulang.
+// encodeURIComponent mengekod '#' warna -> '%23' (data-URI SVG sah).
+function svgKeLatar(svg, saiz) {
+  const uri = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  return `${uri} 0 0 / ${saiz} repeat`;
+}
+
+// Corak-corak SVG. Semua guna `w` (warna tema tertapis) supaya jubin
+// ikut warna pelanggan. Opacity rendah supaya halus, tidak melawan teks.
+const CORAK_SVG = {
+  geo: {
+    saiz: "64px",
+    bina: (w) =>
+      `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'>` +
+      `<rect width='64' height='64' fill='none'/>` +
+      `<path d='M0 32 L32 0 L64 32 L32 64 Z' fill='none' stroke='${w}' stroke-width='1.2' opacity='0.18'/>` +
+      `<circle cx='32' cy='32' r='2' fill='${w}' opacity='0.22'/>` +
+      `</svg>`,
+  },
+  titik: {
+    saiz: "36px",
+    bina: (w) =>
+      `<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'>` +
+      `<circle cx='9' cy='9' r='2.4' fill='${w}' opacity='0.20'/>` +
+      `<circle cx='27' cy='27' r='2.4' fill='${w}' opacity='0.20'/>` +
+      `</svg>`,
+  },
+  dedaun: {
+    saiz: "110px",
+    bina: (w) =>
+      `<svg xmlns='http://www.w3.org/2000/svg' width='110' height='110'>` +
+      `<g fill='none' stroke='${w}' stroke-width='1.3' opacity='0.20'>` +
+      `<path d='M20 78 Q40 40 68 30 Q46 44 40 74 Q34 52 20 78 Z'/>` +
+      `<path d='M40 74 Q40 60 40 44'/>` +
+      `<path d='M78 96 Q90 84 102 86'/>` +
+      `</g>` +
+      `<g fill='${w}' opacity='0.12'>` +
+      `<circle cx='90' cy='22' r='3'/><circle cx='16' cy='30' r='2.5'/>` +
+      `</g>` +
+      `</svg>`,
+  },
+  jantung: {
+    saiz: "48px",
+    bina: (w) =>
+      `<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'>` +
+      `<path d='M24 32 C24 26 16 24 16 30 C16 34 24 38 24 38 C24 38 32 34 32 30 C32 24 24 26 24 32 Z' ` +
+      `fill='${w}' opacity='0.16'/>` +
+      `</svg>`,
+  },
+};
+
+// Senarai untuk UI + urutan paparan. `jenis`:
+//   "imej"  — corak bunga JPEG kongsi (lalai; diwarnakan via corakTapis).
+//   "svg"   — corak dijana, tertinta warna tema.
+//   "warna" — tiada corak; warna latar tema sahaja.
+export const LATAR_PILIHAN = [
+  { id: "bunga",   nama: "Bunga Klasik", jenis: "imej" },
+  { id: "geo",     nama: "Geometri",     jenis: "svg" },
+  { id: "titik",   nama: "Titik Halus",  jenis: "svg" },
+  { id: "dedaun",  nama: "Dedaun",       jenis: "svg" },
+  { id: "jantung", nama: "Hati Kecil",   jenis: "svg" },
+  { id: "kosong",  nama: "Tiada Corak",  jenis: "warna" },
+];
+
+const LATAR_LALAI = "bunga";
+
+// ------------------------------------------------------------
 //  PASANGAN FONT (pilihan terhad untuk pelanggan Premium)
 // ------------------------------------------------------------
 //  Sengaja terhad: kebebasan penuh mudah merosakkan reka bentuk.
@@ -255,6 +339,48 @@ export function cariPraset(id) {
   return TEMA_PRASET.find((t) => t.id === id) || null;
 }
 
+// id corak latar hanya sah jika ada dalam LATAR_PILIHAN. Nilai lain
+// (termasuk apa-apa dari Firestore) -> null -> jatuh ke lalai "bunga".
+export function latarSah(id) {
+  return LATAR_PILIHAN.some((l) => l.id === id) ? id : null;
+}
+
+// ------------------------------------------------------------
+//  gayaLatar(latarId, warna) -> { imej, tapis, opacity }
+// ------------------------------------------------------------
+//  Terjemah pilihan corak + warna tema kepada nilai CSS untuk
+//  lapisan body[data-corak]::before:
+//    imej    — nilai `background` (url/gradient/none).
+//    tapis   — `filter` (bunga sahaja diwarna via penapis; SVG sudah
+//              tertinta jadi "none").
+//    opacity — kekuatan lapisan.
+//  `warna` DIANDAI sudah ditapis oleh warnaSah() (selamat untuk url()).
+//  Dipanggil dengan corakTapis/corakOpacity pra-set untuk kekalkan
+//  tingkah laku asal corak bunga.
+// ------------------------------------------------------------
+export function gayaLatar(latarId, warna, corakTapis = "none", corakOpacity = "1") {
+  const pilihan = LATAR_PILIHAN.find((l) => l.id === latarId) || LATAR_PILIHAN[0];
+
+  if (pilihan.jenis === "svg") {
+    const c = CORAK_SVG[pilihan.id];
+    return {
+      imej: svgKeLatar(c.bina(warna), c.saiz),
+      tapis: "none",
+      opacity: "1",
+    };
+  }
+  if (pilihan.jenis === "warna") {
+    // Tiada corak: biar kecerunan latar tema (--warna-latar) kelihatan.
+    return { imej: "none", tapis: "none", opacity: "1" };
+  }
+  // "imej" (bunga) — kekal tingkah laku asal: JPEG kongsi + penapis tema.
+  return {
+    imej: `url("${URL_CORAK}") center / cover no-repeat`,
+    tapis: corakTapis,
+    opacity: corakOpacity,
+  };
+}
+
 export function cariPasanganFont(id) {
   return PASANGAN_FONT.find((p) => p.id === id) || null;
 }
@@ -293,7 +419,20 @@ export function bacaTema(ev) {
   const fontTajuk = fontSah(t.headingFont) || pasanganPraset.tajuk;
   const fontTeks = fontSah(t.bodyFont) || pasanganPraset.teks;
 
+  // Corak latar: pilihan pelanggan (latarId) diterjemah kepada nilai CSS.
+  // Untuk corak bunga, corakTapis/corakOpacity pra-set dikekalkan supaya
+  // majlis lama nampak sama; corak SVG diwarna terus guna `utama`.
+  const latarId = latarSah(ev?.latarId) || LATAR_LALAI;
+  const latar = gayaLatar(
+    latarId,
+    utama,
+    praset.corakTapis ?? "none",
+    praset.corakOpacity ?? "1"
+  );
+
   return {
+    latarId,
+    corakImej: latar.imej,
     preset: praset.id,
     nama: praset.nama,
     utama,
@@ -312,8 +451,8 @@ export function bacaTema(ev) {
     // Corak bunga dipapar PENUH; setiap tema mewarnakan imej yang sama
     // guna filter CSS. Tanpa itu tema Sage/Navy/Mono dapat kertas
     // dinding merah jambu yang bercanggah dengan warna teksnya.
-    corakOpacity: praset.corakOpacity ?? "1",
-    corakTapis: praset.corakTapis ?? "none",
+    corakOpacity: latar.opacity,
+    corakTapis: latar.tapis,
     fontTajuk,
     fontTeks,
   };
@@ -350,6 +489,7 @@ export function pasangGayaAsasTema() {
       --warna-polaroid-nama: ${t.polaroidNama};
       --corak-opacity: ${t.corakOpacity};
       --corak-tapis: ${t.corakTapis};
+      --corak-imej: ${t.corakImej};
       --font-tajuk: ${tumpukFont(t.fontTajuk)};
       --font-teks: ${tumpukFont(t.fontTeks)};
       --font-tangan: ${tumpukFont(FONT_TANGAN)};
@@ -381,7 +521,10 @@ export function pasangGayaAsasTema() {
       position: fixed;
       inset: 0;
       z-index: -1;
-      background: url("${URL_CORAK}") center / cover no-repeat;
+      /* Corak dipilih pelanggan (latarId) -> --corak-imej. Sandaran =
+         corak bunga kongsi jika var belum ditetapkan. Corak SVG sudah
+         tertinta warna tema; corak bunga diwarna via --corak-tapis. */
+      background: var(--corak-imej, url("${URL_CORAK}") center / cover no-repeat);
       /* Satu-satunya tombol kalau corak dirasa terlalu kuat kemudian. */
       opacity: var(--corak-opacity);
       /* Mewarnakan imej yang SAMA ikut tema — satu fail JPEG, enam rupa.
@@ -460,6 +603,7 @@ export function terapTema(tema, sasaran = document.documentElement) {
   s.setProperty("--warna-polaroid-nama", tema.polaroidNama);
   s.setProperty("--corak-opacity", tema.corakOpacity);
   s.setProperty("--corak-tapis", tema.corakTapis);
+  s.setProperty("--corak-imej", tema.corakImej);
   s.setProperty("--font-tajuk", tumpukFont(tema.fontTajuk));
   s.setProperty("--font-teks", tumpukFont(tema.fontTeks));
   s.setProperty("--font-tangan", tumpukFont(FONT_TANGAN));

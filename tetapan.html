@@ -61,6 +61,23 @@
     .swatch { width: 2rem; height: 2rem; border-radius: 9999px; border: 2px solid #fff; box-shadow: 0 0 0 1px #e5d5ca; cursor: pointer; }
     .swatch.terpilih { box-shadow: 0 0 0 2px #5a4a42; }
 
+    /* Jubin pilihan corak latar — pratonton mini corak (tertinta warna tema) */
+    .latar-tile {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border-radius: 0.6rem;
+      border: 1px solid #e5d5ca;
+      background-color: #fffdf9;
+      cursor: pointer;
+      overflow: hidden;
+      padding: 0;
+      transition: box-shadow .15s ease, transform .1s ease;
+    }
+    .latar-tile:hover { transform: translateY(-1px); }
+    .latar-tile.terpilih { box-shadow: 0 0 0 2px #5a4a42; border-color: transparent; }
+    .latar-nama { font-size: .72rem; color: #8a7a70; text-align: center; margin-top: .3rem; }
+    .latar-item.terpilih .latar-nama { color: #5a4a42; font-weight: 600; }
+
     /* Kotak status & bar progres muat turun */
     .kotak-status { border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
     .kotak-status--info    { background: #fdf1e7; color: #8a5a3a; }
@@ -194,15 +211,23 @@
           </div>
         </div>
 
+        <!-- Corak latar -->
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Corak latar</label>
+          <div id="latar-pilihan" class="grid grid-cols-3 gap-2.5"></div>
+          <p class="mt-1.5 text-xs text-[#a09088]">Corak diwarnakan ikut tema warna anda.</p>
+        </div>
+
         <!-- Mesej aluan -->
         <div>
           <label class="block text-sm font-medium mb-1.5">Mesej aluan <span class="text-[#a09088] font-normal">(pilihan)</span></label>
           <textarea id="c-welcome" rows="2" maxlength="200" class="input-elok resize-none" placeholder="cth: Terima kasih meraikan hari istimewa kami"></textarea>
         </div>
 
+        <!-- Ralat keras (cth majlis luput / gagal sambung) -->
         <div id="simpan-ralat" class="hidden kotak-ralat" role="alert"></div>
-        <div id="simpan-jaya" class="hidden kotak-jaya" role="status"></div>
-        <button id="butang-simpan" type="submit" class="btn-utama w-full rounded-xl py-3.5 font-medium">Simpan Tetapan</button>
+        <!-- Penunjuk auto-save: perubahan disimpan sendiri (tiada butang simpan) -->
+        <div id="status-simpan" class="h-5 text-sm text-[#a09088]" role="status" aria-live="polite"></div>
       </form>
 
       <!-- Pautan pantas -->
@@ -259,7 +284,8 @@
         <div class="flex justify-center">
           <div id="qrcode" class="rounded-xl bg-white p-4 shadow-sm"></div>
         </div>
-        <p id="qr-url" class="mt-3 text-xs text-[#8a7a70] break-all"></p>
+        <a id="qr-url" target="_blank" rel="noopener"
+           class="mt-3 inline-block break-all text-xs text-[#b76e79] underline underline-offset-2 hover:text-[#a13a3a] py-1"></a>
         <button id="butang-cetak" class="no-print btn-utama mt-4 rounded-xl px-5 py-2.5 text-sm font-medium">🖨️ Cetak Kad QR</button>
         <p class="no-print mt-2 text-[11px] text-[#a09088] leading-relaxed">
           Dalam dialog cetak, tandakan <b>“Background graphics”</b> / <b>“Grafik latar”</b>
