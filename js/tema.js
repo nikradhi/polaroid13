@@ -386,9 +386,15 @@ export function gayaLatar(latarId, warna, corakTapis = "none", corakOpacity = "1
     };
   }
   if (pilihan.jenis === "foto") {
-    // Wallpaper penuh-warna: papar apa adanya, TIADA penapis tema.
+    // Wallpaper penuh-warna + tinta LEMBUT warna tema di atasnya, supaya
+    // gambar kekal jelas tetapi berona ikut tema. Tinta dibina dalam nilai
+    // `imej` (dua lapisan background) supaya jubin pratonton DAN lapisan
+    // body[data-corak]::before dapat kesan yang sama — tiada var CSS baharu.
+    // color-mix: sudah dipakai untuk warna aksen terbitan (lihat bacaTema),
+    // jadi selamat untuk apa-apa hex sah (#rgb/#rrggbb) tanpa olah alfa.
+    const tint = `color-mix(in srgb, ${warna} 30%, transparent)`;
     return {
-      imej: `url("${CORAK_IMEJ[pilihan.id]}") center / cover no-repeat`,
+      imej: `linear-gradient(${tint}, ${tint}), url("${CORAK_IMEJ[pilihan.id]}") center / cover no-repeat`,
       tapis: "none",
       opacity: "1",
     };

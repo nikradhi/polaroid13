@@ -37,15 +37,15 @@ import {
 } from "./firebase.js";
 import { compressImej, blobKeBase64, FORMAT_UTAMA } from "./imej.js";
 import { dalamTempohTangguh, HARI_TANGGUH } from "./majlis.js";
+// Konfigurasi pakej — SATU SUMBER KEBENARAN (lihat js/packages.js).
+// Nak laras had/tempoh pakej? Ubah di packages.js sahaja.
+import {
+  PAKEJ,
+  HAD_TANPA_HAD,
+  hadGambarDB,
+  tempohHariPakej,
+} from "./packages.js";
 
-// ------------------------------------------------------------
-//  Konfigurasi pakej (satu tempat rujukan)
-// ------------------------------------------------------------
-const HAD_TANPA_HAD = 100000; // "tanpa had" — nombor besar untuk rules
-const PAKEJ = {
-  basic:   { label: "Basic",   photoLimit: 100,           hari: 14 },
-  premium: { label: "Premium", photoLimit: HAD_TANPA_HAD, hari: 30 },
-};
 const SEHARI_MS = 24 * 60 * 60 * 1000;
 
 // --- Indikator storan (kuota Firestore dikongsi SEMUA majlis) ---
@@ -345,10 +345,10 @@ formCipta.addEventListener("submit", async (e) => {
       welcomeMessage: "",
       package: pakej,
       status: "active",
-      photoLimit: cfg.photoLimit,
+      photoLimit: hadGambarDB(pakej),
       photoCount: 0,
       preModeration: false,
-      expiresAt: new Date(Date.now() + cfg.hari * SEHARI_MS),
+      expiresAt: new Date(Date.now() + cfg.tempohHari * SEHARI_MS),
       createdAt: serverTimestamp(),
       createdBy: auth.currentUser.uid,
     });
@@ -359,7 +359,7 @@ formCipta.addEventListener("submit", async (e) => {
     await batch.commit();
 
     ciptaJaya.innerHTML =
-      `✓ Akaun <b>${esc(emel)}</b> (${cfg.label}) dicipta.<br>` +
+      `✓ Akaun <b>${esc(emel)}</b> (${cfg.nama}) dicipta.<br>` +
       `Beritahu pelanggan: log masuk di <b>tetapan.html</b> guna emel &amp; kata laluan ini untuk pilih URL &amp; tema majlis.`;
     ciptaJaya.classList.remove("hidden");
     formCipta.reset();
@@ -709,9 +709,15 @@ function binaBaris(id, ev, emel = "") {
   } else {
     lencanaStatus = `<span class="rounded-full bg-gray-200 text-gray-600 text-xs px-2 py-0.5">Nyahaktif</span>`;
   }
-  const lencanaPakej = ev.package === "premium"
-    ? `<span class="rounded-full bg-[#f3dfe3] text-[#b76e79] text-xs px-2 py-0.5">Premium</span>`
-    : `<span class="rounded-full bg-[#eee6de] text-[#8a7a70] text-xs px-2 py-0.5">Basic</span>`;
+  // Lencana pakej (3 tier). Warna berbeza supaya mudah dikenali.
+  const gayaPakej = {
+    eksklusif: "bg-[#efe3c8] text-[#9a7b2e]",
+    premium:   "bg-[#f3dfe3] text-[#b76e79]",
+    basic:     "bg-[#eee6de] text-[#8a7a70]",
+  };
+  const idPakej = PAKEJ[ev.package] ? ev.package : "basic";
+  const lencanaPakej =
+    `<span class="rounded-full ${gayaPakej[idPakej] || gayaPakej.basic} text-xs px-2 py-0.5">${PAKEJ[idPakej].nama}</span>`;
 
   const hadTeks = ev.photoLimit >= HAD_TANPA_HAD ? "∞" : ev.photoLimit;
   const slugTeks = ev.slug
@@ -746,8 +752,9 @@ function binaBaris(id, ev, emel = "") {
       }">${ev.status === "active" ? "Nyahaktif" : "Aktifkan"}</button>
 
       <select data-act="pakej" class="rounded-lg border border-[#e5d5ca] bg-white px-2 py-1.5 text-sm">
-        <option value="basic" ${ev.package === "basic" ? "selected" : ""}>Basic</option>
-        <option value="premium" ${ev.package === "premium" ? "selected" : ""}>Premium</option>
+        ${Object.keys(PAKEJ).map((k) =>
+          `<option value="${k}" ${idPakej === k ? "selected" : ""}>${PAKEJ[k].nama}</option>`
+        ).join("")}
       </select>
 
       <label class="flex items-center gap-1 text-sm text-[#8a7a70]">
@@ -808,19 +815,20 @@ function binaBaris(id, ev, emel = "") {
     const pakejBaru = e.currentTarget.value;
     const cfg = PAKEJ[pakejBaru];
     if (!cfg) return;
-    if (!confirm(`Tukar pakej kepada ${cfg.label}? Had gambar akan jadi ${cfg.photoLimit >= HAD_TANPA_HAD ? "tanpa had" : cfg.photoLimit}.`)) {
-      e.currentTarget.value = ev.package; // pulih pilihan
+    const hadBaru = hadGambarDB(pakejBaru);
+    if (!confirm(`Tukar pakej kepada ${cfg.nama}? Had gambar akan jadi ${cfg.hadGambar == null ? "tanpa had" : cfg.hadGambar}.`)) {
+      e.currentTarget.value = idPakej; // pulih pilihan
       return;
     }
     try {
       await updateDoc(doc(db, "events", id), {
         package: pakejBaru,
-        photoLimit: cfg.photoLimit,
+        photoLimit: hadBaru,
       });
     } catch (err) {
       console.error(err);
       alert("Gagal menukar pakej.");
-      e.currentTarget.value = ev.package;
+      e.currentTarget.value = idPakej;
     }
   });
 
