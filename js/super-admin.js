@@ -104,15 +104,13 @@ const butangCipta = document.getElementById("butang-cipta");
 const ciptaRalat = document.getElementById("cipta-ralat");
 const ciptaJaya = document.getElementById("cipta-jaya");
 
-// --- Rujukan DOM: borang promosi harga ---
+// --- Rujukan DOM: borang harga & promosi ---
 const formPromo = document.getElementById("form-promo");
+const promoPakej = document.getElementById("promo-pakej"); // bekas blok per-pakej
 const pAktif = document.getElementById("p-aktif");
 const pTajuk = document.getElementById("p-tajuk");
 const pMula = document.getElementById("p-mula");
 const pTamat = document.getElementById("p-tamat");
-const pHargaBasic = document.getElementById("p-harga-basic");
-const pHargaPremium = document.getElementById("p-harga-premium");
-const pHargaEksklusif = document.getElementById("p-harga-eksklusif");
 const butangSimpanPromo = document.getElementById("butang-simpan-promo");
 const promoRalat = document.getElementById("promo-ralat");
 const promoJaya = document.getElementById("promo-jaya");
@@ -399,13 +397,102 @@ formCipta.addEventListener("submit", async (e) => {
 });
 
 // ------------------------------------------------------------
-//  PROMOSI HARGA PAKEJ (dokumen settings/promo)
+//  HARGA & PROMOSI PAKEJ (dokumen settings/promo)
 // ------------------------------------------------------------
-//  Satu dokumen global; baca awam (tetamu perlu nampak harga promo di
+//  Satu dokumen global; baca awam (tetamu perlu nampak harga di
 //  pakej.html), tulis admin sahaja (dikuatkuasa Firestore rules).
+//
+//  Dua lapis:
+//    - hargaAsal[id] : override harga asal, berkuat kuasa SENTIASA.
+//    - harga[id]     : harga promo, dipapar hanya dalam julat tarikh.
+//
+//  Blok input per-pakej dibina dinamik ke dalam #promo-pakej supaya
+//  id konsisten dan menambah pakej baharu = tiada ubah HTML.
 // ------------------------------------------------------------
 
-// Isi borang promo dari settings/promo (jika ada).
+// Baca satu input harga -> nombor sah (>0) atau null (kosong/tak sah).
+function bacaHargaInput(el) {
+  if (!el) return null;
+  const v = el.value.trim();
+  if (v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// Rujukan input untuk satu pakej (dibina oleh binaBarisPromo).
+function inputPakej(id) {
+  return {
+    asal: document.getElementById(`pa-${id}`),
+    promoCek: document.getElementById(`promo-${id}`),
+    promo: document.getElementById(`pp-${id}`),
+    prev: document.getElementById(`prev-${id}`),
+  };
+}
+
+// Kemas kini pratonton jimat untuk satu pakej (dipanggil pada setiap input).
+function kemasPratonton(id) {
+  const el = inputPakej(id);
+  if (!el.prev) return;
+  const lalai = PAKEJ[id].harga;
+  const asal = bacaHargaInput(el.asal) ?? lalai;       // harga asal berkuat kuasa
+  const cek = el.promoCek?.checked;
+  el.promo.disabled = !cek;                            // input promo aktif bila dicek sahaja
+  if (!cek) { el.prev.textContent = ""; return; }
+  const promo = bacaHargaInput(el.promo);
+  if (promo == null) { el.prev.textContent = "Isi harga promo."; el.prev.className = pratontonKelas("samar"); return; }
+  if (promo >= asal) {
+    el.prev.textContent = `Harga promo mesti kurang dari harga asal (RM${asal}).`;
+    el.prev.className = pratontonKelas("ralat");
+    return;
+  }
+  const jimat = asal - promo;
+  const peratus = Math.round((jimat / asal) * 100);
+  el.prev.textContent = `Jimat RM${jimat} (${peratus}%) — RM${asal} → RM${promo}`;
+  el.prev.className = pratontonKelas("ok");
+}
+
+function pratontonKelas(jenis) {
+  const asas = "text-xs mt-1 ";
+  if (jenis === "ok") return asas + "text-green-600";
+  if (jenis === "ralat") return asas + "text-red-600";
+  return asas + "text-[#a09088]";
+}
+
+// Bina blok input untuk semua pakej ke dalam #promo-pakej.
+function binaBarisPromo() {
+  if (!promoPakej) return;
+  promoPakej.innerHTML = "";
+  Object.keys(PAKEJ).forEach((id) => {
+    const p = PAKEJ[id];
+    const blok = document.createElement("div");
+    blok.className = "rounded-xl border border-[#e5d5ca] bg-white/60 p-4";
+    blok.innerHTML =
+      `<p class="font-medium text-sm mb-2">${p.nama} <span class="text-[#a09088] font-normal">· lalai RM${p.harga}</span></p>` +
+      `<div class="grid sm:grid-cols-2 gap-3">` +
+        `<div>` +
+          `<label class="block text-xs font-medium mb-1">Harga asal (RM)</label>` +
+          `<input id="pa-${id}" type="number" min="1" step="1" class="input-elok" placeholder="lalai RM${p.harga} — kosong = guna lalai" />` +
+        `</div>` +
+        `<div>` +
+          `<label class="inline-flex items-center gap-2 text-xs font-medium mb-1">` +
+            `<input id="promo-${id}" type="checkbox" class="h-4 w-4 rounded border-[#d9a5ac] text-[#b76e79]" /> Promo` +
+          `</label>` +
+          `<input id="pp-${id}" type="number" min="1" step="1" class="input-elok" placeholder="harga promo" disabled />` +
+        `</div>` +
+      `</div>` +
+      `<p id="prev-${id}" class="text-xs mt-1 text-[#a09088]"></p>`;
+    promoPakej.appendChild(blok);
+
+    // Pendengar pratonton langsung
+    const el = inputPakej(id);
+    el.asal?.addEventListener("input", () => kemasPratonton(id));
+    el.promo?.addEventListener("input", () => kemasPratonton(id));
+    el.promoCek?.addEventListener("change", () => kemasPratonton(id));
+  });
+}
+binaBarisPromo();
+
+// Isi borang dari settings/promo (jika ada).
 async function muatPromo() {
   try {
     const snap = await getDoc(doc(db, "settings", "promo"));
@@ -415,20 +502,17 @@ async function muatPromo() {
     pTajuk.value = p.tajuk || "";
     pMula.value = keNilaiInputTarikh(p.mula);
     pTamat.value = keNilaiInputTarikh(p.tamat);
-    pHargaBasic.value = p.harga?.basic ?? "";
-    pHargaPremium.value = p.harga?.premium ?? "";
-    pHargaEksklusif.value = p.harga?.eksklusif ?? "";
+    Object.keys(PAKEJ).forEach((id) => {
+      const el = inputPakej(id);
+      if (el.asal) el.asal.value = p.hargaAsal?.[id] ?? "";
+      const hp = p.harga?.[id];
+      if (el.promoCek) el.promoCek.checked = hp != null;
+      if (el.promo) el.promo.value = hp ?? "";
+      kemasPratonton(id);
+    });
   } catch (err) {
-    console.warn("Gagal memuat promosi:", err);
+    console.warn("Gagal memuat harga/promosi:", err);
   }
-}
-
-// Baca satu input harga -> nombor sah (>0) atau null (kosong/tak sah).
-function bacaHargaInput(el) {
-  const v = el.value.trim();
-  if (v === "") return null;
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 formPromo.addEventListener("submit", async (e) => {
@@ -436,14 +520,30 @@ formPromo.addEventListener("submit", async (e) => {
   promoRalat.classList.add("hidden");
   promoJaya.classList.add("hidden");
 
-  // Kumpul harga promo (buang yang kosong).
-  const harga = {};
-  const hb = bacaHargaInput(pHargaBasic);
-  const hp = bacaHargaInput(pHargaPremium);
-  const he = bacaHargaInput(pHargaEksklusif);
-  if (hb != null) harga.basic = hb;
-  if (hp != null) harga.premium = hp;
-  if (he != null) harga.eksklusif = he;
+  // Kumpul harga asal (override) + harga promo per pakej.
+  const hargaAsal = {};   // override harga asal (berkuat kuasa sentiasa)
+  const harga = {};       // harga promo (dalam julat tarikh)
+  for (const id of Object.keys(PAKEJ)) {
+    const el = inputPakej(id);
+    const asalOverride = bacaHargaInput(el.asal);
+    if (asalOverride != null) hargaAsal[id] = asalOverride;
+
+    if (el.promoCek?.checked) {
+      const hp = bacaHargaInput(el.promo);
+      if (hp == null) {
+        promoRalat.textContent = `Isi harga promo untuk pakej ${PAKEJ[id].nama}.`;
+        promoRalat.classList.remove("hidden");
+        return;
+      }
+      const asalBerkuatKuasa = asalOverride ?? PAKEJ[id].harga;
+      if (hp >= asalBerkuatKuasa) {
+        promoRalat.textContent = `Harga promo ${PAKEJ[id].nama} (RM${hp}) mesti kurang dari harga asal (RM${asalBerkuatKuasa}).`;
+        promoRalat.classList.remove("hidden");
+        return;
+      }
+      harga[id] = hp;
+    }
+  }
 
   // Tarikh: mula = awal hari, tamat = hujung hari (selari corak expiresAt).
   const mula = pMula.value ? new Date(pMula.value + "T00:00:00") : null;
@@ -461,7 +561,7 @@ formPromo.addEventListener("submit", async (e) => {
       return;
     }
     if (Object.keys(harga).length === 0) {
-      promoRalat.textContent = "Isi sekurang-kurangnya satu harga promo pakej.";
+      promoRalat.textContent = "Tanda & isi sekurang-kurangnya satu harga promo pakej.";
       promoRalat.classList.remove("hidden");
       return;
     }
@@ -472,7 +572,10 @@ formPromo.addEventListener("submit", async (e) => {
   butangSimpanPromo.textContent = "Sedang menyimpan…";
 
   try {
+    // Tulis PENUH (tanpa merge) supaya override/promo yang dikosongkan
+    // benar-benar dipadam (merge nested tak memadam kunci).
     await setDoc(doc(db, "settings", "promo"), {
+      hargaAsal,
       aktif: pAktif.checked,
       tajuk: pTajuk.value.trim(),
       mula,
@@ -480,15 +583,15 @@ formPromo.addEventListener("submit", async (e) => {
       harga,
       dikemasOleh: auth.currentUser.uid,
       dikemasPada: serverTimestamp(),
-    }, { merge: true });
+    });
 
     promoJaya.textContent = pAktif.checked
-      ? "✓ Promosi disimpan & aktif dalam julat tarikh ditetapkan."
-      : "✓ Disimpan. Promosi kini tidak aktif.";
+      ? "✓ Disimpan. Harga asal dikemas & promosi aktif dalam julat tarikh ditetapkan."
+      : "✓ Disimpan. Harga asal dikemas; promosi kini tidak aktif.";
     promoJaya.classList.remove("hidden");
   } catch (err) {
-    console.error("Ralat simpan promosi:", err);
-    promoRalat.textContent = "Gagal menyimpan promosi (semak sambungan / rules Firestore).";
+    console.error("Ralat simpan harga/promosi:", err);
+    promoRalat.textContent = "Gagal menyimpan (semak sambungan / rules Firestore).";
     promoRalat.classList.remove("hidden");
   } finally {
     butangSimpanPromo.disabled = false;

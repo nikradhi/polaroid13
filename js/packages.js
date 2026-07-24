@@ -182,18 +182,28 @@ export function promoAktifSekarang(promo, sekarang = new Date()) {
   return true;
 }
 
+// Harga asal BERKUAT KUASA untuk satu pakej.
+// Super-admin boleh override harga asal (settings/promo -> hargaAsal[id]);
+// override ini berkuat kuasa SENTIASA (bukan terikat julat tarikh promo).
+// Kosong / tak sah -> guna nilai lalai PAKEJ[id].harga dalam kod.
+export function hargaAsalPakej(idPakej, cfg) {
+  const p = PAKEJ[idPakej] || PAKEJ[PAKEJ_LALAI];
+  const o = Number(cfg?.hargaAsal?.[idPakej]);
+  return Number.isFinite(o) && o > 0 ? o : p.harga;
+}
+
 // Kira harga berkesan untuk satu pakej.
+// `cfg` = data dokumen settings/promo (harga asal override + promo).
 // Pulang { asal, promo, adaPromo }:
-//   - asal    : harga asal (RM) dari PAKEJ.
+//   - asal    : harga asal berkuat kuasa (override admin atau lalai).
 //   - promo   : harga promo (RM) jika sah & lebih murah, jika tidak null.
 //   - adaPromo: true bila harga promo dikenakan.
 // Penjaga: promo hanya dikira bila promoAktifSekarang() DAN
 // 0 < harga[id] < asal (elak "diskaun" yang menaikkan harga).
-export function hargaPakej(idPakej, promo, sekarang = new Date()) {
-  const p = PAKEJ[idPakej] || PAKEJ[PAKEJ_LALAI];
-  const asal = p.harga;
-  if (promoAktifSekarang(promo, sekarang)) {
-    const hp = Number(promo.harga?.[idPakej]);
+export function hargaPakej(idPakej, cfg, sekarang = new Date()) {
+  const asal = hargaAsalPakej(idPakej, cfg);
+  if (promoAktifSekarang(cfg, sekarang)) {
+    const hp = Number(cfg.harga?.[idPakej]);
     if (Number.isFinite(hp) && hp > 0 && hp < asal) {
       return { asal, promo: hp, adaPromo: true };
     }
