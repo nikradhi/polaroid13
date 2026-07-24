@@ -1,0 +1,6 @@
+{
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/e/:slug", "destination": "/e.html" }
+  ]
+}

@@ -116,32 +116,92 @@
       .bunga-penjuru { width: 3.5rem; opacity: .8; }
     }
 
-    /* Bar reaksi ❤️ + muat turun 💾 — kini DALAM bingkai polaroid
-       (dilekat pada .polaroid__caption), jadi jarak kecil positif dari nama. */
+    /* ---- Kad galeri rata (gaya feed Pinterest/Motion) ----
+       Gambar sudut bulat di atas, tajuk tebal + petikan italic, baris
+       ❤ (kiri) + SIMPAN (kanan) di bawah. Semua warna ikut var(--tema)/
+       var(--warna-*) supaya adaptif ke setiap tema. Live Wall (wall.js)
+       masih guna gaya polaroid — tak terkesan oleh kelas ini. */
+    .kad-galeri {
+      display: block;
+      width: 100%;
+      background: var(--warna-kad);
+      border: 1px solid color-mix(in srgb, var(--tema) 14%, transparent);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 6px 18px -12px color-mix(in srgb, var(--tema) 45%, transparent);
+      transition: transform .18s ease, box-shadow .25s ease;
+    }
+    @media (hover: hover) {
+      .kad-galeri:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 30px -14px color-mix(in srgb, var(--tema) 55%, transparent);
+      }
+    }
+    .kad-galeri__imgwrap {
+      background: color-mix(in srgb, var(--tema) 6%, var(--warna-kad));
+      line-height: 0;
+    }
+    .kad-galeri__img {
+      width: 100%; height: auto; display: block; object-fit: cover;
+      cursor: zoom-in;
+    }
+    .kad-galeri__badan { padding: .75rem .85rem 1rem; }
+    .kad-galeri__tajuk {
+      font-family: var(--font-tajuk);
+      font-weight: 700;
+      font-size: 1.02rem;
+      line-height: 1.25;
+      color: var(--warna-teks);
+      text-align: left;
+      word-break: break-word;
+    }
+    .kad-galeri__petikan {
+      font-family: var(--font-teks);
+      font-style: italic;
+      font-size: .9rem;
+      line-height: 1.35;
+      color: var(--warna-teks-lembut);
+      text-align: left;
+      margin-top: .2rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .kad-galeri__petikan::before { content: "\201C"; }
+    .kad-galeri__petikan::after  { content: "\201D"; }
+
+    /* Bar reaksi ❤️ (kiri) + SIMPAN (kanan) — di bawah kad rata. */
     .reaksi-bar {
-      display: flex; justify-content: center; gap: .5rem;
-      margin-top: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: .5rem; margin-top: .75rem;
     }
     .reaksi {
       display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-      background: rgba(255,255,255,.85); border: 1px solid var(--warna-sempadan);
-      border-radius: 999px; padding: 6px 13px; font-size: .95rem; min-height: 36px;
-      color: var(--warna-teks-lembut); cursor: pointer; transition: transform .12s ease, background .2s;
+      background: transparent; border: 1px solid var(--warna-sempadan);
+      border-radius: 999px; padding: 6px 12px; font-size: .9rem; min-height: 36px;
+      color: var(--warna-teks-lembut); cursor: pointer; transition: transform .12s ease, background .2s, color .2s;
     }
     /* Peranti sentuh (telefon): besarkan sasaran ketik ~44px */
     @media (hover: none) and (pointer: coarse) {
       .reaksi { min-height: 44px; padding: 9px 15px; }
     }
-    .reaksi:hover { background: #fff; transform: translateY(-1px); }
+    .reaksi:hover { background: color-mix(in srgb, var(--tema) 8%, transparent); transform: translateY(-1px); }
     .reaksi .hati { color: var(--warna-sempadan); font-size: 1.05rem; transition: color .2s, transform .2s; }
     .reaksi.disukai { color: var(--tema); cursor: default; }
     .reaksi.disukai .hati { color: #e0526b; transform: scale(1.15); }
-    /* Butang simpan — ikon diwarnakan sama gaya seperti ♥ */
+    /* Butang SIMPAN — pil kelabu lembut dengan label + ikon ⬇ */
+    .reaksi--simpan {
+      background: color-mix(in srgb, var(--warna-teks) 7%, transparent);
+      border-color: transparent;
+      font-weight: 600; letter-spacing: .02em;
+      color: var(--warna-teks-lembut);
+    }
+    .reaksi--simpan:hover { background: color-mix(in srgb, var(--tema) 14%, transparent); color: var(--tema); }
     .reaksi .ikon {
-      color: var(--warna-sempadan); font-size: 1.05rem; line-height: 1; font-weight: 700;
+      font-size: 1rem; line-height: 1; font-weight: 700;
       transition: color .2s;
     }
-    .reaksi:hover .ikon { color: var(--tema); }
     /* Maklum balas selepas muat turun (muat turun berlaku senyap) */
     .reaksi.selesai { color: #2f7a45; border-color: #b8e0c2; background: #eef8f1; }
     .reaksi.selesai .ikon { color: #2f7a45; }

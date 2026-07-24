@@ -22,7 +22,6 @@ import {
   updateDoc,
   increment,
 } from "./firebase.js";
-import { createPolaroid, pasangGayaPolaroid } from "./polaroid.js";
 import { dapatEventId, muatEvent, terapTema } from "./majlis.js";
 import {
   cetusMuatTurun,
@@ -31,8 +30,6 @@ import {
 } from "./muat-turun.js";
 import { pasangBorangUpload } from "./upload.js";
 import { bolehGuna } from "./gating.js";
-
-pasangGayaPolaroid();
 
 const SAIZ_HALAMAN = 12;
 
@@ -151,17 +148,41 @@ function tambahFoto(id, row, diAtas = false) {
   item.className = "masonry-item";
   item.dataset.nama = foto.name.toLowerCase();
 
-  const kad = createPolaroid({
-    imageUrl: foto.img,
-    name: foto.name,
-    message: foto.message,
-  });
-  // Klik gambar -> buka lightbox
-  const imgEl = kad.querySelector(".polaroid__img");
-  imgEl.style.cursor = "zoom-in";
-  imgEl.addEventListener("click", () => bukaLightbox(indeks));
+  // Kad rata gaya feed (Pinterest/Motion): gambar di atas, tajuk tebal,
+  // petikan italic, baris bawah ❤ (kiri) + SIMPAN (kanan). Berbeza dengan
+  // gaya polaroid Live Wall (wall.js) yang masih guna createPolaroid().
+  const kad = document.createElement("article");
+  kad.className = "kad-galeri";
 
-  // Bar reaksi ❤️
+  const imgwrap = document.createElement("div");
+  imgwrap.className = "kad-galeri__imgwrap";
+  const imgEl = document.createElement("img");
+  imgEl.className = "kad-galeri__img";
+  imgEl.src = foto.img;
+  imgEl.loading = "lazy";
+  imgEl.decoding = "async";
+  imgEl.alt = `Gambar daripada ${foto.name}`;
+  // Klik gambar -> buka lightbox
+  imgEl.addEventListener("click", () => bukaLightbox(indeks));
+  imgwrap.appendChild(imgEl);
+  kad.appendChild(imgwrap);
+
+  const badan = document.createElement("div");
+  badan.className = "kad-galeri__badan";
+
+  const tajuk = document.createElement("h3");
+  tajuk.className = "kad-galeri__tajuk";
+  tajuk.textContent = `Oleh ${foto.name}`; // textContent = selamat XSS
+  badan.appendChild(tajuk);
+
+  if (foto.message) {
+    const petikan = document.createElement("p");
+    petikan.className = "kad-galeri__petikan";
+    petikan.textContent = foto.message; // textContent = selamat XSS
+    badan.appendChild(petikan);
+  }
+
+  // Bar reaksi ❤️ (kiri) + SIMPAN (kanan)
   const bar = document.createElement("div");
   bar.className = "reaksi-bar";
   const disukai = setDisukai().has(id);
@@ -173,21 +194,18 @@ function tambahFoto(id, row, diAtas = false) {
   butangHati.addEventListener("click", () => sukaFoto(indeks));
   bar.appendChild(butangHati);
 
-  // Butang muat turun ⬇️ — guna gaya pil .reaksi yang sama
+  // Butang muat turun (SIMPAN) — kekal kelas .reaksi + span .ikon untuk
+  // maklum balas muat turun (⬇ → ✓/✕) yang dikawal oleh muatTurunFoto().
   const butangMuat = document.createElement("button");
-  butangMuat.className = "reaksi";
+  butangMuat.className = "reaksi reaksi--simpan";
   butangMuat.setAttribute("aria-label", `Muat turun gambar daripada ${foto.name}`);
   butangMuat.title = "Muat turun gambar ini";
-  // Ikon sahaja (floppy 💾 = "simpan") — jimat ruang dalam bingkai.
-  butangMuat.innerHTML = `<span class="ikon">💾</span>`;
+  butangMuat.innerHTML = `<span class="ikon">⬇</span> SIMPAN`;
   butangMuat.addEventListener("click", () => muatTurunFoto(indeks));
   bar.appendChild(butangMuat);
 
-  // Bar reaksi diletak DALAM bingkai polaroid (ruang putih bawah, selepas nama)
-  // — bukan sebagai adik-beradik di luar bingkai. Skop galeri sahaja:
-  // wall.js guna createPolaroid() tanpa bar ini, jadi Live Wall tak terkesan.
-  const kaki = kad.querySelector(".polaroid__caption");
-  kaki.appendChild(bar);
+  badan.appendChild(bar);
+  kad.appendChild(badan);
   item.appendChild(kad);
   // Foto baharu (hantar dari modal) dimasukkan di ATAS; foto pagination
   // biasa ditambah di bawah. Closure `indeks` kekal betul untuk klik/reaksi
@@ -234,7 +252,7 @@ function muatTurunFoto(i) {
 
   clearTimeout(foto.pemasaMuat);
   foto.pemasaMuat = setTimeout(() => {
-    ikon.textContent = "💾";
+    ikon.textContent = "⬇";
     btn.classList.remove("selesai", "gagal");
   }, 1800);
 }
