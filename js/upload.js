@@ -5,7 +5,7 @@
 //  - Anti-spam: cooldown (localStorage) + honeypot
 //  - Compress ADAPTIF: satu gambar base64 disimpan dalam `photos.image_url`
 //    (tiada Firebase Storage diperlukan)
-//  - Hormati tetapan pra-moderasi (settings/majlis)
+//  - Autolulus: setiap gambar terus tampil (tiada pra-moderasi)
 //  - Preview polaroid langsung sebelum hantar
 //  - Ambil semula (retake) / tukar / buang gambar tanpa hilang teks
 //  - Kendalian ralat mesra pengguna (Bahasa Melayu)
@@ -364,8 +364,8 @@ form.addEventListener("submit", async (e) => {
     const blob = await compressImej(failDipilih);
     const imageUrl = await blobKeBase64(blob);
 
-    // 2) Pra-moderasi kini per-majlis (medan pada dokumen events).
-    const approved = majlis.preModeration !== true;
+    // 2) Autolulus: semua gambar terus tampil (tiada pra-moderasi).
+    const approved = true;
 
     // 3) Simpan gambar + naikkan kaunter majlis dalam SATU batch atomik.
     //    Firestore rules mewajibkan kaunter naik tepat +1 dan tidak

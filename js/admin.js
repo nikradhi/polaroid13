@@ -57,7 +57,6 @@ const zonKosong = document.getElementById("zon-kosong");
 const statSemua = document.getElementById("stat-semua");
 const statLulus = document.getElementById("stat-lulus");
 const statSembunyi = document.getElementById("stat-sembunyi");
-const suisModerasi = document.getElementById("suis-moderasi");
 const butangLuluskanSemua = document.getElementById("butang-luluskan-semua");
 
 let unsub = null; // untuk hentikan langganan bila log keluar
@@ -166,7 +165,6 @@ onAuthStateChanged(auth, async (user) => {
       pautanGaleri.href = `gallery.html?e=${encodeURIComponent(eventId)}`;
     }
     mulaLangganan();
-    muatToggleModerasi();
   } else {
     if (unsub) { unsub(); unsub = null; }
     zonPanel.classList.add("hidden");
@@ -201,35 +199,6 @@ async function sediakanMajlis(uid) {
     console.error("Ralat memuat majlis:", err);
     return false;
   }
-}
-
-// ------------------------------------------------------------
-//  TOGGLE PRA-MODERASI (medan preModeration pada events/{eventId})
-//  Bila HIDUP: gambar baharu perlu diluluskan dahulu (approved:false).
-//  Bila MATI (lalai): gambar terus dipapar (pasca-moderasi).
-// ------------------------------------------------------------
-async function muatToggleModerasi() {
-  if (!suisModerasi) return;
-  // Pra-moderasi kini medan pada dokumen majlis (bukan settings global)
-  suisModerasi.checked = majlis?.preModeration === true;
-}
-if (suisModerasi) {
-  suisModerasi.addEventListener("change", async () => {
-    if (!eventId) return;
-    suisModerasi.disabled = true;
-    try {
-      await updateDoc(doc(db, "events", eventId), {
-        preModeration: suisModerasi.checked,
-      });
-      if (majlis) majlis.preModeration = suisModerasi.checked;
-    } catch (err) {
-      console.error(err);
-      alert("Gagal menyimpan tetapan. Sila cuba lagi.");
-      suisModerasi.checked = !suisModerasi.checked; // pulih
-    } finally {
-      suisModerasi.disabled = false;
-    }
-  });
 }
 
 // ------------------------------------------------------------

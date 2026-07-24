@@ -691,7 +691,7 @@ function isiKadCetak(urlLanding) {
   const tema = eventData.themeColor || "#b76e79";
   cetakNama.style.color = tema;
   cetakGaris.style.background = tema;
-  cetakTagline.style.color = tema;
+  cetakTagline.style.color = "#fff"; // kekal putih — kotak merah (bukan ikut tema)
 
   // QR kedua — lebih besar untuk cetakan (QR panel kekal 220px).
   // 380px, bukan lebih: padding 16mm kad cetak memakan ruang menegak,
