@@ -31,17 +31,20 @@
     .font-serif-elegan { font-family: var(--font-tajuk); }
     .font-tangan { font-family: var(--font-tangan); }
 
-    /* Masonry guna CSS columns — ringkas & minimakan reflow */
+    /* Masonry guna CSS columns — ringkas & minimakan reflow.
+       Asas = 2 lajur (telefon nampak kiri & kanan). */
     .masonry {
-      column-gap: 1.25rem;
-      column-count: 1;
+      column-gap: 0.75rem;   /* rapat di telefon supaya 2 kad muat */
+      column-count: 2;
     }
-    @media (min-width: 480px)  { .masonry { column-count: 2; } }
-    @media (min-width: 768px)  { .masonry { column-count: 3; } }
+    @media (min-width: 768px)  { .masonry { column-gap: 1.25rem; column-count: 3; } }
     @media (min-width: 1100px) { .masonry { column-count: 4; } }
     .masonry-item {
       break-inside: avoid;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1rem;     /* jarak menegak lebih rapat di telefon */
+    }
+    @media (min-width: 768px) {
+      .masonry-item { margin-bottom: 1.75rem; }  /* kekalkan jarak asal di desktop/tablet */
     }
 
     .btn-utama {
@@ -60,10 +63,14 @@
       margin-top: -0.5rem;
     }
     .reaksi {
-      display: inline-flex; align-items: center; gap: 5px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
       background: rgba(255,255,255,.85); border: 1px solid var(--warna-sempadan);
-      border-radius: 999px; padding: 4px 12px; font-size: .95rem;
+      border-radius: 999px; padding: 6px 13px; font-size: .95rem; min-height: 36px;
       color: var(--warna-teks-lembut); cursor: pointer; transition: transform .12s ease, background .2s;
+    }
+    /* Peranti sentuh (telefon): besarkan sasaran ketik ~44px */
+    @media (hover: none) and (pointer: coarse) {
+      .reaksi { min-height: 44px; padding: 9px 15px; }
     }
     .reaksi:hover { background: #fff; transform: translateY(-1px); }
     .reaksi .hati { color: var(--warna-sempadan); font-size: 1.05rem; transition: color .2s, transform .2s; }
@@ -98,7 +105,7 @@
       box-shadow: 0 20px 60px rgba(0,0,0,.5);
     }
     .lb-kandungan { text-align: center; max-width: 92vw; }
-    #lb-nama { font-family: var(--font-tangan); font-size: 2rem; color: #fff; margin-top: 14px; }
+    #lb-nama { font-family: var(--font-tangan); font-size: 2rem; color: #fff; margin-top: 14px; word-break: break-word; }
     #lb-ucapan { font-family: var(--font-tangan); font-size: 1.5rem; color: #f0d9dd; margin-top: 2px; word-break: break-word; }
     .lb-btn {
       position: absolute; top: 50%; transform: translateY(-50%);
@@ -117,8 +124,10 @@
     }
     #lb-tutup:hover { background: rgba(255,255,255,.3); }
     @media (max-width: 640px) {
-      .lb-btn { width: 42px; height: 42px; font-size: 1.6rem; }
+      .lb-btn { width: 44px; height: 44px; font-size: 1.6rem; }
       #lb-img { max-height: 66vh; }
+      #lb-nama { font-size: 1.6rem; }
+      #lb-ucapan { font-size: 1.25rem; }
     }
 
     /* Kotak carian */
