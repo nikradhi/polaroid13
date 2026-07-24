@@ -73,6 +73,49 @@
     .hiasan-pemisah::after { transform: scaleX(-1); }
     .hiasan-pemisah .hati { font-size: 1.1rem; line-height: 1; }
 
+    /* Kad header berbingkai — panel rounded dengan basuhan gradient lembut
+       (ikut var(--tema)) + bunga hiasan di dua penjuru atas. Semua warna
+       datang daripada var(--tema)/var(--warna-*) supaya ikut setiap tema. */
+    .kad-header {
+      position: relative;
+      overflow: hidden;
+      max-width: 34rem;
+      margin: 0 auto;
+      padding: 2.75rem 1.5rem 2.5rem;
+      border-radius: 1.75rem;
+      border: 1px solid color-mix(in srgb, var(--tema) 25%, transparent);
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--tema) 12%, var(--warna-kad)) 0%,
+        var(--warna-kad) 72%);
+      box-shadow: 0 18px 40px -22px color-mix(in srgb, var(--tema) 55%, transparent);
+    }
+
+    /* Bunga penjuru: SVG inline, diletak di penjuru atas kad.
+       Kanan dicermin (scaleX(-1)) supaya simetri dengan kiri. */
+    .bunga-penjuru {
+      position: absolute;
+      top: 0;
+      width: 5.5rem;
+      pointer-events: none;
+      opacity: .9;
+      line-height: 0;
+    }
+    .bunga-penjuru svg { width: 100%; height: auto; display: block; }
+    /* Bahagian bunga ditintakan ikut tema (color-mix dalam CSS = paling serasi). */
+    .bunga-penjuru .kelopak { fill: color-mix(in srgb, var(--tema) 50%, #fff); }
+    .bunga-penjuru .teras   { fill: color-mix(in srgb, var(--tema) 80%, #ffe6b0); }
+    .bunga-penjuru .daun    { fill: color-mix(in srgb, var(--tema) 26%, #7ba367); }
+    .bunga-penjuru .batang  {
+      fill: none; stroke: color-mix(in srgb, var(--tema) 30%, #7ba367);
+      stroke-width: 2; stroke-linecap: round;
+    }
+    .bunga-kiri  { left: 0; }
+    .bunga-kanan { right: 0; transform: scaleX(-1); }
+    @media (max-width: 640px) {
+      .kad-header { padding: 2.25rem 1.1rem 2rem; border-radius: 1.4rem; }
+      .bunga-penjuru { width: 3.5rem; opacity: .8; }
+    }
+
     /* Bar reaksi ❤️ + muat turun 💾 — kini DALAM bingkai polaroid
        (dilekat pada .polaroid__caption), jadi jarak kecil positif dari nama. */
     .reaksi-bar {
@@ -228,7 +271,82 @@
   <main class="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
 
     <!-- Tajuk -->
-    <header class="text-center mb-10">
+    <header class="kad-header text-center mb-10">
+      <!-- Bunga hiasan penjuru (SVG inline, sifar fail; kanan dicermin via CSS) -->
+      <span class="bunga-penjuru bunga-kiri" aria-hidden="true">
+        <svg viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg">
+          <!-- batang -->
+          <path class="batang" d="M8 2 C 35 25 48 52 44 84"/>
+          <path class="batang" d="M8 2 C 30 28 60 32 88 47"/>
+          <path class="batang" d="M22 14 C 34 32 30 52 19 67"/>
+          <!-- daun -->
+          <path class="daun" transform="translate(26 40) rotate(35)"  d="M0 0 Q 6 -9 0 -19 Q -6 -9 0 0 Z"/>
+          <path class="daun" transform="translate(58 34) rotate(-40)" d="M0 0 Q 6 -9 0 -19 Q -6 -9 0 0 Z"/>
+          <path class="daun" transform="translate(35 62) rotate(75)"  d="M0 0 Q 5 -8 0 -16 Q -5 -8 0 0 Z"/>
+          <!-- bunga besar -->
+          <g transform="translate(44 86) scale(1)">
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(72)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(144)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(216)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(288)"/>
+            <circle class="teras" r="3.2"/>
+          </g>
+          <!-- bunga sederhana -->
+          <g transform="translate(90 48) scale(.78)">
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(72)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(144)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(216)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(288)"/>
+            <circle class="teras" r="3.2"/>
+          </g>
+          <!-- kuncup kecil -->
+          <g transform="translate(18 68) scale(.6)">
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(72)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(144)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(216)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(288)"/>
+            <circle class="teras" r="3.2"/>
+          </g>
+        </svg>
+      </span>
+      <span class="bunga-penjuru bunga-kanan" aria-hidden="true">
+        <svg viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg">
+          <path class="batang" d="M8 2 C 35 25 48 52 44 84"/>
+          <path class="batang" d="M8 2 C 30 28 60 32 88 47"/>
+          <path class="batang" d="M22 14 C 34 32 30 52 19 67"/>
+          <path class="daun" transform="translate(26 40) rotate(35)"  d="M0 0 Q 6 -9 0 -19 Q -6 -9 0 0 Z"/>
+          <path class="daun" transform="translate(58 34) rotate(-40)" d="M0 0 Q 6 -9 0 -19 Q -6 -9 0 0 Z"/>
+          <path class="daun" transform="translate(35 62) rotate(75)"  d="M0 0 Q 5 -8 0 -16 Q -5 -8 0 0 Z"/>
+          <g transform="translate(44 86) scale(1)">
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(72)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(144)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(216)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(288)"/>
+            <circle class="teras" r="3.2"/>
+          </g>
+          <g transform="translate(90 48) scale(.78)">
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(72)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(144)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(216)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(288)"/>
+            <circle class="teras" r="3.2"/>
+          </g>
+          <g transform="translate(18 68) scale(.6)">
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(72)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(144)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(216)"/>
+            <ellipse class="kelopak" cx="0" cy="-7" rx="4.6" ry="8" transform="rotate(288)"/>
+            <circle class="teras" r="3.2"/>
+          </g>
+        </svg>
+      </span>
+
       <p id="nama-majlis" class="font-tangan text-2xl sm:text-3xl text-[color:var(--tema)] mb-1">Kenangan Manis</p>
       <h1 class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">
         Galeri Polaroid
