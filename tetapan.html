@@ -130,6 +130,25 @@
     .kad-pintas .tajuk { font-weight: 600; color: #b76e79; }
     .kad-pintas .subteks { font-size: .7rem; color: #a09088; }
 
+    /* ===== Wizard borang customize (satu langkah/skrin + penunjuk atas) ===== */
+    /* Penunjuk nombor langkah (atas) */
+    .stepper-atas { display: flex; list-style: none; padding: 0; margin: 0 0 1.4rem; }
+    .stepper-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: .35rem; position: relative; }
+    .stepper-item:not(:first-child)::before { content: ""; position: absolute; top: .9rem; left: -50%; right: 50%; height: 2px; background: #e0cfc2; z-index: 0; }
+    .stepper-item--aktif::before, .stepper-item--siap::before { background: #b76e79; }
+    .stepper-titik { position: relative; z-index: 1; width: 1.8rem; height: 1.8rem; border-radius: 9999px; background: #e7d3cb; color: #8a5a55; display: grid; place-items: center; font-weight: 600; font-size: .85rem; transition: background .2s ease; }
+    .stepper-item--aktif .stepper-titik { background: #b76e79; color: #fff; }
+    .stepper-item--siap .stepper-titik { background: #7c9070; color: #fff; }
+    .stepper-label { font-size: .7rem; color: #a09088; }
+    .stepper-item--aktif .stepper-label { color: #5a4a42; font-weight: 600; }
+    .stepper-item--siap { cursor: pointer; }
+    /* Papar satu langkah sahaja */
+    .langkah { display: none; }
+    .langkah--aktif { display: block; }
+    /* Butang kembali */
+    .btn-kembali { border: 1px solid #d9a5ac; color: #b76e79; border-radius: .75rem; padding: .75rem 1.1rem; font-weight: 500; background: #fff; transition: background .2s ease; }
+    .btn-kembali:hover { background: rgba(255,255,255,.7); }
+
     /* Kad cetak: tersembunyi di skrin, hanya muncul semasa cetak */
     .cetak-sahaja { display: none; }
 
@@ -209,6 +228,186 @@
     <!-- Kandungan majlis -->
     <div id="zon-majlis" class="hidden space-y-6">
 
+      <!-- Borang customize — wizard 3 langkah (satu langkah/skrin; lihat js/tetapan.js) -->
+      <form id="form-tetapan" class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5">
+
+        <!-- Penunjuk nombor langkah (atas) -->
+        <ol id="stepper-atas" class="stepper-atas">
+          <li class="stepper-item" data-lompat="1"><span class="stepper-titik">1</span><span class="stepper-label">URL</span></li>
+          <li class="stepper-item" data-lompat="2"><span class="stepper-titik">2</span><span class="stepper-label">Butiran</span></li>
+          <li class="stepper-item" data-lompat="3"><span class="stepper-titik">3</span><span class="stepper-label">Reka</span></li>
+          <li class="stepper-item" data-lompat="4"><span class="stepper-titik">4</span><span class="stepper-label">Kongsi</span></li>
+        </ol>
+
+        <!-- ===== Langkah 1: URL unik ===== -->
+        <section class="langkah" data-langkah="1">
+          <h3 class="font-serif-elegan text-xl font-semibold mb-3">URL unik majlis</h3>
+          <label class="block text-sm font-medium mb-1.5">URL unik majlis anda</label>
+          <div class="flex items-center gap-1 text-sm">
+            <span class="shrink-0 text-[#a09088]">.../e/</span>
+            <input id="c-slug" type="text" class="input-elok flex-1 min-w-0" placeholder="cth: ali-siti" autocomplete="off" />
+          </div>
+          <p id="slug-status" class="mt-1 text-xs h-4"></p>
+          <p class="text-[11px] text-[#a09088]">Huruf kecil, nombor &amp; tanda '-' sahaja. Contoh: <b>ali-siti</b></p>
+
+          <div class="mt-5">
+            <button type="button" class="btn-utama w-full rounded-xl py-3 font-medium" data-teruskan="1">Teruskan →</button>
+          </div>
+          <p class="kotak-ralat hidden mt-2 langkah-ralat" role="alert"></p>
+        </section>
+
+        <!-- ===== Langkah 2: Butiran majlis ===== -->
+        <section class="langkah" data-langkah="2">
+          <h3 class="font-serif-elegan text-xl font-semibold mb-3">Butiran majlis</h3>
+          <!-- Nama pasangan -->
+          <label class="block text-sm font-medium mb-1.5">Nama pasangan</label>
+          <input id="c-nama" type="text" maxlength="80" class="input-elok" placeholder="cth: Ali &amp; Siti" />
+
+          <!-- Tarikh majlis -->
+          <label class="block text-sm font-medium mb-1.5 mt-4">Tarikh majlis</label>
+          <input id="c-tarikh" type="date" class="input-elok" />
+
+          <!-- Mesej aluan -->
+          <label class="block text-sm font-medium mb-1.5 mt-4">Mesej aluan <span class="text-[#a09088] font-normal">(pilihan)</span></label>
+          <textarea id="c-welcome" rows="2" maxlength="200" class="input-elok resize-none" placeholder="cth: Terima kasih meraikan hari istimewa kami"></textarea>
+
+          <div class="flex gap-2 mt-5">
+            <button type="button" class="btn-kembali" data-kembali="2">← Kembali</button>
+            <button type="button" class="btn-utama flex-1 rounded-xl py-3 font-medium" data-teruskan="2">Teruskan →</button>
+          </div>
+          <p class="kotak-ralat hidden mt-2 langkah-ralat" role="alert"></p>
+        </section>
+
+        <!-- ===== Langkah 3: Reka bentuk ===== -->
+        <section class="langkah" data-langkah="3">
+          <h3 class="font-serif-elegan text-xl font-semibold mb-3">Reka bentuk</h3>
+          <!-- Tema warna -->
+          <label class="block text-sm font-medium mb-1.5">Tema warna</label>
+          <div id="swatches" class="flex flex-wrap items-center gap-2 mb-2"></div>
+          <div id="baris-warna-sendiri" class="flex items-center gap-2">
+            <input id="c-tema" type="color" value="#b76e79" class="h-9 w-14 rounded-lg border border-[#e5d5ca] bg-white cursor-pointer" />
+            <span class="text-xs text-[#a09088]">Atau pilih warna sendiri</span>
+          </div>
+          <!-- Nota kunci: warna sendiri hanya Premium ke atas (Basic guna pra-set) -->
+          <p id="tema-kunci" class="hidden mt-2 rounded-lg bg-[#fdf1e7] text-[#8a5a3a] text-xs px-3 py-2">
+            🔒 Pilih warna sendiri untuk pakej Premium ke atas. Anda masih boleh guna tema pra-set di atas.
+          </p>
+
+          <!-- Corak latar -->
+          <label class="block text-sm font-medium mb-1.5 mt-4">Corak latar</label>
+          <div id="latar-pilihan" class="grid grid-cols-3 gap-2.5"></div>
+          <p class="mt-1.5 text-xs text-[#a09088]">Corak diwarnakan ikut tema warna anda.</p>
+
+          <!-- Gaya font -->
+          <label class="block text-sm font-medium mb-1.5 mt-4">Gaya font</label>
+          <div id="fon-pilihan" class="grid grid-cols-2 gap-2.5"></div>
+          <p class="mt-1.5 text-xs text-[#a09088]">Font tajuk & teks halaman majlis anda.</p>
+          <!-- Nota kunci: pilihan font hanya Premium ke atas (Basic guna pra-set) -->
+          <p id="fon-kunci" class="hidden mt-2 rounded-lg bg-[#fdf1e7] text-[#8a5a3a] text-xs px-3 py-2">
+            🔒 Pilihan font untuk pakej Premium ke atas. Pakej Basic guna font tema pra-set.
+          </p>
+
+          <div class="flex gap-2 mt-5">
+            <button type="button" class="btn-kembali" data-kembali="3">← Kembali</button>
+            <button type="button" class="btn-utama flex-1 rounded-xl py-3 font-medium" data-teruskan="3">Teruskan →</button>
+          </div>
+          <p class="kotak-ralat hidden mt-2 langkah-ralat" role="alert"></p>
+        </section>
+
+        <!-- ===== Langkah 4: Kongsi (QR + Muat Turun) ===== -->
+        <section class="langkah" data-langkah="4">
+          <h3 class="font-serif-elegan text-xl font-semibold mb-3">Kongsi majlis</h3>
+
+          <!-- Kad QR -->
+          <div id="zon-qr" class="text-center">
+            <p class="text-xs text-[#a09088] mb-4">Tetamu imbas untuk muat naik gambar</p>
+            <div class="flex justify-center">
+              <div id="qrcode" class="rounded-xl bg-white p-4 shadow-sm"></div>
+            </div>
+            <a id="qr-url" target="_blank" rel="noopener"
+               class="mt-3 inline-block break-all text-xs text-[#b76e79] underline underline-offset-2 hover:text-[#a13a3a] py-1"></a>
+            <button id="butang-cetak" class="no-print btn-utama mt-4 rounded-xl px-5 py-2.5 text-sm font-medium">🖨️ Cetak Kad QR</button>
+            <p class="no-print mt-2 text-[11px] text-[#a09088] leading-relaxed">
+              Dalam dialog cetak, tandakan <b>“Background graphics”</b> / <b>“Grafik latar”</b>
+              supaya corak bunga turut dicetak.
+            </p>
+
+            <!-- Kongsi dengan tetamu — ayat jemputan sedia salin -->
+            <div class="no-print mt-5 border-t border-[#e5d5ca] pt-4 text-left">
+              <h4 class="font-serif-elegan text-lg font-semibold">Kongsi dengan tetamu</h4>
+              <p class="mt-1 text-xs text-[#a09088] leading-relaxed">
+                Kongsi kod QR atau pautan di atas kepada tetamu melalui WhatsApp,
+                kad jemputan, atau media sosial. Anda boleh guna ayat jemputan ini:
+              </p>
+              <p id="qr-ayat"
+                 class="mt-2 rounded-xl border border-[#e5d5ca] bg-[#fbf6f0] px-4 py-3 text-sm text-[#6b5c54] leading-relaxed whitespace-pre-line"></p>
+
+              <!-- Butang kongsi WhatsApp + salin ayat ke clipboard -->
+              <div class="mt-3 flex gap-2">
+                <button id="butang-kongsi-wa" type="button"
+                        class="btn-utama flex-1 rounded-xl py-2.5 text-sm font-medium">
+                  💬 Kongsi WhatsApp
+                </button>
+                <button id="butang-salin-ayat" type="button"
+                        class="shrink-0 rounded-xl border border-[#d9a5ac] px-4 py-2.5 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">
+                  📋 Salin
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Muat Turun Gambar (Premium) -->
+          <div class="mt-6 pt-6 border-t border-[#e5d5ca] text-center">
+            <div class="text-4xl mb-2">📦</div>
+            <h4 class="font-serif-elegan text-xl font-semibold mb-1">Muat Turun Gambar</h4>
+            <p class="text-xs text-[#a09088] mb-4 leading-relaxed">
+              Semua gambar tetamu dimampatkan jadi satu fail ZIP,
+              termasuk <strong>senarai-ucapan.csv</strong>.
+            </p>
+
+            <!-- Mesej berkunci (Basic / tidak aktif / tamat tempoh tangguh) -->
+            <div id="mt-kunci" class="hidden kotak-amaran mb-3"></div>
+
+            <!-- Nyahdaya secara LALAI (gagal-tertutup): hanya kemasKiniGateMuatTurun()
+                 dalam tetapan.js yang mendayakannya selepas kelayakan disahkan. -->
+            <button id="butang-muat-turun" disabled class="btn-utama w-full rounded-xl py-3.5 font-medium">
+              ⬇️ Muat Turun Semua Gambar
+            </button>
+
+            <!-- Bar progres -->
+            <div id="mt-bar-luar" class="bar-luar hidden mt-4">
+              <div id="mt-bar-dalam" class="bar-dalam"></div>
+            </div>
+
+            <!-- Kotak status -->
+            <div id="mt-status" class="kotak-status hidden mt-3" role="status" aria-live="polite"></div>
+
+            <!-- Pautan sandaran: jika pelayar menyekat muat turun automatik -->
+            <div id="mt-sandaran" class="hidden mt-3 text-sm">
+              <p class="text-xs text-[#a09088] mb-1.5">Fail tidak turun sendiri?</p>
+              <a id="mt-pautan" href="#" download
+                 class="inline-block rounded-xl border border-[#d9a5ac] px-4 py-2 font-medium text-[#b76e79] hover:bg-white/60 transition">
+                ⬇️ Klik di sini untuk simpan fail
+              </a>
+            </div>
+
+            <p class="mt-3 text-[11px] text-[#a09088] leading-relaxed">
+              Untuk set gambar yang besar, mampatan mungkin ambil sedikit masa.
+              Biarkan tab ini terbuka sehingga selesai.
+            </p>
+          </div>
+
+          <div class="flex gap-2 mt-6">
+            <button type="button" class="btn-kembali" data-kembali="4">← Kembali</button>
+          </div>
+        </section>
+
+        <!-- Ralat keras (cth majlis luput / gagal sambung) -->
+        <div id="simpan-ralat" class="hidden kotak-ralat" role="alert"></div>
+        <!-- Penunjuk auto-save: perubahan disimpan sendiri (tiada butang simpan) -->
+        <div id="status-simpan" class="h-5 text-sm text-[#a09088]" role="status" aria-live="polite"></div>
+      </form>
+
       <!-- Info pakej -->
       <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-4">
         <div class="grid grid-cols-3 gap-2 text-center text-sm">
@@ -238,76 +437,6 @@
         <div id="kad-pakej" class="grid gap-3 sm:grid-cols-3"></div>
       </div>
 
-      <!-- Borang customize -->
-      <form id="form-tetapan" class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 space-y-5">
-
-        <!-- URL unik -->
-        <div>
-          <label class="block text-sm font-medium mb-1.5">URL unik majlis anda</label>
-          <div class="flex items-center gap-1 text-sm">
-            <span class="shrink-0 text-[#a09088]">.../e/</span>
-            <input id="c-slug" type="text" class="input-elok flex-1 min-w-0" placeholder="cth: ali-siti" autocomplete="off" />
-          </div>
-          <p id="slug-status" class="mt-1 text-xs h-4"></p>
-          <p class="text-[11px] text-[#a09088]">Huruf kecil, nombor &amp; tanda '-' sahaja. Contoh: <b>ali-siti</b></p>
-        </div>
-
-        <!-- Nama pasangan -->
-        <div>
-          <label class="block text-sm font-medium mb-1.5">Nama pasangan</label>
-          <input id="c-nama" type="text" maxlength="80" class="input-elok" placeholder="cth: Ali &amp; Siti" />
-        </div>
-
-        <!-- Tarikh majlis -->
-        <div>
-          <label class="block text-sm font-medium mb-1.5">Tarikh majlis</label>
-          <input id="c-tarikh" type="date" class="input-elok" />
-        </div>
-
-        <!-- Tema warna -->
-        <div>
-          <label class="block text-sm font-medium mb-1.5">Tema warna</label>
-          <div id="swatches" class="flex flex-wrap items-center gap-2 mb-2"></div>
-          <div id="baris-warna-sendiri" class="flex items-center gap-2">
-            <input id="c-tema" type="color" value="#b76e79" class="h-9 w-14 rounded-lg border border-[#e5d5ca] bg-white cursor-pointer" />
-            <span class="text-xs text-[#a09088]">Atau pilih warna sendiri</span>
-          </div>
-          <!-- Nota kunci: warna sendiri hanya Premium ke atas (Basic guna pra-set) -->
-          <p id="tema-kunci" class="hidden mt-2 rounded-lg bg-[#fdf1e7] text-[#8a5a3a] text-xs px-3 py-2">
-            🔒 Pilih warna sendiri untuk pakej Premium ke atas. Anda masih boleh guna tema pra-set di atas.
-          </p>
-        </div>
-
-        <!-- Corak latar -->
-        <div>
-          <label class="block text-sm font-medium mb-1.5">Corak latar</label>
-          <div id="latar-pilihan" class="grid grid-cols-3 gap-2.5"></div>
-          <p class="mt-1.5 text-xs text-[#a09088]">Corak diwarnakan ikut tema warna anda.</p>
-        </div>
-
-        <!-- Gaya font -->
-        <div>
-          <label class="block text-sm font-medium mb-1.5">Gaya font</label>
-          <div id="fon-pilihan" class="grid grid-cols-2 gap-2.5"></div>
-          <p class="mt-1.5 text-xs text-[#a09088]">Font tajuk & teks halaman majlis anda.</p>
-          <!-- Nota kunci: pilihan font hanya Premium ke atas (Basic guna pra-set) -->
-          <p id="fon-kunci" class="hidden mt-2 rounded-lg bg-[#fdf1e7] text-[#8a5a3a] text-xs px-3 py-2">
-            🔒 Pilihan font untuk pakej Premium ke atas. Pakej Basic guna font tema pra-set.
-          </p>
-        </div>
-
-        <!-- Mesej aluan -->
-        <div>
-          <label class="block text-sm font-medium mb-1.5">Mesej aluan <span class="text-[#a09088] font-normal">(pilihan)</span></label>
-          <textarea id="c-welcome" rows="2" maxlength="200" class="input-elok resize-none" placeholder="cth: Terima kasih meraikan hari istimewa kami"></textarea>
-        </div>
-
-        <!-- Ralat keras (cth majlis luput / gagal sambung) -->
-        <div id="simpan-ralat" class="hidden kotak-ralat" role="alert"></div>
-        <!-- Penunjuk auto-save: perubahan disimpan sendiri (tiada butang simpan) -->
-        <div id="status-simpan" class="h-5 text-sm text-[#a09088]" role="status" aria-live="polite"></div>
-      </form>
-
       <!-- Pautan pantas -->
       <div class="grid grid-cols-2 gap-3">
         <a id="link-galeri" href="#" class="kad-pintas">
@@ -320,74 +449,6 @@
           <span class="tajuk">Panel Moderasi</span>
           <span class="subteks">Lulus / tolak gambar</span>
         </a>
-      </div>
-
-      <!-- Kad Muat Turun Gambar (Premium) -->
-      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 text-center">
-        <div class="text-4xl mb-2">📦</div>
-        <h2 class="font-serif-elegan text-2xl font-semibold mb-1">Muat Turun Gambar</h2>
-        <p class="text-xs text-[#a09088] mb-4 leading-relaxed">
-          Semua gambar tetamu dimampatkan jadi satu fail ZIP,
-          termasuk <strong>senarai-ucapan.csv</strong>.
-        </p>
-
-        <!-- Mesej berkunci (Basic / tidak aktif / tamat tempoh tangguh) -->
-        <div id="mt-kunci" class="hidden kotak-amaran mb-3"></div>
-
-        <!-- Nyahdaya secara LALAI (gagal-tertutup): hanya kemasKiniGateMuatTurun()
-             dalam tetapan.js yang mendayakannya selepas kelayakan disahkan. -->
-        <button id="butang-muat-turun" disabled class="btn-utama w-full rounded-xl py-3.5 font-medium">
-          ⬇️ Muat Turun Semua Gambar
-        </button>
-
-        <!-- Bar progres -->
-        <div id="mt-bar-luar" class="bar-luar hidden mt-4">
-          <div id="mt-bar-dalam" class="bar-dalam"></div>
-        </div>
-
-        <!-- Kotak status -->
-        <div id="mt-status" class="kotak-status hidden mt-3" role="status" aria-live="polite"></div>
-
-        <!-- Pautan sandaran: jika pelayar menyekat muat turun automatik -->
-        <div id="mt-sandaran" class="hidden mt-3 text-sm">
-          <p class="text-xs text-[#a09088] mb-1.5">Fail tidak turun sendiri?</p>
-          <a id="mt-pautan" href="#" download
-             class="inline-block rounded-xl border border-[#d9a5ac] px-4 py-2 font-medium text-[#b76e79] hover:bg-white/60 transition">
-            ⬇️ Klik di sini untuk simpan fail
-          </a>
-        </div>
-
-        <p class="mt-3 text-[11px] text-[#a09088] leading-relaxed">
-          Untuk set gambar yang besar, mampatan mungkin ambil sedikit masa.
-          Biarkan tab ini terbuka sehingga selesai.
-        </p>
-      </div>
-
-      <!-- Kad QR -->
-      <div id="zon-qr" class="hidden rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 text-center">
-        <h2 class="font-serif-elegan text-2xl font-semibold mb-1">Kod QR Majlis</h2>
-        <p class="text-xs text-[#a09088] mb-4">Tetamu imbas untuk muat naik gambar</p>
-        <div class="flex justify-center">
-          <div id="qrcode" class="rounded-xl bg-white p-4 shadow-sm"></div>
-        </div>
-        <a id="qr-url" target="_blank" rel="noopener"
-           class="mt-3 inline-block break-all text-xs text-[#b76e79] underline underline-offset-2 hover:text-[#a13a3a] py-1"></a>
-        <button id="butang-cetak" class="no-print btn-utama mt-4 rounded-xl px-5 py-2.5 text-sm font-medium">🖨️ Cetak Kad QR</button>
-        <p class="no-print mt-2 text-[11px] text-[#a09088] leading-relaxed">
-          Dalam dialog cetak, tandakan <b>“Background graphics”</b> / <b>“Grafik latar”</b>
-          supaya corak bunga turut dicetak.
-        </p>
-
-        <!-- Kongsi dengan tetamu — ayat jemputan sedia salin (paparan sahaja) -->
-        <div class="no-print mt-5 border-t border-[#e5d5ca] pt-4">
-          <h3 class="font-serif-elegan text-lg font-semibold">Kongsi dengan tetamu</h3>
-          <p class="mt-1 text-xs text-[#a09088] leading-relaxed">
-            Kongsi kod QR atau pautan di atas kepada tetamu melalui WhatsApp,
-            kad jemputan, atau media sosial. Anda boleh guna ayat jemputan ini:
-          </p>
-          <p id="qr-ayat"
-             class="mt-2 rounded-xl border border-[#e5d5ca] bg-[#fbf6f0] px-4 py-3 text-left text-sm text-[#6b5c54] leading-relaxed whitespace-pre-line"></p>
-        </div>
       </div>
 
     </div>

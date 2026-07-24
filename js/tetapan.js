@@ -105,6 +105,8 @@ const zonQr = document.getElementById("zon-qr");
 const qrcodeEl = document.getElementById("qrcode");
 const qrUrl = document.getElementById("qr-url");
 const qrAyat = document.getElementById("qr-ayat");
+const butangKongsiWa = document.getElementById("butang-kongsi-wa");
+const butangSalinAyat = document.getElementById("butang-salin-ayat");
 const butangCetak = document.getElementById("butang-cetak");
 
 // --- DOM: kad cetak (tersembunyi di skrin, muncul semasa @media print) ---
@@ -120,6 +122,20 @@ let eventData = null; // data majlis semasa
 let slugSah = false;  // adakah slug semasa dalam input sah & tersedia
 let latarDipilih = "bunga"; // id corak latar terpilih
 let fonDipilih = "klasik-elegan"; // id pasangan font terpilih (lalai = rose-gold)
+
+// --- Keadaan wizard (borang customize 4 langkah, satu langkah/skrin) ---
+//  Langkah 1-3 = medan (ada `siap`); Langkah 4 = Kongsi (QR + Muat Turun),
+//  langkah papar yang boleh dicapai selepas 3 langkah medan siap.
+const langkahEl = {};                            // {1:<section>, .., 4:..}
+const stepperItem = {};                          // {1:<li>, .., 4:..} penunjuk atas
+const siap = { 1: false, 2: false, 3: false };   // langkah medan selesai?
+let langkahAktif = 1;                            // langkah yang sedang dipapar (1..4)
+formTetapan.querySelectorAll(".langkah").forEach((el) => {
+  langkahEl[el.dataset.langkah] = el;
+});
+formTetapan.querySelectorAll(".stepper-item").forEach((el) => {
+  stepperItem[el.dataset.lompat] = el;
+});
 
 // ------------------------------------------------------------
 //  UTILITI
@@ -297,6 +313,17 @@ function isiBorang() {
 
   // QR
   kemasKiniQr();
+
+  // --- Keadaan awal wizard ---
+  // Majlis sedia dikonfigurasi → mula Langkah 1, semua bulatan hijau (boleh
+  // diklik lompat), QR + Muat Turun terus nampak. Majlis baru → mula Langkah 1
+  // kosong, penunjuk kelabu, QR/Muat Turun tersembunyi sampai Selesai.
+  const adaData = !!(eventData.slug || (eventData.coupleName || "").trim()
+                     || eventData.weddingDate || eventData.welcomeMessage);
+  siap[1] = !!eventData.slug;
+  siap[2] = !!(eventData.coupleName || "").trim();
+  siap[3] = adaData; // reka bentuk ada nilai lalai → dikira siap utk majlis sedia ada
+  bukaLangkah(adaData ? (pertamaBelum() || 1) : 1);
 }
 
 // ------------------------------------------------------------
@@ -490,6 +517,103 @@ function terapGatingTema() {
     fonPilihan.classList.toggle("pointer-events-none", !boleh);
     if (fonKunci) fonKunci.classList.toggle("hidden", boleh);
   }
+}
+
+// ------------------------------------------------------------
+//  WIZARD — borang customize 3 langkah (satu langkah/skrin)
+// ------------------------------------------------------------
+//  Langkah 1: URL unik  |  Langkah 2: Butiran  |  Langkah 3: Reka bentuk.
+//  Penunjuk nombor di atas: aktif (rose) / siap (hijau ✓) / belum (kelabu).
+//  Auto-save sedia ada dikekalkan; "Teruskan" hanya flush simpan & maju.
+//  Bulatan siap boleh diklik untuk lompat balik; belum-siap tak boleh.
+// ------------------------------------------------------------
+
+// Langkah pertama yang belum siap (0 jika semua siap).
+function pertamaBelum() {
+  return [1, 2, 3].find((n) => !siap[n]) || 0;
+}
+function semuaSiap() {
+  return siap[1] && siap[2] && siap[3];
+}
+
+// Adakah langkah n boleh diteruskan (validasi minimum)?
+function bolehTeruskan(n) {
+  if (n === 1) return slugSah && bersihkanSlug(cSlug.value).length >= 3;
+  if (n === 2) return cNama.value.trim().length > 0;
+  return true; // Langkah 3 sentiasa sah (ada nilai lalai)
+}
+
+// Adakah langkah n boleh dicapai (untuk lompat/klik penunjuk)?
+//  1-3: bila langkah itu sudah siap.  4 (Kongsi): bila ketiga-tiga siap.
+function bolehCapai(n) {
+  return n === 4 ? semuaSiap() : siap[n];
+}
+
+// Render penunjuk atas + papar SATU langkah aktif (satu sumber kebenaran).
+function kemasStepper() {
+  for (const n of [1, 2, 3, 4]) {
+    if (langkahEl[n]) langkahEl[n].classList.toggle("langkah--aktif", n === langkahAktif);
+    const it = stepperItem[n];
+    if (!it) continue;
+    const aktif = n === langkahAktif;
+    // Langkah 4 (Kongsi) bukan langkah medan — tiada ✓, nombor kekal; hijau =
+    // boleh dicapai. Langkah 1-3: hijau + ✓ bila siap & bukan aktif.
+    const capaiHijau = n === 4 ? (semuaSiap() && !aktif) : (siap[n] && !aktif);
+    it.classList.toggle("stepper-item--aktif", aktif);
+    it.classList.toggle("stepper-item--siap", capaiHijau);
+    const t = it.querySelector(".stepper-titik");
+    if (t) t.textContent = (n !== 4 && capaiHijau) ? "✓" : String(n); // textContent — selamat XSS
+  }
+}
+
+// Papar langkah n (1..4); yang lain disorok.
+function bukaLangkah(n) {
+  langkahAktif = n;
+  kemasStepper();
+  if (langkahEl[n]) formTetapan.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// Klik bulatan penunjuk — hanya langkah yang boleh dicapai.
+function lompatLangkah(n) {
+  if (bolehCapai(n)) bukaLangkah(n);
+}
+
+// Butang "← Kembali" — undur satu langkah (tiada validasi).
+function kembaliLangkah(n) {
+  if (n > 1) bukaLangkah(n - 1);
+}
+
+// "Teruskan" — sahkan, flush simpan, tanda siap, maju ke langkah seterusnya.
+async function teruskanLangkah(n) {
+  const ralat = langkahEl[n] && langkahEl[n].querySelector(".langkah-ralat");
+  if (ralat) ralat.classList.add("hidden");
+
+  if (!bolehTeruskan(n)) {
+    if (ralat) {
+      ralat.textContent = n === 1
+        ? "Sila pilih URL yang sah dan tersedia dahulu."
+        : "Sila isi nama pasangan dahulu.";
+      ralat.classList.remove("hidden");
+    }
+    return;
+  }
+
+  // Flush simpan supaya tiada perubahan tertinggal semasa maju.
+  if (n === 1) {
+    if (bersihkanSlug(cSlug.value) !== (eventData?.slug || "")) await simpanSlug();
+    if (!slugSah) {
+      if (ralat) {
+        ralat.textContent = "Gagal menyimpan URL. Cuba lagi.";
+        ralat.classList.remove("hidden");
+      }
+      return;
+    }
+  } else {
+    await simpanMedanBiasa();
+  }
+
+  siap[n] = true;
+  bukaLangkah(n + 1); // Langkah 3 → 4 (Kongsi: QR + Muat Turun)
 }
 
 // ------------------------------------------------------------
@@ -776,13 +900,16 @@ async function simpanMedanBiasa() {
 // Simpan slug — dipanggil pada 'blur'. Guna laluan batch atomik:
 // tempah slugs/{slug} + kemas kini events. Membuat semakan getDoc sendiri
 // (autoritatif) supaya kekal betul walaupun semakan debounce belum selesai.
+let sedangSimpanSlug = false; // pengawal in-flight: elak blur + "Teruskan" simpan berganda
 async function simpanSlug() {
   if (!eventId) return;
   const slugBaru = bersihkanSlug(cSlug.value);
   const slugLama = eventData?.slug || "";
   if (!slugBaru || slugBaru.length < 3) return; // slugStatus sudah papar sebab
   if (slugBaru === slugLama) return;             // tiada perubahan
+  if (sedangSimpanSlug) return;                  // simpanan sedang berjalan
 
+  sedangSimpanSlug = true;
   simpanRalat.classList.add("hidden");
   tunjukStatusSimpan("menyimpan");
   slugStatus.textContent = "menyimpan…";
@@ -814,6 +941,8 @@ async function simpanSlug() {
       : "Gagal menyimpan URL. Cuba lagi.";
     slugStatus.className = "mt-1 text-xs h-4 text-red-500";
     tunjukStatusSimpan("gagal");
+  } finally {
+    sedangSimpanSlug = false;
   }
 }
 
@@ -830,30 +959,40 @@ formTetapan.addEventListener("submit", (e) => {
   simpanSlug();
 });
 
+// Delegasi klik wizard: Teruskan/Selesai, Kembali, & lompat penunjuk atas.
+formTetapan.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-teruskan]");
+  if (t) { teruskanLangkah(Number(t.dataset.teruskan)); return; }
+  const k = e.target.closest("[data-kembali]");
+  if (k) { kembaliLangkah(Number(k.dataset.kembali)); return; }
+  const l = e.target.closest("[data-lompat]");
+  if (l) lompatLangkah(Number(l.dataset.lompat));
+});
+
 // ------------------------------------------------------------
 //  QR ke halaman landing majlis
 // ------------------------------------------------------------
 let qr = null;
+let ayatJemputan = ""; // ayat jemputan terkini (dikongsi butang WhatsApp & Salin)
 function kemasKiniQr() {
-  if (!eventData?.slug) {
-    zonQr.classList.add("hidden");
-    return;
-  }
+  // Keterlihatan QR dikawal oleh keaktifan Langkah 4 (kemasStepper), bukan di sini.
+  // Tanpa slug tiada apa nak dibina — biar Langkah 4 kekal kosong (tak tercapai).
+  if (!eventData?.slug) return;
   // URL landing awam: e.html?e=<slug> di lokasi hos semasa
   const urlLanding = new URL(`e.html?e=${encodeURIComponent(eventData.slug)}`, window.location.href).href;
-  zonQr.classList.remove("hidden");
   qrUrl.textContent = urlLanding;
   qrUrl.href = urlLanding;
 
   // Contoh ayat jemputan (paparan sahaja) — isi nama & pautan sebenar.
   // textContent, bukan innerHTML: coupleName boleh diubah pengguna.
   const namaMajlis = eventData.coupleName || "kami";
-  qrAyat.textContent =
+  ayatJemputan =
     "Assalamualaikum & Salam Sejahtera 🤍\n\n" +
     `Jemput kongsi gambar & ucapan di majlis ${namaMajlis}!\n` +
     "Imbas QR atau klik pautan untuk muat naik terus dari telefon:\n" +
     `${urlLanding}\n\n` +
     "Terima kasih meraikan hari istimewa kami 💐";
+  qrAyat.textContent = ayatJemputan;
 
   qrcodeEl.innerHTML = "";
   qr = new QRCode(qrcodeEl, {
@@ -908,4 +1047,32 @@ function isiKadCetak(urlLanding) {
 butangCetak.addEventListener("click", () => {
   if (!eventData?.slug) return; // tiada slug -> kad kosong; #zon-qr pun tersembunyi
   window.print();
+});
+
+// Kongsi ayat jemputan terus ke WhatsApp (pemilih penerima muncul;
+// berfungsi di telefon & WhatsApp Web).
+butangKongsiWa.addEventListener("click", () => {
+  if (!ayatJemputan) return;
+  window.open("https://wa.me/?text=" + encodeURIComponent(ayatJemputan), "_blank", "noopener");
+});
+
+// Salin ayat jemputan ke clipboard, dengan fallback untuk pelayar lama
+// / konteks bukan-HTTPS (cth localhost) di mana navigator.clipboard tiada.
+butangSalinAyat.addEventListener("click", async () => {
+  if (!ayatJemputan) return;
+  try {
+    await navigator.clipboard.writeText(ayatJemputan);
+  } catch {
+    const ta = document.createElement("textarea");
+    ta.value = ayatJemputan;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+  const asal = butangSalinAyat.textContent;
+  butangSalinAyat.textContent = "✓ Disalin";
+  setTimeout(() => { butangSalinAyat.textContent = asal; }, 1500);
 });
