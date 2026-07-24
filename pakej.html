@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pilih Pakej · Polaroid Wedding</title>
+
+  <!-- Tailwind CSS melalui CDN (tiada langkah build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Cormorant Garamond (tajuk) + Caveat (tulisan tangan) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* Halaman jualan — tiada majlis untuk apply tema, jadi guna
+       palet Rose Gold hardcoded (ikut konvensyen tetapan.html). */
+    body {
+      background:
+        radial-gradient(1200px 600px at 50% -10%, #fbeef0 0%, transparent 60%),
+        linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
+      background-color: #fdf8f3;
+      color: #5a4a42;
+      min-height: 100vh;
+    }
+    .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
+    .font-tangan { font-family: 'Caveat', cursive; }
+
+    .btn-utama {
+      background: linear-gradient(135deg, #c07f89 0%, #b76e79 100%);
+      color: #fff;
+      transition: transform .15s ease, box-shadow .2s ease, opacity .2s;
+      box-shadow: 0 8px 20px -6px rgba(183,110,121,.6);
+    }
+    .btn-utama:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-utama:disabled { opacity: .5; cursor: not-allowed; }
+
+    .btn-kedua {
+      border: 1px solid #d9a5ac;
+      background: rgba(255,255,255,.85);
+      color: #b76e79;
+      transition: background .2s ease;
+    }
+    .btn-kedua:hover:not(:disabled) { background: #fff; }
+    .btn-kedua:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Butang WhatsApp (warna jenama) */
+    .btn-wasap {
+      background: #25D366;
+      color: #fff;
+      transition: transform .15s ease, box-shadow .2s ease, opacity .2s;
+      box-shadow: 0 8px 20px -6px rgba(37,211,102,.6);
+    }
+    .btn-wasap:hover { transform: translateY(-1px); }
+
+    .input-elok {
+      width: 100%;
+      border-radius: 0.75rem;
+      border: 1px solid #e5d5ca;
+      background: rgba(255,255,255,0.75);
+      padding: 0.65rem 0.9rem;
+    }
+    .input-elok:focus { border-color: #b76e79; outline: none; box-shadow: 0 0 0 2px rgba(217,165,172,.5); }
+
+    .kotak-amaran { background:#fdf1e7; color:#8a5a3a; border-radius:12px; padding:10px 14px; font-size:.9rem; text-align:center; }
+
+    /* Penunjuk kemajuan — bulatan bernombor */
+    .langkah-bulat {
+      width: 2rem; height: 2rem; border-radius: 9999px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; font-weight: 600;
+      background: #eee6de; color: #a09088;
+      border: 2px solid transparent;
+      transition: all .2s ease;
+    }
+    .langkah-bulat.aktif { background: #b76e79; color: #fff; }
+    .langkah-bulat.selesai { background: #fff; color: #b76e79; border-color: #b76e79; }
+    .langkah-garis { flex: 1 1 auto; height: 2px; background: #e5d5ca; }
+    .langkah-garis.selesai { background: #b76e79; }
+  </style>
+</head>
+
+<body class="antialiased">
+
+  <main class="mx-auto w-full max-w-2xl px-4 sm:px-6 py-8 sm:py-12">
+
+    <!-- Tajuk -->
+    <header class="text-center mb-6">
+      <p class="font-tangan text-2xl text-[#b76e79] mb-1">Buat Majlis Anda Sendiri</p>
+      <h1 class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">Pilih Pakej</h1>
+      <p class="mt-2 text-sm text-[#8a7a70]">Ikut langkah 1 hingga 4 — mudah &amp; pantas.</p>
+    </header>
+
+    <!-- Penunjuk kemajuan -->
+    <div id="penunjuk" class="flex items-center gap-2 mb-8 max-w-md mx-auto">
+      <div class="langkah-bulat aktif" data-bulat="1">1</div>
+      <div class="langkah-garis" data-garis="1"></div>
+      <div class="langkah-bulat" data-bulat="2">2</div>
+      <div class="langkah-garis" data-garis="2"></div>
+      <div class="langkah-bulat" data-bulat="3">3</div>
+      <div class="langkah-garis" data-garis="3"></div>
+      <div class="langkah-bulat" data-bulat="4">4</div>
+    </div>
+
+    <!-- ============ LANGKAH 1: Pilih Pakej ============ -->
+    <section id="langkah-1" class="langkah">
+      <h2 class="font-serif-elegan text-2xl font-semibold mb-1 text-center">Langkah 1 — Pilih Pakej</h2>
+      <p class="text-xs text-[#a09088] mb-4 text-center">Tekan "Pilih" pada pakej yang anda mahu.</p>
+      <div id="kad-pakej" class="grid gap-3 sm:grid-cols-3"></div>
+    </section>
+
+    <!-- ============ LANGKAH 2: Maklumat Majlis ============ -->
+    <section id="langkah-2" class="langkah hidden">
+      <h2 class="font-serif-elegan text-2xl font-semibold mb-1 text-center">Langkah 2 — Maklumat Majlis</h2>
+      <p class="text-xs text-[#a09088] mb-4 text-center">Butiran ini akan dipapar pada halaman majlis anda.</p>
+      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 space-y-4">
+        <div>
+          <label for="w-nama-pasangan" class="block text-sm font-medium mb-1.5">Nama pasangan <span class="text-[#b76e79]">*</span></label>
+          <input id="w-nama-pasangan" type="text" maxlength="80" class="input-elok" placeholder="cth: Ali &amp; Siti" />
+        </div>
+        <div>
+          <label for="w-tarikh" class="block text-sm font-medium mb-1.5">Tarikh majlis <span class="text-[#b76e79]">*</span></label>
+          <input id="w-tarikh" type="date" class="input-elok" />
+        </div>
+        <div>
+          <label for="w-slug" class="block text-sm font-medium mb-1.5">URL pilihan <span class="text-[#a09088] font-normal">(pilihan)</span></label>
+          <div class="flex items-center gap-1 text-sm">
+            <span class="text-[#a09088]">.../e/</span>
+            <input id="w-slug" type="text" class="input-elok" placeholder="cth: ali-siti" autocomplete="off" />
+          </div>
+          <p class="mt-1 text-[11px] text-[#a09088]">Huruf kecil, nombor &amp; tanda '-' sahaja. Admin akan sahkan URL akhir.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LANGKAH 3: Maklumat Anda ============ -->
+    <section id="langkah-3" class="langkah hidden">
+      <h2 class="font-serif-elegan text-2xl font-semibold mb-1 text-center">Langkah 3 — Maklumat Anda</h2>
+      <p class="text-xs text-[#a09088] mb-4 text-center">Supaya admin boleh hubungi anda untuk setup selepas bayaran.</p>
+      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 space-y-4">
+        <div>
+          <label for="w-nama-anda" class="block text-sm font-medium mb-1.5">Nama anda <span class="text-[#b76e79]">*</span></label>
+          <input id="w-nama-anda" type="text" maxlength="80" class="input-elok" placeholder="cth: Ahmad" />
+        </div>
+        <div>
+          <label for="w-telefon" class="block text-sm font-medium mb-1.5">No. telefon (WhatsApp) <span class="text-[#b76e79]">*</span></label>
+          <input id="w-telefon" type="tel" inputmode="tel" class="input-elok" placeholder="cth: 012-3456789" />
+        </div>
+        <div>
+          <label for="w-emel" class="block text-sm font-medium mb-1.5">Emel <span class="text-[#a09088] font-normal">(pilihan)</span></label>
+          <input id="w-emel" type="email" class="input-elok" placeholder="cth: nama@email.com" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LANGKAH 4: Ringkasan ============ -->
+    <section id="langkah-4" class="langkah hidden">
+      <h2 class="font-serif-elegan text-2xl font-semibold mb-1 text-center">Langkah 4 — Ringkasan</h2>
+      <p class="text-xs text-[#a09088] mb-4 text-center">Semak butiran, kemudian teruskan ke WhatsApp untuk tempah.</p>
+      <div id="ringkasan" class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 space-y-2 text-sm"></div>
+
+      <a id="butang-wasap" href="#" target="_blank" rel="noopener"
+         class="btn-wasap mt-5 flex items-center justify-center gap-2 w-full rounded-xl py-4 font-semibold text-base">
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true">
+          <path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.28-1.38a9.86 9.86 0 004.76 1.21h.004c5.46 0 9.9-4.44 9.9-9.9 0-2.64-1.03-5.13-2.9-7A9.82 9.82 0 0012.04 2zm5.8 14.06c-.24.68-1.4 1.3-1.93 1.35-.5.05-1.13.07-1.82-.11-.42-.13-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.36-.14-.19-1.18-1.57-1.18-2.99 0-1.42.75-2.12 1.01-2.41.26-.29.57-.36.76-.36l.55.01c.18.01.41-.07.64.49.24.57.81 1.99.88 2.13.07.14.12.31.02.5-.09.19-.14.31-.28.48-.14.17-.29.37-.42.5-.14.14-.28.29-.12.57.16.28.72 1.18 1.54 1.91 1.06.95 1.96 1.24 2.24 1.38.28.14.44.12.6-.07.16-.19.69-.8.87-1.08.18-.28.36-.23.61-.14.25.09 1.6.76 1.87.9.28.14.46.21.53.33.07.12.07.68-.17 1.36z"/>
+        </svg>
+        Teruskan ke WhatsApp
+      </a>
+      <p id="wasap-nota" class="mt-2 text-center text-[11px] text-[#a09088]"></p>
+    </section>
+
+    <!-- Mesej amaran validasi -->
+    <div id="wizard-amaran" class="hidden kotak-amaran mt-5 max-w-md mx-auto"></div>
+
+    <!-- Navigasi -->
+    <div class="mt-6 flex items-center justify-between gap-3 max-w-md mx-auto">
+      <button id="butang-kembali" type="button"
+        class="btn-kedua rounded-xl px-5 py-3 font-medium invisible">← Kembali</button>
+      <button id="butang-seterusnya" type="button"
+        class="btn-utama rounded-xl px-6 py-3 font-medium">Seterusnya →</button>
+    </div>
+
+    <p class="mt-8 text-center text-xs text-[#a09088]">
+      Sudah ada akaun? <a href="tetapan.html" class="text-[#b76e79] hover:underline">Log masuk di sini</a>.
+    </p>
+
+  </main>
+
+  <script type="module" src="js/pakej.js"></script>
+</body>
+</html>

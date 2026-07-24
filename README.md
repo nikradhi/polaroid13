@@ -41,17 +41,31 @@ Galeri / Live Wall papar gambar · Pelanggan moderasi di admin.html
 
 ## 📦 Pakej & Had
 
-| Ciri | Basic | Premium |
-|---|---|---|
-| Had gambar | **100** | Tanpa had |
-| Tempoh aktif | **14 hari** | **30 hari** |
-| Galeri polaroid | ✅ | ✅ |
-| Live Wall (projektor) | ❌ | ✅ |
-| Muat turun ZIP | ❌ | ✅ |
-| Panel moderasi | ✅ | ✅ |
+| Ciri | Basic | Premium | Eksklusif |
+|---|---|---|---|
+| Had gambar | **300** | Tanpa had | Tanpa had |
+| Tempoh aktif | **14 hari** | **60 hari** | **1 tahun** |
+| Galeri polaroid | ✅ | ✅ | ✅ |
+| Kod QR | ✅ | ✅ | ✅ |
+| Panel moderasi | ✅ | ✅ | ✅ |
+| Muat turun gambar individu | ✅ | ✅ | ✅ |
+| Muat turun semua (ZIP) | ❌ | ✅ | ✅ |
+| Live Wall (projektor) | ❌ | ✅ | ✅ |
+| Tema pra-set | ✅ | ✅ | ✅ |
+| Kustom warna & font | ❌ | ✅ | ✅ |
+| Ucapan/guestbook digital | ❌ | ✅ | ✅ |
+| Muzik latar | ❌ | ❌ | ✅ *(akan datang)* |
+| Voice recording tetamu | ❌ | ❌ | ⏳ *(akan datang)* |
+
+> **Satu sumber kebenaran:** semua had & ciri di atas ditakrifkan dalam
+> [`js/packages.js`](js/packages.js) (objek `PAKEJ`). Nak laras had Basic dari 300 ke
+> 400? Ubah **satu** nilai di situ. Semakan pakej pula dipusatkan dalam
+> [`js/gating.js`](js/gating.js) (`bolehGuna`, `bolehUploadLagi`, `bakiGambar`, …).
 
 **Had gambar dan tarikh luput dikuatkuasakan dalam Firestore Security Rules** — bukan
 frontend sahaja. Tetamu yang cuba memintas antara muka tetap ditolak oleh pelayan.
+Rules bersifat *tier-agnostik* (bandingkan `photoCount <= photoLimit` secara nombor),
+jadi pakej baru berfungsi automatik selagi admin menetapkan `photoLimit`/`expiresAt`.
 
 > Live Wall & muat turun ZIP ialah operasi *baca* sahaja, jadi gate **pakej** disekat di
 > frontend. Yang dikuatkuasa oleh rules ialah **pemilikan**: muat turun ZIP berada dalam

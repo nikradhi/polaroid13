@@ -12,3 +12,6 @@ Desktop.ini
 *.log
 *.tmp
 node_modules/
+
+# Artifak ujian Playwright (snapshot/screenshot)
+.playwright-mcp/

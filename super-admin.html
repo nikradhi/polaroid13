@@ -181,8 +181,9 @@
         <div>
           <label class="block text-sm font-medium mb-1.5">Pakej</label>
           <select id="c-pakej" class="input-elok">
-            <option value="basic">Basic — 100 gambar, 14 hari</option>
-            <option value="premium">Premium — tanpa had, Live Wall + ZIP, 30 hari</option>
+            <option value="basic">Basic — 300 gambar, 14 hari</option>
+            <option value="premium">Premium — tanpa had, Live Wall + ZIP, 60 hari</option>
+            <option value="eksklusif">Eksklusif — tanpa had, semua ciri, 1 tahun</option>
           </select>
         </div>
         <div class="sm:col-span-2">
@@ -196,6 +197,11 @@
     <!-- ====== Senarai pelanggan ====== -->
     <h2 class="font-serif-elegan text-2xl font-semibold mb-3">Senarai Majlis</h2>
 
+    <!-- Carian: tapis ikut nama, emel, atau URL (sisi-klien) -->
+    <input id="input-cari" type="search" placeholder="Cari nama, emel, atau URL…"
+      class="w-full rounded-xl border border-[#e5d5ca] bg-white/70 px-4 py-2.5 text-sm mb-4
+             focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]" />
+
     <div id="zon-memuat" class="hidden text-center py-12">
       <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#e5d5ca] border-t-[#b76e79]"></div>
       <p class="mt-3 text-sm text-[#a09088]">Memuatkan…</p>
@@ -204,9 +210,20 @@
       <div class="text-5xl mb-3">🗂️</div>
       <p class="text-[#8a7a70]">Belum ada pelanggan. Cipta yang pertama di atas.</p>
     </div>
+    <div id="zon-tiada-carian" class="hidden text-center py-12">
+      <div class="text-5xl mb-3">🔍</div>
+      <p class="text-[#8a7a70]">Tiada majlis padan dengan carian anda.</p>
+    </div>
 
     <!-- Kad (mobile) + jadual (desktop) diisi oleh JS -->
     <div id="senarai" class="space-y-3"></div>
+
+    <div class="text-center mt-4">
+      <button id="butang-muat-lebih" type="button"
+        class="hidden rounded-xl border border-[#d9a5ac] px-6 py-2.5 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">
+        Muat lebih
+      </button>
+    </div>
   </section>
 
   <script type="module" src="js/super-admin.js"></script>

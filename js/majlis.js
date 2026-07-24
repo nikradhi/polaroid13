@@ -15,9 +15,13 @@
 
 import { db, doc, getDoc } from "./firebase.js";
 import { terapTemaMajlis } from "./tema.js";
-
-// Ambang "tanpa had" — selaras dengan super-admin.js
-export const HAD_TANPA_HAD = 100000;
+// Ambang "tanpa had" — SATU SUMBER KEBENARAN dalam js/packages.js.
+// Kekal di-eksport semula di sini supaya pemanggil sedia ada
+// (yang import { HAD_TANPA_HAD } from "./majlis.js") tidak rosak.
+// PENTING: majlis.js import dari packages.js SAHAJA (bukan gating.js)
+// untuk elak pusingan import (gating.js -> majlis.js).
+import { HAD_TANPA_HAD, PAKEJ, PAKEJ_LALAI } from "./packages.js";
+export { HAD_TANPA_HAD };
 
 // Tempoh tangguh muat turun: pengantin masih boleh kutip gambar
 // selama 30 hari SELEPAS majlis tamat tempoh. (expiresAt menutup
@@ -80,6 +84,14 @@ export function adalahPremium(ev) {
   return ev?.package === "premium";
 }
 
+// Semakan ciri ringkas tanpa bergantung pada gating.js (elak pusingan
+// import). Untuk semakan umum di halaman lain, guna bolehGuna() dari
+// js/gating.js — ini versi dalaman untuk bolehMuatTurun sahaja.
+function cirianEvent(ev, namaCiri) {
+  const id = PAKEJ[ev?.package] ? ev.package : PAKEJ_LALAI;
+  return !!PAKEJ[id].ciri?.[namaCiri];
+}
+
 export function kuotaPenuh(ev) {
   if (!ev) return false;
   const had = Number(ev.photoLimit ?? 0);
@@ -122,10 +134,10 @@ export function bolehMuatTurun(ev) {
       sebab: `Tempoh muat turun telah tamat (${HARI_TANGGUH} hari selepas majlis). Hubungi admin untuk melanjutkan.`,
     };
   }
-  if (!adalahPremium(ev)) {
+  if (!cirianEvent(ev, "downloadZip")) {
     return {
       boleh: false,
-      sebab: "Muat turun ZIP hanya untuk pakej Premium. Naik taraf untuk menggunakan ciri ini.",
+      sebab: "Muat turun ZIP hanya untuk pakej Premium ke atas. Naik taraf untuk menggunakan ciri ini.",
     };
   }
   return { boleh: true, sebab: "" };

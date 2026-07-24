@@ -26,10 +26,10 @@ import {
   dapatEventId,
   muatEvent,
   majlisAktif,
-  kuotaPenuh,
   terapTema,
   mesejMajlisTakBoleh,
 } from "./majlis.js";
+import { bolehUploadLagi, bakiGambar, tanpaHad } from "./gating.js";
 
 pasangGayaPolaroid();
 
@@ -61,6 +61,7 @@ const zonMajlisRalat = document.getElementById("zon-majlis-ralat");
 const majlisRalatTajuk = document.getElementById("majlis-ralat-tajuk");
 const majlisRalatMesej = document.getElementById("majlis-ralat-mesej");
 const namaMajlis = document.getElementById("nama-majlis");
+const bakiKuota = document.getElementById("baki-kuota");
 const footerGaleri = document.querySelector("footer a[href*='gallery']");
 const pautanGaleriTk = document.querySelector("#zon-terima-kasih a[href*='gallery']");
 
@@ -91,6 +92,31 @@ function sekatBorang(tajuk, mesej) {
 }
 
 // ------------------------------------------------------------
+//  PAPAR BAKI KUOTA (hanya pakej berhad, cth Basic)
+// ------------------------------------------------------------
+//  Pakej tanpa had (Premium/Eksklusif) tidak papar apa-apa.
+//  Bila baki rendah, tunjuk amaran mesra supaya tetamu tahu
+//  ruang hampir habis (bukan mesej mengasarkan).
+// ------------------------------------------------------------
+function paparBakiKuota(ev) {
+  if (!bakiKuota) return;
+  if (tanpaHad(ev)) {
+    bakiKuota.classList.add("hidden");
+    return;
+  }
+  const baki = bakiGambar(ev);
+  const rendah = baki <= 20;
+  bakiKuota.textContent = rendah
+    ? `📸 Tinggal ${baki} ruang gambar lagi — jangan lepaskan peluang!`
+    : `📸 Baki ruang gambar: ${baki}`;
+  bakiKuota.className =
+    "rounded-xl px-4 py-2.5 text-sm text-center " +
+    (rendah
+      ? "bg-[#fdf1e7] text-[#8a5a3a]"
+      : "bg-[color:var(--tema-lembut,#f6ece6)] text-[color:var(--warna-teks-lembut,#8a7a70)]");
+}
+
+// ------------------------------------------------------------
 //  MULAKAN: muat majlis dari ?e=<eventId>
 // ------------------------------------------------------------
 (async function mulakanMajlis() {
@@ -99,6 +125,8 @@ function sekatBorang(tajuk, mesej) {
       "Pautan tidak lengkap",
       "Sila imbas kod QR majlis untuk muat naik gambar."
     );
+    // Bakal pelanggan (bukan tetamu majlis) — tawarkan CTA pilih pakej.
+    document.getElementById("cta-pakej")?.classList.remove("hidden");
     return;
   }
   try {
@@ -116,10 +144,10 @@ function sekatBorang(tajuk, mesej) {
     sekatBorang("Majlis tidak tersedia", mesejMajlisTakBoleh(majlis));
     return;
   }
-  if (kuotaPenuh(majlis)) {
+  if (!bolehUploadLagi(majlis)) {
     sekatBorang(
-      "Kuota gambar penuh",
-      `Majlis ini telah mencapai had ${majlis.photoLimit} gambar. Terima kasih!`
+      "Kuota gambar telah penuh",
+      "Ruang gambar untuk majlis ini sudah penuh. Terima kasih kerana berkongsi detik indah bersama! 💛"
     );
     return;
   }
@@ -127,6 +155,7 @@ function sekatBorang(tajuk, mesej) {
   // Majlis sah — peribadikan halaman
   terapTema(majlis);
   if (majlis.coupleName) namaMajlis.textContent = majlis.coupleName;
+  paparBakiKuota(majlis);
   // Bawa eventId pada pautan galeri
   const urlGaleri = `gallery.html?e=${encodeURIComponent(eventId)}`;
   if (footerGaleri) footerGaleri.href = urlGaleri;

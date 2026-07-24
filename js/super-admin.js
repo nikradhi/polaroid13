@@ -18,6 +18,7 @@ import {
   configSiap,
   ciptaAkaunPelanggan,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
   collection,
@@ -48,6 +49,9 @@ import {
 
 const SEHARI_MS = 24 * 60 * 60 * 1000;
 
+// Berapa majlis dipapar sekali gus; butang "Muat lebih" tambah sebanyak ini.
+const SAIZ_HALAMAN = 10;
+
 // --- Indikator storan (kuota Firestore dikongsi SEMUA majlis) ---
 const HAD_STORAN = 1024 * 1024 * 1024; // 1 GiB (had percuma Firestore)
 // Anggaran satu gambar selepas compressImej() + base64, mengikut sasaran
@@ -77,6 +81,9 @@ const statPremium = document.getElementById("stat-premium");
 const senarai = document.getElementById("senarai");
 const zonMemuat = document.getElementById("zon-memuat");
 const zonKosong = document.getElementById("zon-kosong");
+const zonTiadaCarian = document.getElementById("zon-tiada-carian");
+const inputCari = document.getElementById("input-cari");
+const butangMuatLebih = document.getElementById("butang-muat-lebih");
 const storanTeks = document.getElementById("storan-teks");
 const storanBar = document.getElementById("storan-bar");
 const storanNota = document.getElementById("storan-nota");
@@ -101,6 +108,9 @@ const ciptaJaya = document.getElementById("cipta-jaya");
 let unsubs = [];
 let dataEvents = [];        // [{ id, ...medan event }]
 let petaEmel = new Map();   // eventId -> ownerEmail (dari eventsPrivate)
+
+let istilahCari = "";              // teks carian semasa (huruf kecil)
+let jumlahDipapar = SAIZ_HALAMAN;  // berapa baris ditunjuk (pagination sisi-klien)
 
 let storanTepatBait = null;  // hasil "Kira tepat" (null = guna anggaran)
 let storanTepatBil = 0;      // bilangan dokumen gambar yang diimbas
@@ -413,24 +423,73 @@ function mulaLangganan() {
 // ------------------------------------------------------------
 //  PAPAR SENARAI (gabungan events + emel peribadi)
 // ------------------------------------------------------------
+//  Carian & pagination dibuat sisi-klien ke atas dataEvents yang
+//  sudah dilanggan real-time (onSnapshot) — jadi kemas kini langsung
+//  kekal berfungsi tanpa bacaan Firestore tambahan.
+
+// Emel majlis (koleksi peribadi; fallback ke medan lama pada majlis sedia ada)
+function emelEvent(ev) {
+  return petaEmel.get(ev.id) || ev.ownerEmail || "";
+}
+
+// Tapis ikut istilah carian: padan pada nama pasangan / emel / slug
+function tapisEvents() {
+  if (!istilahCari) return dataEvents;
+  return dataEvents.filter((ev) => {
+    const teks = [ev.coupleName, emelEvent(ev), ev.slug]
+      .filter(Boolean).join(" ").toLowerCase();
+    return teks.includes(istilahCari);
+  });
+}
+
 function paparSenarai() {
   zonMemuat.classList.add("hidden");
   senarai.innerHTML = "";
 
+  // Stat dikira dari KESELURUHAN dataEvents — tidak terjejas carian/halaman
   let aktif = 0, premium = 0;
   dataEvents.forEach((ev) => {
     if (ev.status === "active") aktif++;
     if (ev.package === "premium") premium++;
-    // Emel dari koleksi peribadi; fallback ke medan lama (majlis sedia ada)
-    const emel = petaEmel.get(ev.id) || ev.ownerEmail || "";
-    senarai.appendChild(binaBaris(ev.id, ev, emel));
   });
-
   statSemua.textContent = dataEvents.length;
   statAktif.textContent = aktif;
   statPremium.textContent = premium;
+
+  const tertapis = tapisEvents();
+  tertapis.slice(0, jumlahDipapar).forEach((ev) => {
+    senarai.appendChild(binaBaris(ev.id, ev, emelEvent(ev)));
+  });
+
+  // Zon kosong (tiada majlis langsung) vs tiada hasil carian
   zonKosong.classList.toggle("hidden", dataEvents.length > 0);
+  if (zonTiadaCarian) {
+    zonTiadaCarian.classList.toggle(
+      "hidden", !(dataEvents.length > 0 && tertapis.length === 0)
+    );
+  }
+  // Butang "Muat lebih" hanya jika masih ada baris tersembunyi
+  if (butangMuatLebih) {
+    butangMuatLebih.classList.toggle("hidden", jumlahDipapar >= tertapis.length);
+  }
   paparStoran();
+}
+
+// --- Carian: reset ke halaman pertama setiap kali istilah berubah ---
+if (inputCari) {
+  inputCari.addEventListener("input", () => {
+    istilahCari = inputCari.value.trim().toLowerCase();
+    jumlahDipapar = SAIZ_HALAMAN;
+    paparSenarai();
+  });
+}
+
+// --- Muat lebih: tambah satu halaman ---
+if (butangMuatLebih) {
+  butangMuatLebih.addEventListener("click", () => {
+    jumlahDipapar += SAIZ_HALAMAN;
+    paparSenarai();
+  });
 }
 
 // ------------------------------------------------------------
@@ -763,9 +822,32 @@ function binaBaris(id, ev, emel = "") {
           class="rounded-lg border border-[#e5d5ca] bg-white px-2 py-1 text-sm" />
       </label>
 
+      ${emel
+        ? `<button data-act="reset-kl" class="rounded-lg px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100">Reset kata laluan</button>`
+        : `<button disabled title="Tiada emel pelanggan" class="rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-50 text-gray-400 cursor-not-allowed">Reset kata laluan</button>`
+      }
+
       <button data-act="padam" class="ml-auto rounded-lg px-3 py-1.5 text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100">Padam</button>
     </div>
   `;
+
+  // --- Reset kata laluan pelanggan (hantar emel reset Firebase) ---
+  //     Zero-backend: admin tidak menetapkan kata laluan; pelanggan
+  //     tetapkan sendiri melalui pautan dalam emel. Tidak mengganggu
+  //     sesi log masuk admin.
+  kad.querySelector('[data-act="reset-kl"]')?.addEventListener("click", async (e) => {
+    if (!confirm(`Hantar emel reset kata laluan ke "${emel}"?`)) return;
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      await sendPasswordResetEmail(auth, emel);
+      alert(`Emel reset kata laluan dihantar ke ${emel}.`);
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menghantar emel reset. Pastikan emel pelanggan sah.");
+      btn.disabled = false;
+    }
+  });
 
   // --- Toggle status aktif/nyahaktif ---
   kad.querySelector('[data-act="status"]').addEventListener("click", async (e) => {

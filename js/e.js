@@ -10,6 +10,7 @@
 
 import { db, doc, getDoc } from "./firebase.js";
 import { formatTarikhMajlis, terapTema } from "./majlis.js";
+import { bolehGuna } from "./gating.js";
 
 const HAD_TANPA_HAD = 100000;
 
@@ -106,7 +107,8 @@ function paparRalat(tajuk, mesej) {
     const eid = encodeURIComponent(eventId);
     lUpload.href = new URL(`../index.html?e=${eid}`, import.meta.url).href;
     lGaleri.href = new URL(`../gallery.html?e=${eid}`, import.meta.url).href;
-    if (ev.package === "premium") {
+    // Pautan Live Wall didedah untuk pakej yang menyokongnya (Premium ke atas).
+    if (bolehGuna(ev, "liveWall")) {
       lWall.href = new URL(`../wall.html?e=${eid}`, import.meta.url).href;
       lWall.classList.remove("hidden");
     }

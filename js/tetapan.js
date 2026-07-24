@@ -32,8 +32,9 @@ import {
 import { bolehMuatTurun, formatTarikhMajlis } from "./majlis.js";
 import { muatTurunZipMajlis, mesejRalatMuatTurun } from "./muat-turun.js";
 import { LATAR_PILIHAN, gayaLatar, latarSah } from "./tema.js";
-
-const HAD_TANPA_HAD = 100000; // selaras dengan super-admin.js
+// Had & konfig pakej — SATU SUMBER KEBENARAN (js/packages.js).
+import { HAD_TANPA_HAD, PAKEJ, CIRI_AKAN_DATANG, LABEL_CIRI } from "./packages.js";
+import { bolehGuna, namaPakej, pakejEvent, bakiGambar, tanpaHad } from "./gating.js";
 
 // Warna tema pratetap
 const TEMA_PILIHAN = [
@@ -63,6 +64,9 @@ const zonMajlis = document.getElementById("zon-majlis");
 const infoPakej = document.getElementById("info-pakej");
 const infoStatus = document.getElementById("info-status");
 const infoTamat = document.getElementById("info-tamat");
+const kuotaTeks = document.getElementById("kuota-teks");
+const kuotaBar = document.getElementById("kuota-bar");
+const kadPakej = document.getElementById("kad-pakej");
 const amaranMajlis = document.getElementById("amaran-majlis");
 
 // --- DOM: borang customize ---
@@ -74,6 +78,8 @@ const cTarikh = document.getElementById("c-tarikh");
 const cTema = document.getElementById("c-tema");
 const swatches = document.getElementById("swatches");
 const latarPilihan = document.getElementById("latar-pilihan");
+const temaKunci = document.getElementById("tema-kunci");
+const barisWarnaSendiri = document.getElementById("baris-warna-sendiri");
 const cWelcome = document.getElementById("c-welcome");
 const simpanRalat = document.getElementById("simpan-ralat");
 const statusSimpan = document.getElementById("status-simpan");
@@ -235,10 +241,12 @@ async function muatMajlis(uid) {
 // ------------------------------------------------------------
 function isiBorang() {
   // Info pakej
-  infoPakej.textContent = eventData.package === "premium" ? "Premium" : "Basic";
+  infoPakej.textContent = namaPakej(eventData);
   const luput = keDate(eventData.expiresAt) && keDate(eventData.expiresAt).getTime() < Date.now();
   infoStatus.textContent = luput ? "Tamat tempoh" : (eventData.status === "active" ? "Aktif" : "Nyahaktif");
   infoTamat.textContent = formatTarikh(eventData.expiresAt);
+  paparKuota();      // "142 / 300 gambar" + jalur
+  binaKadPakej();    // kad pakej + senarai ciri (serlah pakej semasa)
 
   // Amaran jika tidak aktif / luput
   if (luput || eventData.status !== "active") {
@@ -260,6 +268,7 @@ function isiBorang() {
   latarDipilih = latarSah(eventData.latarId) || "bunga";
   binaJubinLatar();
   pratontonLatar(); // papar corak tersimpan pada halaman sebaik dimuat
+  terapGatingTema(); // kunci "warna sendiri" untuk pakej tanpa kustom warna
 
   // Jika slug sedia ada, anggap sah
   slugSah = !!eventData.slug;
@@ -361,6 +370,110 @@ if (butangMuatTurun) {
       kemasKiniGateMuatTurun(); // pulihkan keadaan butang ikut kelayakan
     }
   });
+}
+
+// ------------------------------------------------------------
+//  PAPAR KUOTA GAMBAR: "142 / 300 gambar" + jalur kemajuan.
+//  Pakej tanpa had -> "142 gambar (tanpa had)" tanpa jalur penuh.
+// ------------------------------------------------------------
+function paparKuota() {
+  if (!kuotaTeks || !kuotaBar) return;
+  const kira = Number(eventData.photoCount ?? 0);
+  if (tanpaHad(eventData)) {
+    kuotaTeks.textContent = `${kira} gambar (tanpa had)`;
+    kuotaBar.style.width = "100%";
+    kuotaBar.classList.remove("bg-amber-500");
+    kuotaBar.classList.add("bg-[#7c9070]"); // hijau lembut = selesa
+    return;
+  }
+  const had = Number(eventData.photoLimit ?? 0);
+  const peratus = had > 0 ? Math.min(100, Math.round((kira / had) * 100)) : 0;
+  const baki = bakiGambar(eventData);
+  kuotaTeks.textContent = `${kira} / ${had} gambar` + (baki <= 20 ? ` · tinggal ${baki}` : "");
+  kuotaBar.style.width = peratus + "%";
+  // Merah lembut bila hampir/penuh, jika tidak warna tema.
+  const hampirPenuh = peratus >= 85;
+  kuotaBar.classList.toggle("bg-amber-500", hampirPenuh);
+  kuotaBar.classList.toggle("bg-[#b76e79]", !hampirPenuh);
+}
+
+// ------------------------------------------------------------
+//  BINA KAD PAKEJ: 3 kad dengan senarai ciri ✅/🔒, serlah pakej
+//  semasa. Ciri belum dibina ditanda "akan datang". Tiada checkout.
+// ------------------------------------------------------------
+function binaKadPakej() {
+  if (!kadPakej) return;
+  const idSemasa = pakejEvent(eventData);
+  kadPakej.innerHTML = "";
+
+  Object.keys(PAKEJ).forEach((id) => {
+    const p = PAKEJ[id];
+    const semasa = id === idSemasa;
+
+    const kad = document.createElement("div");
+    kad.className =
+      "rounded-xl border p-3 text-xs " +
+      (semasa
+        ? "border-[#b76e79] bg-[#fdf1f2] ring-1 ring-[#e7c3c9]"
+        : "border-[#e5d5ca] bg-white/60");
+
+    // Tajuk + lencana "Pakej anda"
+    const tajuk = document.createElement("div");
+    tajuk.className = "flex items-center justify-between mb-1.5";
+    const namaEl = document.createElement("span");
+    namaEl.className = "font-semibold text-[#5a4a42]";
+    namaEl.textContent = p.nama;
+    tajuk.appendChild(namaEl);
+    if (semasa) {
+      const badge = document.createElement("span");
+      badge.className = "rounded-full bg-[#b76e79] text-white text-[10px] px-2 py-0.5";
+      badge.textContent = "Pakej anda";
+      tajuk.appendChild(badge);
+    }
+    kad.appendChild(tajuk);
+
+    // Had gambar + tempoh
+    const meta = document.createElement("p");
+    meta.className = "text-xs text-[#a09088] mb-2";
+    meta.textContent =
+      `${p.hadGambar == null ? "Gambar tanpa had" : p.hadGambar + " gambar"} · ${p.tempohHari} hari`;
+    kad.appendChild(meta);
+
+    // Senarai ciri
+    const ul = document.createElement("ul");
+    ul.className = "space-y-1 leading-tight";
+    Object.keys(LABEL_CIRI).forEach((namaCiri) => {
+      const ada = !!p.ciri?.[namaCiri];
+      const akanDatang = CIRI_AKAN_DATANG.includes(namaCiri);
+      const li = document.createElement("li");
+      li.className = "flex items-start gap-1 " + (ada ? "text-[#5a4a42]" : "text-[#b8aaa1]");
+      const ikon = document.createElement("span");
+      ikon.textContent = ada ? "✅" : "🔒";
+      const teks = document.createElement("span");
+      teks.textContent = LABEL_CIRI[namaCiri] + (ada && akanDatang ? " (akan datang)" : "");
+      li.appendChild(ikon);
+      li.appendChild(teks);
+      ul.appendChild(li);
+    });
+    kad.appendChild(ul);
+
+    kadPakej.appendChild(kad);
+  });
+}
+
+// ------------------------------------------------------------
+//  GATING TEMA: "pilih warna sendiri" hanya Premium ke atas.
+//  Tema PRA-SET (swatch) kekal untuk semua pakej — hanya pemilih
+//  warna bebas (#c-tema) dikunci untuk Basic. Ini semakan sisi-klien
+//  (kosmetik); ia tidak menjejaskan keselamatan data.
+// ------------------------------------------------------------
+function terapGatingTema() {
+  const boleh = bolehGuna(eventData, "kustomWarnaFont");
+  if (!cTema || !barisWarnaSendiri) return;
+  cTema.disabled = !boleh;
+  barisWarnaSendiri.classList.toggle("opacity-50", !boleh);
+  barisWarnaSendiri.classList.toggle("pointer-events-none", !boleh);
+  if (temaKunci) temaKunci.classList.toggle("hidden", boleh);
 }
 
 // ------------------------------------------------------------

@@ -23,10 +23,10 @@ import { createPolaroid, pasangGayaPolaroid } from "./polaroid.js";
 import {
   dapatEventId,
   muatEvent,
-  adalahPremium,
   terapTema,
   mesejMajlisTakBoleh,
 } from "./majlis.js";
+import { bolehGuna, mesejNaikTaraf } from "./gating.js";
 
 pasangGayaPolaroid();
 
@@ -130,10 +130,10 @@ function paparRalatWall(mesej) {
     return;
   }
 
-  // --- GATING PAKEJ: Live Wall hanya untuk Premium ---
-  if (!adalahPremium(majlis)) {
+  // --- GATING PAKEJ: Live Wall untuk Premium ke atas ---
+  if (!bolehGuna(majlis, "liveWall")) {
     paparRalatWall(
-      "Live Wall hanya tersedia untuk pakej Premium. Naik taraf ke Premium untuk menggunakan ciri ini."
+      `Live Wall untuk skrin majlis. ${mesejNaikTaraf("liveWall")} Hubungi admin untuk naik taraf.`
     );
     return;
   }

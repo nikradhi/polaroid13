@@ -134,10 +134,24 @@
       <div class="text-5xl mb-3">💌</div>
       <h2 id="majlis-ralat-tajuk" class="font-serif-elegan text-2xl font-semibold mb-2">Majlis tidak dijumpai</h2>
       <p id="majlis-ralat-mesej" class="text-[color:var(--warna-teks-lembut)] leading-relaxed"></p>
+
+      <!-- CTA jualan: hanya didedah bila TIADA pautan majlis (?e=) — lihat js/upload.js -->
+      <div id="cta-pakej" class="hidden mt-8 border-t border-[color:var(--warna-sempadan)] pt-8">
+        <p class="text-sm text-[color:var(--warna-teks-lembut)] mb-3">
+          Nak buat galeri polaroid untuk majlis anda sendiri?
+        </p>
+        <a href="pakej.html"
+           class="btn-utama inline-block rounded-xl px-6 py-3 font-medium">
+          Lihat Pakej &amp; Harga →
+        </a>
+      </div>
     </div>
 
     <!-- BORANG UPLOAD -->
     <form id="form-upload" class="space-y-5" novalidate>
+
+      <!-- Baki kuota (dipapar hanya untuk pakej berhad, cth Basic) -->
+      <div id="baki-kuota" class="hidden rounded-xl px-4 py-2.5 text-sm text-center"></div>
 
       <!-- Pilih / ambil gambar -->
       <div>
