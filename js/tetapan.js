@@ -505,8 +505,8 @@ TEMA_PILIHAN.forEach((t) => {
   b.addEventListener("click", () => {
     cTema.value = t.warna;
     tandaSwatchTerpilih(t.warna);
-    binaJubinLatar(); // corak SVG tertinta ikut warna baharu
-    pratontonLatar(); // latar halaman ikut warna baharu serta-merta
+    // Warna tema hanya kesan teks/aksen — latar tidak berubah, jadi
+    // tiada perlu bina semula jubin atau pratonton latar.
     autoSimpan();     // warna tema berubah -> simpan
   });
   swatches.appendChild(b);
@@ -518,22 +518,19 @@ function tandaSwatchTerpilih(warna) {
 }
 cTema.addEventListener("input", () => {
   tandaSwatchTerpilih(cTema.value);
-  binaJubinLatar(); // pratonton corak dikemas kini ikut warna dipilih
-  pratontonLatar(); // latar halaman ikut warna dipilih serta-merta
+  // Warna tema hanya kesan teks/aksen — latar tidak berubah.
   autoSimpan();     // pemilih warna sendiri -> simpan (debounce)
 });
 
 // ------------------------------------------------------------
-//  CORAK LATAR — jubin pratonton (tertinta warna tema semasa)
+//  CORAK LATAR — jubin pratonton
 // ------------------------------------------------------------
 //  Setiap jubin memaparkan corak sebenar yang akan dipapar pada
-//  halaman tetamu, diwarnakan guna warna dalam #c-tema. Dibina
-//  semula setiap kali warna berubah supaya "cantik ikut tema"
-//  kelihatan sebelum simpan.
+//  halaman tetamu. Latar TIDAK ikut warna tema (themeColor) — jadi
+//  jubin tetap sama walaupun warna tema ditukar.
 // ------------------------------------------------------------
 function binaJubinLatar() {
   if (!latarPilihan) return;
-  const warna = cTema.value || "#b76e79";
   latarPilihan.innerHTML = "";
 
   LATAR_PILIHAN.forEach((l) => {
@@ -546,9 +543,10 @@ function binaJubinLatar() {
     btn.title = l.nama;
     btn.dataset.latar = l.id;
 
-    const g = gayaLatar(l.id, warna);
-    // "Tiada Corak" (imej: none) -> pratonton basuhan warna tema yang halus.
-    btn.style.background = g.imej === "none" ? warna + "1f" : g.imej;
+    const g = gayaLatar(l.id);
+    // "Tiada Corak" (imej: none) -> basuhan neutral halus (bukan warna tema;
+    // latar tidak ikut themeColor).
+    btn.style.background = g.imej === "none" ? "#9a8c8014" : g.imej;
     // Corak bunga diwarna via penapis tema; sapukan pada pratonton juga.
     if (g.tapis && g.tapis !== "none") btn.style.filter = g.tapis;
 
@@ -646,12 +644,11 @@ function tandaFonTerpilih() {
 //  (bukan sekadar jubin mini). Guna gaya INLINE pada document.body:
 //  tetapan.html memaksa `body[data-corak] { --corak-tapis: none }`,
 //  dan gaya inline mengatasi peraturan stylesheet itu. Nilai dikira
-//  sama seperti jubin (gayaLatar dengan lalai) supaya pratonton dan
-//  jubin sentiasa sepadan.
+//  sama seperti jubin (gayaLatar) supaya pratonton dan jubin sentiasa
+//  sepadan.
 // ------------------------------------------------------------
 function pratontonLatar() {
-  const warna = cTema.value || "#b76e79";
-  const g = gayaLatar(latarDipilih, warna);
+  const g = gayaLatar(latarDipilih);
   const b = document.body.style;
   b.setProperty("--corak-imej", g.imej);
   b.setProperty("--corak-tapis", g.tapis || "none");

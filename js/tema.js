@@ -88,14 +88,16 @@ const CORAK_IMEJ = {
 //  PILIHAN CORAK LATAR (background)
 // ------------------------------------------------------------
 //  Selain corak bunga (imej JPEG kongsi), pelanggan boleh pilih
-//  corak SVG yang DIJANA dalam kod dan diwarnakan ikut warna tema
-//  mereka (themeColor). Kelebihan berbanding fail imej: sifar fail
-//  baharu, sifar kos kuota, dan sentiasa "cantik ikut tema" kerana
-//  warna disuntik masa apply — bukan warna tetap.
+//  corak SVG yang DIJANA dalam kod. Corak ini diwarna dengan warna
+//  NEUTRAL tetap (CORAK_WARNA_NEUTRAL) — SENGAJA tidak ikut warna
+//  tema. Latar ditentukan hanya oleh pilihan corak (latarId); warna
+//  tema (themeColor) hanya mempengaruhi teks/aksen, bukan latar.
+//  Kelebihan corak SVG berbanding fail imej kekal: sifar fail baharu,
+//  sifar kos kuota.
 //
-//  KESELAMATAN: warna yang disuntik ke SVG mesti sudah melalui
-//  warnaSah() (hanya #rgb/#rrggbb), jadi tiada aksara jahat masuk
-//  ke url(). id corak pula ditapis oleh latarSah().
+//  KESELAMATAN: warna neutral ialah pemalar tetap dalam kod (bukan
+//  dari Firestore), jadi tiada aksara jahat masuk ke url(). id corak
+//  ditapis oleh latarSah().
 //
 //  Setiap corak `svg` ada:
 //    bina(warna)  — pulangkan rentetan <svg> jubin (tileable).
@@ -109,8 +111,13 @@ function svgKeLatar(svg, saiz) {
   return `${uri} 0 0 / ${saiz} repeat`;
 }
 
-// Corak-corak SVG. Semua guna `w` (warna tema tertapis) supaya jubin
-// ikut warna pelanggan. Opacity rendah supaya halus, tidak melawan teks.
+// Warna neutral untuk corak latar — SENGAJA tidak ikut warna tema.
+// Latar ditentukan hanya oleh pilihan corak (latarId), bukan themeColor.
+const CORAK_WARNA_NEUTRAL = "#9a8c80"; // taupe lembut; halus atas kertas krim
+
+// Corak-corak SVG. Semua guna `w` (CORAK_WARNA_NEUTRAL) supaya jubin
+// halus & tetap, tidak berubah ikut warna tema. Opacity rendah supaya
+// tidak melawan teks.
 const CORAK_SVG = {
   geo: {
     saiz: "64px",
@@ -371,39 +378,36 @@ export function fontIdSah(id) {
 }
 
 // ------------------------------------------------------------
-//  gayaLatar(latarId, warna) -> { imej, tapis, opacity }
+//  gayaLatar(latarId) -> { imej, tapis, opacity }
 // ------------------------------------------------------------
-//  Terjemah pilihan corak + warna tema kepada nilai CSS untuk
-//  lapisan body[data-corak]::before:
+//  Terjemah pilihan corak kepada nilai CSS untuk lapisan
+//  body[data-corak]::before:
 //    imej    — nilai `background` (url/gradient/none).
-//    tapis   — `filter` (bunga sahaja diwarna via penapis; SVG sudah
-//              tertinta jadi "none").
+//    tapis   — `filter` (bunga sahaja diwarna via penapis pra-set;
+//              corak lain "none").
 //    opacity — kekuatan lapisan.
-//  `warna` DIANDAI sudah ditapis oleh warnaSah() (selamat untuk url()).
+//  NOTA: latar TIDAK ikut warna tema (themeColor) — corak SVG guna
+//  CORAK_WARNA_NEUTRAL yang tetap, foto dipapar tanpa tinta tema.
 //  Dipanggil dengan corakTapis/corakOpacity pra-set untuk kekalkan
 //  tingkah laku asal corak bunga.
 // ------------------------------------------------------------
-export function gayaLatar(latarId, warna, corakTapis = "none", corakOpacity = "1") {
+export function gayaLatar(latarId, corakTapis = "none", corakOpacity = "1") {
   const pilihan = LATAR_PILIHAN.find((l) => l.id === latarId) || LATAR_PILIHAN[0];
 
   if (pilihan.jenis === "svg") {
     const c = CORAK_SVG[pilihan.id];
     return {
-      imej: svgKeLatar(c.bina(warna), c.saiz),
+      imej: svgKeLatar(c.bina(CORAK_WARNA_NEUTRAL), c.saiz),
       tapis: "none",
       opacity: "1",
     };
   }
   if (pilihan.jenis === "foto") {
-    // Wallpaper penuh-warna + tinta LEMBUT warna tema di atasnya, supaya
-    // gambar kekal jelas tetapi berona ikut tema. Tinta dibina dalam nilai
-    // `imej` (dua lapisan background) supaya jubin pratonton DAN lapisan
-    // body[data-corak]::before dapat kesan yang sama — tiada var CSS baharu.
-    // color-mix: sudah dipakai untuk warna aksen terbitan (lihat bacaTema),
-    // jadi selamat untuk apa-apa hex sah (#rgb/#rrggbb) tanpa olah alfa.
-    const tint = `color-mix(in srgb, ${warna} 30%, transparent)`;
+    // Wallpaper penuh-warna dipapar apa adanya — TIADA tinta warna tema.
+    // Latar dikawal hanya oleh pilihan corak (latarId); themeColor hanya
+    // mempengaruhi teks/aksen.
     return {
-      imej: `linear-gradient(${tint}, ${tint}), url("${CORAK_IMEJ[pilihan.id]}") center / cover no-repeat`,
+      imej: `url("${CORAK_IMEJ[pilihan.id]}") center / cover no-repeat`,
       tapis: "none",
       opacity: "1",
     };
@@ -470,11 +474,11 @@ export function bacaTema(ev) {
 
   // Corak latar: pilihan pelanggan (latarId) diterjemah kepada nilai CSS.
   // Untuk corak bunga, corakTapis/corakOpacity pra-set dikekalkan supaya
-  // majlis lama nampak sama; corak SVG diwarna terus guna `utama`.
+  // majlis lama nampak sama. Latar TIDAK ikut warna tema (utama) — corak
+  // SVG guna warna neutral tetap, foto tanpa tinta tema.
   const latarId = latarSah(ev?.latarId) || LATAR_LALAI;
   const latar = gayaLatar(
     latarId,
-    utama,
     praset.corakTapis ?? "none",
     praset.corakOpacity ?? "1"
   );
