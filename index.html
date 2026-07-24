@@ -91,13 +91,17 @@
     .btn-kedua:hover:not(:disabled) { background: #fff; border-color: var(--rosegold); }
     .btn-kedua:disabled, .zon-fail:disabled { opacity: .5; cursor: not-allowed; }
 
-    /* Butang buang — teks kecil sahaja */
+    /* Butang buang — kotak merah menonjol supaya pengguna perasan */
     .btn-buang {
-      color: #a1897f;
-      font-size: .85rem;
-      transition: color .2s, opacity .2s;
+      background: #c0392b;
+      color: #fff;
+      font-size: .95rem;
+      font-weight: 600;
+      padding: .55rem .9rem;
+      border-radius: .5rem;
+      transition: background .2s, opacity .2s;
     }
-    .btn-buang:hover:not(:disabled) { color: #a13a3a; }
+    .btn-buang:hover:not(:disabled) { background: #a5281b; }
     .btn-buang:disabled { opacity: .5; cursor: not-allowed; }
 
     /* Cincin fokus ikut tema (ganti cincin hitam lalai pelayar) */
@@ -110,7 +114,7 @@
   </style>
 </head>
 
-<body class="antialiased" data-corak>
+<body class="antialiased">
   <main class="mx-auto w-full max-w-md px-5 py-8 sm:py-12">
 
     <!-- Tajuk -->

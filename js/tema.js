@@ -73,6 +73,17 @@ export const FONT_TANGAN = "Caveat";
 // ------------------------------------------------------------
 export const URL_CORAK = new URL("../img/latar-bunga.jpeg", import.meta.url).href;
 
+// Imej latar penuh-warna (wallpaper) — BUKAN diwarnakan semula ikut tema.
+// Berbeza dengan URL_CORAK (bunga line-art yang diwarna via penapis), imej
+// ini sudah ada warna sendiri (pink/hijau atas kertas krim), jadi dipapar
+// tanpa penapis. URL dikira sama cara (import.meta.url) untuk URL cantik.
+const CORAK_IMEJ = {
+  sakura:  new URL("../img/latar-sakura.jpeg",  import.meta.url).href,
+  reben:   new URL("../img/latar-reben.jpeg",   import.meta.url).href,
+  taburan: new URL("../img/latar-taburan.jpeg", import.meta.url).href,
+  botani:  new URL("../img/latar-botani.jpeg",  import.meta.url).href,
+};
+
 // ------------------------------------------------------------
 //  PILIHAN CORAK LATAR (background)
 // ------------------------------------------------------------
@@ -144,15 +155,20 @@ const CORAK_SVG = {
 
 // Senarai untuk UI + urutan paparan. `jenis`:
 //   "imej"  — corak bunga JPEG kongsi (lalai; diwarnakan via corakTapis).
+//   "foto"  — wallpaper penuh-warna dari CORAK_IMEJ (tanpa penapis tema).
 //   "svg"   — corak dijana, tertinta warna tema.
 //   "warna" — tiada corak; warna latar tema sahaja.
 export const LATAR_PILIHAN = [
-  { id: "bunga",   nama: "Bunga Klasik", jenis: "imej" },
-  { id: "geo",     nama: "Geometri",     jenis: "svg" },
-  { id: "titik",   nama: "Titik Halus",  jenis: "svg" },
-  { id: "dedaun",  nama: "Dedaun",       jenis: "svg" },
-  { id: "jantung", nama: "Hati Kecil",   jenis: "svg" },
-  { id: "kosong",  nama: "Tiada Corak",  jenis: "warna" },
+  { id: "bunga",   nama: "Bunga Klasik",  jenis: "imej" },
+  { id: "sakura",  nama: "Sakura Air",    jenis: "foto" },
+  { id: "reben",   nama: "Reben Pink",    jenis: "foto" },
+  { id: "taburan", nama: "Bunga Taburan", jenis: "foto" },
+  { id: "botani",  nama: "Botani Vintaj", jenis: "foto" },
+  { id: "geo",     nama: "Geometri",      jenis: "svg" },
+  { id: "titik",   nama: "Titik Halus",   jenis: "svg" },
+  { id: "dedaun",  nama: "Dedaun",        jenis: "svg" },
+  { id: "jantung", nama: "Hati Kecil",    jenis: "svg" },
+  { id: "kosong",  nama: "Tiada Corak",   jenis: "warna" },
 ];
 
 const LATAR_LALAI = "bunga";
@@ -365,6 +381,14 @@ export function gayaLatar(latarId, warna, corakTapis = "none", corakOpacity = "1
     const c = CORAK_SVG[pilihan.id];
     return {
       imej: svgKeLatar(c.bina(warna), c.saiz),
+      tapis: "none",
+      opacity: "1",
+    };
+  }
+  if (pilihan.jenis === "foto") {
+    // Wallpaper penuh-warna: papar apa adanya, TIADA penapis tema.
+    return {
+      imej: `url("${CORAK_IMEJ[pilihan.id]}") center / cover no-repeat`,
       tapis: "none",
       opacity: "1",
     };
