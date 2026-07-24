@@ -57,6 +57,22 @@
     .btn-utama:hover:not(:disabled) { transform: translateY(-1px); }
     .btn-utama:disabled { opacity: .6; cursor: not-allowed; }
 
+    /* Pemisah hiasan header: garis halus — ♥ — garis halus.
+       Guna var(--tema) supaya ikut warna setiap tema majlis. */
+    .hiasan-pemisah {
+      display: flex; align-items: center; justify-content: center;
+      gap: .75rem; margin: 1rem auto 0; max-width: 15rem;
+      color: var(--tema);
+    }
+    .hiasan-pemisah::before,
+    .hiasan-pemisah::after {
+      content: ""; height: 1px; flex: 1;
+      background: linear-gradient(90deg, transparent,
+                  color-mix(in srgb, var(--tema) 45%, transparent));
+    }
+    .hiasan-pemisah::after { transform: scaleX(-1); }
+    .hiasan-pemisah .hati { font-size: 1.1rem; line-height: 1; }
+
     /* Bar reaksi ❤️ + muat turun 💾 — kini DALAM bingkai polaroid
        (dilekat pada .polaroid__caption), jadi jarak kecil positif dari nama. */
     .reaksi-bar {
@@ -213,19 +229,22 @@
 
     <!-- Tajuk -->
     <header class="text-center mb-10">
-      <p id="nama-majlis" class="font-tangan text-2xl text-[color:var(--tema)] mb-1">Kenangan Manis</p>
+      <p id="nama-majlis" class="font-tangan text-2xl sm:text-3xl text-[color:var(--tema)] mb-1">Kenangan Manis</p>
       <h1 class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">
         Galeri Polaroid
       </h1>
       <p class="mt-3 text-sm text-[color:var(--warna-teks-lembut)]">Detik indah yang dikongsi oleh tetamu kami</p>
 
+      <!-- Pemisah hiasan -->
+      <div class="hiasan-pemisah"><span class="hati">♥</span></div>
+
       <!-- Butang muat naik (buka modal) + pautan Live Wall (Premium sahaja) -->
-      <div class="mt-5 flex flex-col items-center gap-3">
-        <button id="butang-buka-upload" class="btn-utama hidden rounded-xl px-8 py-3.5 text-lg font-medium">
-          📸 Muat Naik Gambar
+      <div class="mt-6 flex flex-col items-center gap-3">
+        <button id="butang-buka-upload" class="btn-utama hidden rounded-2xl px-9 py-4 text-lg font-medium">
+          📷 Muat Naik Gambar
         </button>
         <a id="pautan-wall" href="#" class="hidden font-tangan text-xl text-[color:var(--tema)] hover:underline">
-          📺 Live Wall
+          🖥️ Live Wall
         </a>
       </div>
     </header>
