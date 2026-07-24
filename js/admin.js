@@ -28,6 +28,7 @@ import {
   getDoc,
   updateDoc,
   deleteDoc,
+  writeBatch,
 } from "./firebase.js";
 import { pasangGayaPolaroid } from "./polaroid.js";
 import { dapatEventId } from "./majlis.js";
@@ -57,8 +58,10 @@ const statSemua = document.getElementById("stat-semua");
 const statLulus = document.getElementById("stat-lulus");
 const statSembunyi = document.getElementById("stat-sembunyi");
 const suisModerasi = document.getElementById("suis-moderasi");
+const butangLuluskanSemua = document.getElementById("butang-luluskan-semua");
 
 let unsub = null; // untuk hentikan langganan bila log keluar
+let idTersembunyi = []; // id gambar approved:false semasa (untuk luluskan pukal)
 
 // ------------------------------------------------------------
 //  UTILITI: escape teks -> selamat untuk innerHTML (elak XSS)
@@ -249,9 +252,11 @@ function mulaLangganan() {
       senarai.innerHTML = "";
 
       let lulus = 0, sembunyi = 0;
+      idTersembunyi = [];
       snap.forEach((d) => {
         const p = d.data();
-        p.approved ? lulus++ : sembunyi++;
+        if (p.approved) lulus++;
+        else { sembunyi++; idTersembunyi.push(d.id); }
         senarai.appendChild(binaKad(d.id, p));
       });
 
@@ -259,6 +264,7 @@ function mulaLangganan() {
       statLulus.textContent = lulus;
       statSembunyi.textContent = sembunyi;
       zonKosong.classList.toggle("hidden", snap.size > 0);
+      kemasKiniButangLuluskanSemua(sembunyi);
     },
     (err) => {
       console.error("Ralat langganan admin:", err);
@@ -267,6 +273,48 @@ function mulaLangganan() {
         `<p class="col-span-full text-center text-red-600">Gagal memuat gambar. Semak rules & sambungan.</p>`;
     }
   );
+}
+
+// ------------------------------------------------------------
+//  LULUSKAN SEMUA (pukal) — tampilkan semua gambar tersembunyi
+// ------------------------------------------------------------
+//  Mematikan suis pra-moderasi hanya menjejaskan muat naik AKAN
+//  DATANG; gambar sedia ada yang approved:false kekal tersembunyi.
+//  Butang ini meluluskan kesemuanya dalam satu klik.
+// ------------------------------------------------------------
+function kemasKiniButangLuluskanSemua(sembunyi) {
+  if (!butangLuluskanSemua) return;
+  butangLuluskanSemua.classList.toggle("hidden", sembunyi === 0);
+  butangLuluskanSemua.textContent = `✓ Luluskan semua yang tersembunyi (${sembunyi})`;
+}
+
+if (butangLuluskanSemua) {
+  butangLuluskanSemua.addEventListener("click", async () => {
+    const ids = [...idTersembunyi]; // salin: snapshot boleh mengubahnya
+    if (ids.length === 0) return;
+    if (!confirm(`Luluskan ${ids.length} gambar tersembunyi supaya tampil di galeri?`)) return;
+
+    butangLuluskanSemua.disabled = true;
+    butangLuluskanSemua.textContent = "Sedang meluluskan…";
+    try {
+      // Firestore had 500 operasi/batch — pecah kepada kelompok selamat.
+      for (let i = 0; i < ids.length; i += 400) {
+        const batch = writeBatch(db);
+        for (const id of ids.slice(i, i + 400)) {
+          batch.update(doc(db, "photos", id), { approved: true });
+        }
+        await batch.commit();
+      }
+      // UI dikemas kini automatik oleh onSnapshot.
+    } catch (err) {
+      console.error("Ralat luluskan semua:", err);
+      alert("Gagal meluluskan sebahagian gambar. Sila cuba lagi.");
+    } finally {
+      butangLuluskanSemua.disabled = false;
+      // Label diselaraskan semula oleh kemasKiniButangLuluskanSemua()
+      // apabila snapshot seterusnya tiba.
+    }
+  });
 }
 
 // ------------------------------------------------------------
