@@ -218,7 +218,6 @@ function muatTurunFoto(i) {
 
   const btn = foto.butangMuat;
   const ikon = btn.querySelector(".ikon");
-  const teks = btn.querySelector(".teks");
 
   try {
     const nama = `${namaBersih(foto.name)}.${sambunganDari(foto.img)}`;
@@ -226,19 +225,16 @@ function muatTurunFoto(i) {
 
     // Maklum balas: muat turun berlaku senyap, jadi tunjukkan ia berjaya.
     ikon.textContent = "✓";
-    teks.textContent = "Disimpan";
     btn.classList.add("selesai");
   } catch (err) {
     console.error("Ralat muat turun gambar:", err);
     ikon.textContent = "✕";
-    teks.textContent = "Gagal";
     btn.classList.add("gagal");
   }
 
   clearTimeout(foto.pemasaMuat);
   foto.pemasaMuat = setTimeout(() => {
-    ikon.textContent = "↓";
-    teks.textContent = "Simpan";
+    ikon.textContent = "💾";
     btn.classList.remove("selesai", "gagal");
   }, 1800);
 }
