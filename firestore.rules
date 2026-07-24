@@ -88,7 +88,8 @@ service cloud.firestore {
           && resource.data.ownerUid == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['coupleName', 'weddingDate', 'themeColor',
-                        'welcomeMessage', 'slug', 'preModeration', 'latarId'])
+                        'welcomeMessage', 'slug', 'preModeration', 'latarId',
+                        'fontId'])
         )
 
         // (3) Tetamu — hanya menaikkan kaunter foto (+1) semasa upload.

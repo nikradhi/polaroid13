@@ -184,6 +184,7 @@ export const PASANGAN_FONT = [
   { id: "romantik-kaligrafi", label: "Romantik Kaligrafi", tajuk: "Great Vibes",        teks: "Lato" },
   { id: "minimalis-kemas",    label: "Minimalis Kemas",    tajuk: "Marcellus",          teks: "Karla" },
   { id: "elegan-nusantara",   label: "Elegan Nusantara",   tajuk: "Amiri",              teks: "Poppins" },
+  { id: "manis-santai",       label: "Manis Santai",       tajuk: "Caveat",             teks: "Poppins" },
 ];
 
 // ------------------------------------------------------------
@@ -361,6 +362,14 @@ export function latarSah(id) {
   return LATAR_PILIHAN.some((l) => l.id === id) ? id : null;
 }
 
+// id pasangan font hanya sah jika ada dalam PASANGAN_FONT. Nilai lain
+// (termasuk apa-apa dari Firestore) -> null -> caller jatuh ke pra-set.
+// Sama corak seperti latarSah: pelanggan pilih ID PASANGAN yang dikurasi,
+// bukan nama font mentah — jadi tiada nama font liar masuk ke CSS.
+export function fontIdSah(id) {
+  return PASANGAN_FONT.some((p) => p.id === id) ? id : null;
+}
+
 // ------------------------------------------------------------
 //  gayaLatar(latarId, warna) -> { imej, tapis, opacity }
 // ------------------------------------------------------------
@@ -422,7 +431,9 @@ export function idPasanganFont(tajuk, teks) {
 }
 
 // Bina nilai font-family lengkap berserta sandaran: "'Lato', sans-serif"
-function tumpukFont(nama) {
+// Dieksport supaya pratonton picker font (tetapan.js) dapat sandaran
+// yang sama seperti halaman tetamu.
+export function tumpukFont(nama) {
   const f = SPEK_FONT[nama];
   return f ? `'${nama}', ${f.tumpuk}` : "serif";
 }
@@ -445,9 +456,17 @@ export function bacaTema(ev) {
     (adaTema ? null : warnaSah(ev?.themeColor)) ||
     praset.utama;
 
-  const pasanganPraset = cariPasanganFont(praset.font) || PASANGAN_FONT[0];
-  const fontTajuk = fontSah(t.headingFont) || pasanganPraset.tajuk;
-  const fontTeks = fontSah(t.bodyFont) || pasanganPraset.teks;
+  // Keutamaan font:
+  //   1. theme.headingFont/bodyFont (override admin) — tertinggi, jangan pecah
+  //      majlis lama yang admin sudah set nama font terus.
+  //   2. ev.fontId — pilihan pasangan pelanggan (dari panel tetapan).
+  //   3. pasangan pra-set tema.
+  const pasanganDipilih =
+    cariPasanganFont(fontIdSah(ev?.fontId)) ||
+    cariPasanganFont(praset.font) ||
+    PASANGAN_FONT[0];
+  const fontTajuk = fontSah(t.headingFont) || pasanganDipilih.tajuk;
+  const fontTeks = fontSah(t.bodyFont) || pasanganDipilih.teks;
 
   // Corak latar: pilihan pelanggan (latarId) diterjemah kepada nilai CSS.
   // Untuk corak bunga, corakTapis/corakOpacity pra-set dikekalkan supaya

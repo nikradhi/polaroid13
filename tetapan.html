@@ -78,6 +78,23 @@
     .latar-nama { font-size: .72rem; color: #8a7a70; text-align: center; margin-top: .3rem; }
     .latar-item.terpilih .latar-nama { color: #5a4a42; font-weight: 600; }
 
+    /* Petak pilihan pasangan font — self-preview dalam font sebenar */
+    .fon-tile {
+      width: 100%;
+      border-radius: 0.6rem;
+      border: 1px solid #e5d5ca;
+      background-color: #fffdf9;
+      cursor: pointer;
+      padding: 0.55rem 0.7rem;
+      text-align: left;
+      transition: box-shadow .15s ease, transform .1s ease;
+    }
+    .fon-tile:hover { transform: translateY(-1px); }
+    .fon-tile.terpilih { box-shadow: 0 0 0 2px #5a4a42; border-color: transparent; }
+    .fon-tajuk { font-size: 1.15rem; line-height: 1.2; color: #5a4a42; }
+    .fon-label { font-size: .72rem; color: #8a7a70; margin-top: .15rem; }
+    .fon-tile.terpilih .fon-label { color: #5a4a42; font-weight: 600; }
+
     /* Kotak status & bar progres muat turun */
     .kotak-status { border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
     .kotak-status--info    { background: #fdf1e7; color: #8a5a3a; }
@@ -85,6 +102,33 @@
     .kotak-status--berjaya { background: #e4f7e8; color: #2f7a43; }
     .bar-luar { background: #efe0d6; border-radius: 999px; height: 10px; overflow: hidden; }
     .bar-dalam { background: linear-gradient(90deg, #d9a5ac, #b76e79); height: 100%; width: 0%; transition: width .2s ease; }
+
+    /* Butang kad pautan pantas (galeri & moderasi) */
+    .kad-pintas {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .35rem;
+      border-radius: 1rem;                 /* rounded-2xl selari kad lain */
+      border: 1px solid #e5d5ca;
+      background: rgba(255,255,255,.7);
+      padding: 1.1rem .75rem;
+      text-align: center;
+      transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+      box-shadow: 0 4px 14px -8px rgba(183,110,121,.35);
+    }
+    .kad-pintas:hover {
+      transform: translateY(-2px);
+      border-color: #d9a5ac;
+      box-shadow: 0 10px 22px -10px rgba(183,110,121,.55);
+    }
+    .kad-pintas .ikon {
+      font-size: 1.6rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 3px rgba(183,110,121,.25));
+    }
+    .kad-pintas .tajuk { font-weight: 600; color: #b76e79; }
+    .kad-pintas .subteks { font-size: .7rem; color: #a09088; }
 
     /* Kad cetak: tersembunyi di skrin, hanya muncul semasa cetak */
     .cetak-sahaja { display: none; }
@@ -241,6 +285,17 @@
           <p class="mt-1.5 text-xs text-[#a09088]">Corak diwarnakan ikut tema warna anda.</p>
         </div>
 
+        <!-- Gaya font -->
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Gaya font</label>
+          <div id="fon-pilihan" class="grid grid-cols-2 gap-2.5"></div>
+          <p class="mt-1.5 text-xs text-[#a09088]">Font tajuk & teks halaman majlis anda.</p>
+          <!-- Nota kunci: pilihan font hanya Premium ke atas (Basic guna pra-set) -->
+          <p id="fon-kunci" class="hidden mt-2 rounded-lg bg-[#fdf1e7] text-[#8a5a3a] text-xs px-3 py-2">
+            🔒 Pilihan font untuk pakej Premium ke atas. Pakej Basic guna font tema pra-set.
+          </p>
+        </div>
+
         <!-- Mesej aluan -->
         <div>
           <label class="block text-sm font-medium mb-1.5">Mesej aluan <span class="text-[#a09088] font-normal">(pilihan)</span></label>
@@ -255,8 +310,16 @@
 
       <!-- Pautan pantas -->
       <div class="grid grid-cols-2 gap-3">
-        <a id="link-galeri" href="#" class="rounded-xl border border-[#d9a5ac] py-3 text-center text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">Lihat Galeri</a>
-        <a id="link-moderasi" href="#" class="rounded-xl border border-[#d9a5ac] py-3 text-center text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">Panel Moderasi</a>
+        <a id="link-galeri" href="#" class="kad-pintas">
+          <span class="ikon">🖼️</span>
+          <span class="tajuk">Lihat Galeri</span>
+          <span class="subteks">Tengok semua gambar tetamu</span>
+        </a>
+        <a id="link-moderasi" href="#" class="kad-pintas">
+          <span class="ikon">🛡️</span>
+          <span class="tajuk">Panel Moderasi</span>
+          <span class="subteks">Lulus / tolak gambar</span>
+        </a>
       </div>
 
       <!-- Kad Muat Turun Gambar (Premium) -->
@@ -314,6 +377,17 @@
           Dalam dialog cetak, tandakan <b>“Background graphics”</b> / <b>“Grafik latar”</b>
           supaya corak bunga turut dicetak.
         </p>
+
+        <!-- Kongsi dengan tetamu — ayat jemputan sedia salin (paparan sahaja) -->
+        <div class="no-print mt-5 border-t border-[#e5d5ca] pt-4">
+          <h3 class="font-serif-elegan text-lg font-semibold">Kongsi dengan tetamu</h3>
+          <p class="mt-1 text-xs text-[#a09088] leading-relaxed">
+            Kongsi kod QR atau pautan di atas kepada tetamu melalui WhatsApp,
+            kad jemputan, atau media sosial. Anda boleh guna ayat jemputan ini:
+          </p>
+          <p id="qr-ayat"
+             class="mt-2 rounded-xl border border-[#e5d5ca] bg-[#fbf6f0] px-4 py-3 text-left text-sm text-[#6b5c54] leading-relaxed whitespace-pre-line"></p>
+        </div>
       </div>
 
     </div>
@@ -324,14 +398,14 @@
   <section id="kad-cetak" class="cetak-sahaja text-center">
     <p class="font-tangan text-3xl text-[#b76e79]">Majlis Perkahwinan</p>
     <h1 id="cetak-nama" class="font-serif-elegan text-5xl font-semibold my-3"></h1>
-    <p id="cetak-tarikh" class="font-serif-elegan text-xl text-[#8a7a70]"></p>
+    <p id="cetak-tarikh" class="font-serif-elegan text-5xl font-semibold text-[#5a4d44]"></p>
     <div id="cetak-garis" class="mx-auto my-8 h-px w-32 bg-[#e0cfc2]"></div>
 
     <h2 class="font-serif-elegan text-3xl font-medium mb-1">Kongsi Gambar Anda</h2>
     <p class="text-sm text-[#8a7a70] mb-6">Imbas kod QR ini untuk muat naik gambar &amp; ucapan anda</p>
 
     <!-- Tagline utama kad -->
-    <p id="cetak-tagline" class="inline-block bg-[#dc2626] text-white font-serif-elegan text-2xl font-semibold uppercase tracking-[.3em] px-6 py-3 rounded-xl mb-5">
+    <p id="cetak-tagline" class="inline-block bg-[#dc2626] text-white font-sans text-2xl font-bold uppercase tracking-[.25em] px-6 py-3 rounded-xl mb-5">
       Imbas &amp; Raikan
     </p>
 

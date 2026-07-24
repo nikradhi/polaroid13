@@ -31,7 +31,10 @@ import {
 } from "./firebase.js";
 import { bolehMuatTurun, formatTarikhMajlis } from "./majlis.js";
 import { muatTurunZipMajlis, mesejRalatMuatTurun } from "./muat-turun.js";
-import { LATAR_PILIHAN, gayaLatar, latarSah } from "./tema.js";
+import {
+  LATAR_PILIHAN, gayaLatar, latarSah,
+  PASANGAN_FONT, fontIdSah, muatFontTema, tumpukFont,
+} from "./tema.js";
 // Had & konfig pakej — SATU SUMBER KEBENARAN (js/packages.js).
 import { HAD_TANPA_HAD, PAKEJ, CIRI_AKAN_DATANG, LABEL_CIRI } from "./packages.js";
 import { bolehGuna, namaPakej, pakejEvent, bakiGambar, tanpaHad } from "./gating.js";
@@ -78,6 +81,8 @@ const cTarikh = document.getElementById("c-tarikh");
 const cTema = document.getElementById("c-tema");
 const swatches = document.getElementById("swatches");
 const latarPilihan = document.getElementById("latar-pilihan");
+const fonPilihan = document.getElementById("fon-pilihan");
+const fonKunci = document.getElementById("fon-kunci");
 const temaKunci = document.getElementById("tema-kunci");
 const barisWarnaSendiri = document.getElementById("baris-warna-sendiri");
 const cWelcome = document.getElementById("c-welcome");
@@ -99,6 +104,7 @@ const linkModerasi = document.getElementById("link-moderasi");
 const zonQr = document.getElementById("zon-qr");
 const qrcodeEl = document.getElementById("qrcode");
 const qrUrl = document.getElementById("qr-url");
+const qrAyat = document.getElementById("qr-ayat");
 const butangCetak = document.getElementById("butang-cetak");
 
 // --- DOM: kad cetak (tersembunyi di skrin, muncul semasa @media print) ---
@@ -113,6 +119,7 @@ let eventId = null;   // id majlis pengguna
 let eventData = null; // data majlis semasa
 let slugSah = false;  // adakah slug semasa dalam input sah & tersedia
 let latarDipilih = "bunga"; // id corak latar terpilih
+let fonDipilih = "klasik-elegan"; // id pasangan font terpilih (lalai = rose-gold)
 
 // ------------------------------------------------------------
 //  UTILITI
@@ -268,7 +275,9 @@ function isiBorang() {
   latarDipilih = latarSah(eventData.latarId) || "bunga";
   binaJubinLatar();
   pratontonLatar(); // papar corak tersimpan pada halaman sebaik dimuat
-  terapGatingTema(); // kunci "warna sendiri" untuk pakej tanpa kustom warna
+  fonDipilih = fontIdSah(eventData.fontId) || "klasik-elegan";
+  binaPilihanFon();
+  terapGatingTema(); // kunci "warna sendiri" & font untuk pakej tanpa kustom
 
   // Jika slug sedia ada, anggap sah
   slugSah = !!eventData.slug;
@@ -469,11 +478,18 @@ function binaKadPakej() {
 // ------------------------------------------------------------
 function terapGatingTema() {
   const boleh = bolehGuna(eventData, "kustomWarnaFont");
-  if (!cTema || !barisWarnaSendiri) return;
-  cTema.disabled = !boleh;
-  barisWarnaSendiri.classList.toggle("opacity-50", !boleh);
-  barisWarnaSendiri.classList.toggle("pointer-events-none", !boleh);
-  if (temaKunci) temaKunci.classList.toggle("hidden", boleh);
+  if (cTema && barisWarnaSendiri) {
+    cTema.disabled = !boleh;
+    barisWarnaSendiri.classList.toggle("opacity-50", !boleh);
+    barisWarnaSendiri.classList.toggle("pointer-events-none", !boleh);
+    if (temaKunci) temaKunci.classList.toggle("hidden", boleh);
+  }
+  // Picker font dikunci sama seperti pemilih warna sendiri.
+  if (fonPilihan) {
+    fonPilihan.classList.toggle("opacity-50", !boleh);
+    fonPilihan.classList.toggle("pointer-events-none", !boleh);
+    if (fonKunci) fonKunci.classList.toggle("hidden", boleh);
+  }
 }
 
 // ------------------------------------------------------------
@@ -561,6 +577,66 @@ function tandaLatarTerpilih() {
     const on = tile?.dataset.latar === latarDipilih;
     it.classList.toggle("terpilih", on);
     tile?.classList.toggle("terpilih", on);
+  });
+}
+
+// ------------------------------------------------------------
+//  PILIHAN FONT — petak self-preview (setiap satu render dalam
+//  font pasangan itu sendiri). Corak sama seperti binaJubinLatar.
+// ------------------------------------------------------------
+//  Berbeza dengan warna/latar, TIADA pratonton global pada body:
+//  petak sudah menunjukkan rupa sebenar, dan menukar font seluruh
+//  panel admin hanya mengelirukan (sepadan reka bentuk tema.js:
+//  panel pelanggan sendiri tidak bertukar semasa melihat pilihan).
+// ------------------------------------------------------------
+function binaPilihanFon() {
+  if (!fonPilihan) return;
+
+  // Muat semua font pasangan sekali supaya pratonton render betul
+  // (bukan jatuh ke serif sistem). Panel pelanggan sahaja — bukan
+  // halaman tetamu — jadi kos rangkaian ini diterima.
+  muatFontTema(...PASANGAN_FONT.flatMap((p) => [p.tajuk, p.teks]));
+
+  const contoh = (cNama.value || "").trim() || "Aisyah & Ali";
+  fonPilihan.innerHTML = "";
+
+  PASANGAN_FONT.forEach((p) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "fon-tile";
+    btn.title = p.label;
+    btn.dataset.fon = p.id;
+
+    // Baris contoh nama pasangan dalam font TAJUK
+    const tajuk = document.createElement("div");
+    tajuk.className = "fon-tajuk";
+    tajuk.style.fontFamily = tumpukFont(p.tajuk);
+    tajuk.textContent = contoh;
+
+    // Label pasangan dalam font TEKS
+    const label = document.createElement("div");
+    label.className = "fon-label";
+    label.style.fontFamily = tumpukFont(p.teks);
+    label.textContent = p.label;
+
+    btn.append(tajuk, label);
+
+    btn.addEventListener("click", () => {
+      fonDipilih = p.id;
+      tandaFonTerpilih();
+      autoSimpan(); // pasangan font berubah -> simpan
+    });
+
+    fonPilihan.appendChild(btn);
+  });
+
+  tandaFonTerpilih();
+}
+
+function tandaFonTerpilih() {
+  if (!fonPilihan) return;
+  fonPilihan.querySelectorAll(".fon-tile").forEach((tile) => {
+    tile.classList.toggle("terpilih", tile.dataset.fon === fonDipilih);
   });
 }
 
@@ -672,6 +748,7 @@ function kumpulMedan() {
     themeColor: cTema.value || "#b76e79",
     welcomeMessage: cWelcome.value.trim(),
     latarId: latarSah(latarDipilih) || "bunga",
+    fontId: fontIdSah(fonDipilih) || "klasik-elegan",
   };
 }
 
@@ -770,6 +847,17 @@ function kemasKiniQr() {
   zonQr.classList.remove("hidden");
   qrUrl.textContent = urlLanding;
   qrUrl.href = urlLanding;
+
+  // Contoh ayat jemputan (paparan sahaja) — isi nama & pautan sebenar.
+  // textContent, bukan innerHTML: coupleName boleh diubah pengguna.
+  const namaMajlis = eventData.coupleName || "kami";
+  qrAyat.textContent =
+    "Assalamualaikum & Salam Sejahtera 🤍\n\n" +
+    `Jemput kongsi gambar & ucapan di majlis ${namaMajlis}!\n` +
+    "Imbas QR atau klik pautan untuk muat naik terus dari telefon:\n" +
+    `${urlLanding}\n\n` +
+    "Terima kasih meraikan hari istimewa kami 💐";
+
   qrcodeEl.innerHTML = "";
   qr = new QRCode(qrcodeEl, {
     text: urlLanding,
