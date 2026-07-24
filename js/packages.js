@@ -65,7 +65,7 @@ export const PAKEJ = {
 
   eksklusif: {
     nama: "Eksklusif",
-    harga: 55,            // RM
+    harga: 80,            // RM
     hadGambar: null,      // tanpa had
     tempohHari: 365,
     ciri: {
