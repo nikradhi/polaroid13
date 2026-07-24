@@ -208,6 +208,27 @@
     .reaksi.gagal   { color: #a13a3a; border-color: #f0c4c4; background: #fbe4e4; }
     .reaksi.gagal .ikon { color: #a13a3a; }
 
+    /* --- Mobile 2-lajur: kad sempit (~110–150px isi), jadi pil ❤+SIMPAN
+       dipadatkan supaya muat satu baris; overflow:hidden pada kad akan
+       kerat butang jika terlalu besar. flex-wrap = jaring keselamatan pada
+       telefon paling kecil (SIMPAN turun ke bawah, tak terkerat). Datang
+       SELEPAS peraturan pointer:coarse supaya mengatasinya di telefon. */
+    @media (max-width: 767px) {
+      .kad-galeri__badan { padding: .55rem .6rem .7rem; }
+      .kad-galeri__tajuk { font-size: .95rem; }
+      .kad-galeri__petikan { font-size: .82rem; -webkit-line-clamp: 2; }
+      /* flex-start + margin-left:auto pada SIMPAN: kekal ❤ kiri / SIMPAN
+         kanan pada satu baris, DAN bila terpaksa wrap, SIMPAN tetap kanan
+         pada baris keduanya (bukan terkiri seperti space-between). */
+      .reaksi-bar { flex-wrap: wrap; justify-content: flex-start; gap: .35rem; margin-top: .55rem; }
+      .reaksi {
+        min-height: 38px; padding: 5px 9px; font-size: .8rem; gap: 4px;
+        flex: 0 1 auto; min-width: 0;
+      }
+      .reaksi .hati, .reaksi .ikon { font-size: .95rem; }
+      .reaksi--simpan { letter-spacing: 0; margin-left: auto; }
+    }
+
     /* Lightbox */
     #lightbox {
       position: fixed; inset: 0; z-index: 50;
