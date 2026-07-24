@@ -194,6 +194,54 @@
       </form>
     </div>
 
+    <!-- ====== Promosi harga pakej ====== -->
+    <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
+      <h2 class="font-serif-elegan text-2xl font-semibold mb-1">🏷️ Promosi Harga Pakej</h2>
+      <p class="text-xs text-[#a09088] mb-4">
+        Tetapkan harga promo untuk tempoh tertentu. Harga promo dipapar di halaman
+        jualan (dengan harga asal dicoret) semasa julat tarikh aktif. Biar harga kosong
+        untuk pakej yang tiada promo.
+      </p>
+
+      <form id="form-promo" class="grid sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <label class="inline-flex items-center gap-2 text-sm font-medium">
+            <input id="p-aktif" type="checkbox" class="h-4 w-4 rounded border-[#d9a5ac] text-[#b76e79]" />
+            Aktifkan promosi
+          </label>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium mb-1.5">Tajuk banner (pilihan)</label>
+          <input id="p-tajuk" type="text" class="input-elok" placeholder="cth: Promosi Raya — jimat sekarang!" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Tarikh mula</label>
+          <input id="p-mula" type="date" class="input-elok" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Tarikh tamat</label>
+          <input id="p-tamat" type="date" class="input-elok" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Harga promo Basic (RM)</label>
+          <input id="p-harga-basic" type="number" min="1" step="1" class="input-elok" placeholder="asal RM40 — kosong = tiada promo" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Harga promo Premium (RM)</label>
+          <input id="p-harga-premium" type="number" min="1" step="1" class="input-elok" placeholder="asal RM50 — kosong = tiada promo" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5">Harga promo Eksklusif (RM)</label>
+          <input id="p-harga-eksklusif" type="number" min="1" step="1" class="input-elok" placeholder="asal RM80 — kosong = tiada promo" />
+        </div>
+        <div class="sm:col-span-2">
+          <div id="promo-ralat" class="hidden kotak-ralat mb-3" role="alert"></div>
+          <div id="promo-jaya" class="hidden kotak-jaya mb-3" role="status"></div>
+          <button id="butang-simpan-promo" type="submit" class="btn-utama rounded-xl px-6 py-3 font-medium">Simpan Promosi</button>
+        </div>
+      </form>
+    </div>
+
     <!-- ====== Senarai pelanggan ====== -->
     <h2 class="font-serif-elegan text-2xl font-semibold mb-3">Senarai Majlis</h2>
 

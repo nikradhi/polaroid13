@@ -17,15 +17,24 @@ import {
   CIRI_AKAN_DATANG,
   LABEL_CIRI,
   NOMBOR_WHATSAPP,
+  hargaPakej,
+  promoAktifSekarang,
 } from "./packages.js";
+import { db, doc, getDoc } from "./firebase.js";
 
 // --- Keadaan wizard ---
 let langkahSemasa = 1;          // 1..4
 let pakejDipilih = null;        // "basic" | "premium" | "eksklusif" | null
 const JUM_LANGKAH = 4;
 
+// Data promosi harga (settings/promo). null = belum dimuat / tiada.
+let promoSemasa = null;
+
 // --- Rujukan DOM ---
 const kadPakej = document.getElementById("kad-pakej");
+const bannerPromo = document.getElementById("banner-promo");
+const bannerPromoTajuk = document.getElementById("banner-promo-tajuk");
+const bannerPromoTarikh = document.getElementById("banner-promo-tarikh");
 const ringkasan = document.getElementById("ringkasan");
 const wizardAmaran = document.getElementById("wizard-amaran");
 const butangKembali = document.getElementById("butang-kembali");
@@ -79,18 +88,33 @@ function binaKadPakej() {
       kad.appendChild(soon);
     }
 
+    // Harga berkesan (mengambil kira promosi jika aktif)
+    const hg = hargaPakej(id, promoSemasa);
+
+    // Lencana "Promo" (sudut kiri supaya tak bertindih Popular/Akan datang)
+    if (hg.adaPromo) {
+      const promo = document.createElement("span");
+      promo.className =
+        "absolute -top-2 left-3 rounded-full bg-[#b76e79] text-white text-[10px] px-2 py-0.5";
+      promo.textContent = "Promo";
+      kad.appendChild(promo);
+    }
+
     // Nama pakej
     const nama = document.createElement("p");
     nama.className = "font-serif-elegan text-xl font-semibold text-[#5a4a42]";
     nama.textContent = p.nama;
     kad.appendChild(nama);
 
-    // Harga
+    // Harga (papar harga asal dicoret + harga promo bila ada promo)
     const harga = document.createElement("p");
     harga.className = "mb-1";
-    harga.innerHTML =
-      `<span class="text-2xl font-bold text-[#b76e79]">RM${p.harga}</span>` +
-      `<span class="text-xs text-[#a09088]"> / majlis</span>`;
+    harga.innerHTML = hg.adaPromo
+      ? `<span class="text-sm text-[#a09088] line-through mr-1">RM${hg.asal}</span>` +
+        `<span class="text-2xl font-bold text-[#b76e79]">RM${hg.promo}</span>` +
+        `<span class="text-xs text-[#a09088]"> / majlis</span>`
+      : `<span class="text-2xl font-bold text-[#b76e79]">RM${hg.asal}</span>` +
+        `<span class="text-xs text-[#a09088]"> / majlis</span>`;
     kad.appendChild(harga);
 
     // Meta: had gambar + tempoh
@@ -206,10 +230,15 @@ function sembunyiAmaran() {
 // ------------------------------------------------------------
 function binaRingkasan() {
   const p = PAKEJ[pakejDipilih] || PAKEJ[PAKEJ_LALAI];
+  const hg = hargaPakej(pakejDipilih, promoSemasa);
   ringkasan.innerHTML = "";
 
+  const teksHarga = hg.adaPromo
+    ? `${p.nama} — RM${hg.promo} (promo, asal RM${hg.asal})`
+    : `${p.nama} — RM${hg.asal}`;
+
   const baris = [
-    ["Pakej", `${p.nama} — RM${p.harga}`],
+    ["Pakej", teksHarga],
     ["Had gambar", p.hadGambar == null ? "Tanpa had" : `${p.hadGambar} gambar`],
     ["Tempoh aktif", `${p.tempohHari} hari`],
     ["Nama pasangan", wNamaPasangan.value.trim()],
@@ -251,10 +280,14 @@ function binaRingkasan() {
 function binaMesejWasap(p) {
   const slug = wSlug.value.trim();
   const emel = wEmel.value.trim();
+  const hg = hargaPakej(pakejDipilih, promoSemasa);
+  const teksPakej = hg.adaPromo
+    ? `${p.nama} (RM${hg.promo} promo, asal RM${hg.asal})`
+    : `${p.nama} (RM${hg.asal})`;
   const baris = [
     "Hai! Saya nak tempah Polaroid Wedding 📸",
     "",
-    `Pakej: ${p.nama} (RM${p.harga})`,
+    `Pakej: ${teksPakej}`,
     `Nama pasangan: ${wNamaPasangan.value.trim()}`,
     `Tarikh majlis: ${wTarikh.value}`,
     slug ? `URL pilihan: ${slug}` : null,
@@ -290,6 +323,35 @@ butangKembali.addEventListener("click", () => {
   el?.addEventListener("input", sembunyiAmaran);
 });
 
+// ------------------------------------------------------------
+//  PROMOSI — muat settings/promo, papar banner jika aktif
+// ------------------------------------------------------------
+function formatTarikhBanner(nilai) {
+  const dt = nilai && typeof nilai.toDate === "function" ? nilai.toDate()
+    : (nilai instanceof Date ? nilai : null);
+  if (!dt) return "";
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(dt.getDate())}/${p(dt.getMonth() + 1)}/${dt.getFullYear()}`;
+}
+
+async function muatPromo() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "promo"));
+    if (snap.exists()) promoSemasa = snap.data();
+  } catch (err) {
+    // Bukan kritikal — jika gagal, harga biasa dipapar.
+    console.warn("Gagal memuat promosi:", err);
+  }
+
+  // Banner promosi (hanya bila promo aktif)
+  if (promoAktifSekarang(promoSemasa)) {
+    bannerPromoTajuk.textContent = promoSemasa.tajuk?.trim() || "Promosi harga istimewa!";
+    const tamat = formatTarikhBanner(promoSemasa.tamat);
+    bannerPromoTarikh.textContent = tamat ? `Sah sehingga ${tamat}` : "";
+    bannerPromo.classList.remove("hidden");
+  }
+}
+
 // --- Mula ---
-binaKadPakej();
 tunjukLangkah(1);
+muatPromo().finally(binaKadPakej);

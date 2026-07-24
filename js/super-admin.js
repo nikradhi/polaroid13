@@ -104,6 +104,19 @@ const butangCipta = document.getElementById("butang-cipta");
 const ciptaRalat = document.getElementById("cipta-ralat");
 const ciptaJaya = document.getElementById("cipta-jaya");
 
+// --- Rujukan DOM: borang promosi harga ---
+const formPromo = document.getElementById("form-promo");
+const pAktif = document.getElementById("p-aktif");
+const pTajuk = document.getElementById("p-tajuk");
+const pMula = document.getElementById("p-mula");
+const pTamat = document.getElementById("p-tamat");
+const pHargaBasic = document.getElementById("p-harga-basic");
+const pHargaPremium = document.getElementById("p-harga-premium");
+const pHargaEksklusif = document.getElementById("p-harga-eksklusif");
+const butangSimpanPromo = document.getElementById("butang-simpan-promo");
+const promoRalat = document.getElementById("promo-ralat");
+const promoJaya = document.getElementById("promo-jaya");
+
 // Langganan senarai (dua koleksi: events + eventsPrivate)
 let unsubs = [];
 let dataEvents = [];        // [{ id, ...medan event }]
@@ -235,6 +248,7 @@ onAuthStateChanged(auth, async (user) => {
     zonPanel.classList.remove("hidden");
     emelAdmin.textContent = user.email || "admin";
     mulaLangganan();
+    muatPromo();
   } else {
     hentikanLangganan();
     sembunyiBukanAdmin();
@@ -381,6 +395,104 @@ formCipta.addEventListener("submit", async (e) => {
   } finally {
     butangCipta.disabled = false;
     butangCipta.textContent = teksAsal;
+  }
+});
+
+// ------------------------------------------------------------
+//  PROMOSI HARGA PAKEJ (dokumen settings/promo)
+// ------------------------------------------------------------
+//  Satu dokumen global; baca awam (tetamu perlu nampak harga promo di
+//  pakej.html), tulis admin sahaja (dikuatkuasa Firestore rules).
+// ------------------------------------------------------------
+
+// Isi borang promo dari settings/promo (jika ada).
+async function muatPromo() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "promo"));
+    if (!snap.exists()) return;
+    const p = snap.data();
+    pAktif.checked = p.aktif === true;
+    pTajuk.value = p.tajuk || "";
+    pMula.value = keNilaiInputTarikh(p.mula);
+    pTamat.value = keNilaiInputTarikh(p.tamat);
+    pHargaBasic.value = p.harga?.basic ?? "";
+    pHargaPremium.value = p.harga?.premium ?? "";
+    pHargaEksklusif.value = p.harga?.eksklusif ?? "";
+  } catch (err) {
+    console.warn("Gagal memuat promosi:", err);
+  }
+}
+
+// Baca satu input harga -> nombor sah (>0) atau null (kosong/tak sah).
+function bacaHargaInput(el) {
+  const v = el.value.trim();
+  if (v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+formPromo.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  promoRalat.classList.add("hidden");
+  promoJaya.classList.add("hidden");
+
+  // Kumpul harga promo (buang yang kosong).
+  const harga = {};
+  const hb = bacaHargaInput(pHargaBasic);
+  const hp = bacaHargaInput(pHargaPremium);
+  const he = bacaHargaInput(pHargaEksklusif);
+  if (hb != null) harga.basic = hb;
+  if (hp != null) harga.premium = hp;
+  if (he != null) harga.eksklusif = he;
+
+  // Tarikh: mula = awal hari, tamat = hujung hari (selari corak expiresAt).
+  const mula = pMula.value ? new Date(pMula.value + "T00:00:00") : null;
+  const tamat = pTamat.value ? new Date(pTamat.value + "T23:59:59") : null;
+
+  if (pAktif.checked) {
+    if (!mula || !tamat) {
+      promoRalat.textContent = "Sila isi tarikh mula & tamat untuk promosi aktif.";
+      promoRalat.classList.remove("hidden");
+      return;
+    }
+    if (tamat < mula) {
+      promoRalat.textContent = "Tarikh tamat mesti selepas tarikh mula.";
+      promoRalat.classList.remove("hidden");
+      return;
+    }
+    if (Object.keys(harga).length === 0) {
+      promoRalat.textContent = "Isi sekurang-kurangnya satu harga promo pakej.";
+      promoRalat.classList.remove("hidden");
+      return;
+    }
+  }
+
+  butangSimpanPromo.disabled = true;
+  const teksAsal = butangSimpanPromo.textContent;
+  butangSimpanPromo.textContent = "Sedang menyimpan…";
+
+  try {
+    await setDoc(doc(db, "settings", "promo"), {
+      aktif: pAktif.checked,
+      tajuk: pTajuk.value.trim(),
+      mula,
+      tamat,
+      harga,
+      dikemasOleh: auth.currentUser.uid,
+      dikemasPada: serverTimestamp(),
+    }, { merge: true });
+
+    promoJaya.textContent = pAktif.checked
+      ? "✓ Promosi disimpan & aktif dalam julat tarikh ditetapkan."
+      : "✓ Disimpan. Promosi kini tidak aktif.";
+    promoJaya.classList.remove("hidden");
+  } catch (err) {
+    console.error("Ralat simpan promosi:", err);
+    promoRalat.textContent = "Gagal menyimpan promosi (semak sambungan / rules Firestore).";
+    promoRalat.classList.remove("hidden");
+  } finally {
+    butangSimpanPromo.disabled = false;
+    butangSimpanPromo.textContent = teksAsal;
   }
 });
 

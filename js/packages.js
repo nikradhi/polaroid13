@@ -147,3 +147,56 @@ export function pakejTerendahUntukCiri(namaCiri) {
   }
   return null;
 }
+
+// ============================================================
+//  PROMOSI HARGA — dikawal super-admin (dokumen Firestore settings/promo)
+// ------------------------------------------------------------
+//  Helper di bawah TULEN: terima objek `promo` (data settings/promo)
+//  sebagai argumen — TIADA gandingan ke Firestore, supaya packages.js
+//  kekal bebas Firebase dan boleh diimport di mana-mana.
+//
+//  Bentuk objek promo (semua medan pilihan / mungkin tiada):
+//    { aktif: bool, tajuk: string, mula: Date|Timestamp,
+//      tamat: Date|Timestamp, harga: { basic, premium, eksklusif } }
+//
+//  `mula`/`tamat` boleh jadi Date (dari <input type=date>) ATAU
+//  Firestore Timestamp (ada .toDate()). keTarikh() menormalkan.
+// ============================================================
+
+// Tukar Date | Firestore Timestamp | null -> Date | null.
+function keTarikh(nilai) {
+  if (!nilai) return null;
+  if (typeof nilai.toDate === "function") return nilai.toDate(); // Timestamp
+  if (nilai instanceof Date) return nilai;
+  return null;
+}
+
+// Adakah promo aktif pada masa `sekarang` (default: sekarang sebenar)?
+// Aktif = suis induk hidup DAN sekarang dalam julat [mula, tamat].
+export function promoAktifSekarang(promo, sekarang = new Date()) {
+  if (!promo || promo.aktif !== true) return false;
+  const mula = keTarikh(promo.mula);
+  const tamat = keTarikh(promo.tamat);
+  if (mula && sekarang < mula) return false;
+  if (tamat && sekarang > tamat) return false;
+  return true;
+}
+
+// Kira harga berkesan untuk satu pakej.
+// Pulang { asal, promo, adaPromo }:
+//   - asal    : harga asal (RM) dari PAKEJ.
+//   - promo   : harga promo (RM) jika sah & lebih murah, jika tidak null.
+//   - adaPromo: true bila harga promo dikenakan.
+// Penjaga: promo hanya dikira bila promoAktifSekarang() DAN
+// 0 < harga[id] < asal (elak "diskaun" yang menaikkan harga).
+export function hargaPakej(idPakej, promo, sekarang = new Date()) {
+  const p = PAKEJ[idPakej] || PAKEJ[PAKEJ_LALAI];
+  const asal = p.harga;
+  if (promoAktifSekarang(promo, sekarang)) {
+    const hp = Number(promo.harga?.[idPakej]);
+    if (Number.isFinite(hp) && hp > 0 && hp < asal) {
+      return { asal, promo: hp, adaPromo: true };
+    }
+  }
+  return { asal, promo: null, adaPromo: false };
+}

@@ -36,8 +36,11 @@ import {
   PASANGAN_FONT, fontIdSah, muatFontTema, tumpukFont,
 } from "./tema.js";
 // Had & konfig pakej — SATU SUMBER KEBENARAN (js/packages.js).
-import { HAD_TANPA_HAD, PAKEJ, CIRI_AKAN_DATANG, LABEL_CIRI } from "./packages.js";
+import { HAD_TANPA_HAD, PAKEJ, CIRI_AKAN_DATANG, LABEL_CIRI, hargaPakej } from "./packages.js";
 import { bolehGuna, namaPakej, pakejEvent, bakiGambar, tanpaHad } from "./gating.js";
+
+// Data promosi harga (settings/promo). null = belum dimuat / tiada.
+let promoSemasa = null;
 
 // Warna tema pratetap
 const TEMA_PILIHAN = [
@@ -468,12 +471,19 @@ function binaKadPakej() {
     }
     kad.appendChild(tajuk);
 
-    // Harga
+    // Harga (papar harga asal dicoret + harga promo bila ada promo)
+    const hg = hargaPakej(id, promoSemasa);
     const harga = document.createElement("p");
     harga.className = "mb-1.5";
+    if (hg.adaPromo) {
+      const asal = document.createElement("span");
+      asal.className = "text-[color:var(--warna-teks-samar)] line-through mr-1";
+      asal.textContent = `RM${hg.asal}`;
+      harga.appendChild(asal);
+    }
     const hargaAngka = document.createElement("span");
     hargaAngka.className = "font-semibold text-[#b76e79] text-base";
-    hargaAngka.textContent = `RM${p.harga}`;
+    hargaAngka.textContent = `RM${hg.adaPromo ? hg.promo : hg.asal}`;
     const hargaUnit = document.createElement("span");
     hargaUnit.className = "text-[#a09088]";
     hargaUnit.textContent = " / majlis";
@@ -509,6 +519,20 @@ function binaKadPakej() {
     kadPakej.appendChild(kad);
   });
 }
+
+// Muat promosi harga (settings/promo) sekali, kemudian render semula kad
+// jika majlis sudah dimuat. Gagal = senyap (harga biasa dipapar).
+async function muatPromo() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "promo"));
+    if (snap.exists()) promoSemasa = snap.data();
+  } catch (err) {
+    console.warn("Gagal memuat promosi:", err);
+    return;
+  }
+  if (eventData) binaKadPakej();
+}
+muatPromo();
 
 // ------------------------------------------------------------
 //  GATING TEMA: "pilih warna sendiri" hanya Premium ke atas.

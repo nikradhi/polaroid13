@@ -124,6 +124,16 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ---------- settings/{docId} ----------
+    // Konfigurasi global (cth settings/promo — promosi harga pakej).
+    // Baca AWAM: tetamu di pakej.html perlu nampak harga promo tanpa
+    // log masuk. Tulis: super-admin sahaja (isAdmin()). Tiada maklumat
+    // sulit di sini — hanya tetapan paparan.
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // ---------- photos/{id} ----------
     match /photos/{docId} {
 
