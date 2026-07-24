@@ -61,26 +61,9 @@
     <p class="text-[color:var(--warna-teks-lembut)] max-w-sm" id="ralat-mesej">Pautan ini mungkin salah atau majlis telah tamat.</p>
   </div>
 
-  <!-- Landing majlis -->
-  <main id="zon-landing" class="hidden mx-auto w-full max-w-md px-5 py-10 sm:py-16">
-    <div class="text-center">
-      <p class="font-tangan text-2xl teks-tema mb-2">Kami Menjemput Anda</p>
-      <h1 id="l-nama" class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">Majlis Perkahwinan</h1>
-      <p id="l-tarikh" class="mt-2 text-sm text-[color:var(--warna-teks-lembut)]"></p>
-
-      <div class="mx-auto my-6 h-px w-24" style="background: var(--tema); opacity:.4"></div>
-
-      <p id="l-welcome" class="text-[color:var(--warna-teks-lembut)] leading-relaxed mb-8"></p>
-
-      <div class="space-y-3">
-        <a id="l-upload" href="#" class="btn-tema block rounded-xl py-4 text-lg font-medium">📸 Muat Naik Gambar</a>
-        <a id="l-galeri" href="#" class="btn-garis block rounded-xl py-3.5 font-medium">🖼️ Lihat Galeri</a>
-        <a id="l-wall" href="#" class="btn-garis hidden block rounded-xl py-3.5 font-medium">📺 Live Wall</a>
-      </div>
-
-      <p class="mt-10 font-tangan text-2xl teks-tema">Terima kasih! 💐</p>
-    </div>
-  </main>
+  <!-- Tiada lagi skrin landing 3-butang: js/e.js mengalih terus ke
+       gallery.html?e=<eventId> selepas resolusi slug. #zon-memuat kekal
+       tampil sebagai spinner ringkas sepanjang resolusi + alihan. -->
 
   <!-- Laluan root-absolut supaya berfungsi walaupun guna URL cantik /e/<slug> -->
   <!--

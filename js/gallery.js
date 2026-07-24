@@ -29,6 +29,8 @@ import {
   namaBersih,
   sambunganDari,
 } from "./muat-turun.js";
+import { pasangBorangUpload } from "./upload.js";
+import { bolehGuna } from "./gating.js";
 
 pasangGayaPolaroid();
 
@@ -43,6 +45,12 @@ const zonMemuat = document.getElementById("zon-memuat");
 const butangMuatLebih = document.getElementById("butang-muat-lebih");
 const kotakRalat = document.getElementById("kotak-ralat");
 const inputCari = document.getElementById("input-cari");
+
+// Modal muat naik
+const modalUpload = document.getElementById("modal-upload");
+const butangBukaUpload = document.getElementById("butang-buka-upload");
+const butangKosongUpload = document.getElementById("butang-kosong-upload");
+const pautanWall = document.getElementById("pautan-wall");
 
 // Lightbox
 const lightbox = document.getElementById("lightbox");
@@ -128,7 +136,7 @@ async function muatGambar() {
 // ------------------------------------------------------------
 //  TAMBAH SATU FOTO KE GALERI
 // ------------------------------------------------------------
-function tambahFoto(id, row) {
+function tambahFoto(id, row, diAtas = false) {
   const foto = {
     id,
     name: row.name || "Tetamu",
@@ -170,15 +178,22 @@ function tambahFoto(id, row) {
   butangMuat.className = "reaksi";
   butangMuat.setAttribute("aria-label", `Muat turun gambar daripada ${foto.name}`);
   butangMuat.title = "Muat turun gambar ini";
-  // Guna aksara teks (bukan emoji) supaya boleh diwarnakan CSS dan
-  // menyatu dengan tema majlis — sama seperti ♥ pada butang suka.
-  butangMuat.innerHTML = `<span class="ikon">↓</span> <span class="teks">Simpan</span>`;
+  // Ikon sahaja (floppy 💾 = "simpan") — jimat ruang dalam bingkai.
+  butangMuat.innerHTML = `<span class="ikon">💾</span>`;
   butangMuat.addEventListener("click", () => muatTurunFoto(indeks));
   bar.appendChild(butangMuat);
 
+  // Bar reaksi diletak DALAM bingkai polaroid (ruang putih bawah, selepas nama)
+  // — bukan sebagai adik-beradik di luar bingkai. Skop galeri sahaja:
+  // wall.js guna createPolaroid() tanpa bar ini, jadi Live Wall tak terkesan.
+  const kaki = kad.querySelector(".polaroid__caption");
+  kaki.appendChild(bar);
   item.appendChild(kad);
-  item.appendChild(bar);
-  zonGaleri.appendChild(item);
+  // Foto baharu (hantar dari modal) dimasukkan di ATAS; foto pagination
+  // biasa ditambah di bawah. Closure `indeks` kekal betul untuk klik/reaksi
+  // kerana ia sepadan dengan kedudukan dalam fotoDimuat (bukan susunan DOM).
+  if (diAtas) zonGaleri.insertBefore(item, zonGaleri.firstChild);
+  else zonGaleri.appendChild(item);
 
   foto.el = item;
   foto.kiraEl = kiraEl;
@@ -316,6 +331,49 @@ function tapisCarian() {
 if (inputCari) inputCari.addEventListener("input", tapisCarian);
 
 // ------------------------------------------------------------
+//  MODAL MUAT NAIK
+// ------------------------------------------------------------
+function bukaModal() {
+  if (!modalUpload) return;
+  modalUpload.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+function tutupModal() {
+  if (!modalUpload) return;
+  modalUpload.classList.add("hidden");
+  document.body.style.overflow = "";
+}
+if (modalUpload) {
+  // Klik latar (bukan kotak) -> tutup
+  modalUpload.addEventListener("click", (e) => {
+    if (e.target === modalUpload) tutupModal();
+  });
+  // Butang tutup (×) + "Lihat Galeri" selepas berjaya
+  modalUpload.querySelectorAll("[data-tutup-modal]").forEach((el) =>
+    el.addEventListener("click", tutupModal)
+  );
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modalUpload.classList.contains("hidden")) tutupModal();
+  });
+}
+
+// Callback bila upload berjaya: masukkan gambar baharu di ATAS galeri.
+function masukkanFotoBaru(foto) {
+  zonKosong.classList.add("hidden");
+  tambahFoto(
+    foto.id,
+    {
+      name: foto.name,
+      message: foto.message,
+      image_url: foto.image_url,
+      likes: foto.likes,
+    },
+    true // diAtas
+  );
+  tapisCarian(); // hormati penapis carian semasa
+}
+
+// ------------------------------------------------------------
 //  MULA
 // ------------------------------------------------------------
 function paparRalatMula(mesej) {
@@ -336,8 +394,9 @@ function paparRalatMula(mesej) {
   }
 
   // Muat majlis untuk tema + nama (tidak kritikal jika gagal)
+  let majlis = null;
   try {
-    const majlis = await muatEvent(eventId);
+    majlis = await muatEvent(eventId);
     if (majlis) {
       terapTema(majlis);
       const namaMajlis = document.getElementById("nama-majlis");
@@ -347,10 +406,25 @@ function paparRalatMula(mesej) {
     /* majlis tidak aktif — galeri masih boleh papar gambar diluluskan */
   }
 
-  // Bawa eventId pada semua pautan ke halaman muat naik
-  document.querySelectorAll('a[href="index.html"]').forEach((a) => {
-    a.href = `index.html?e=${encodeURIComponent(eventId)}`;
+  // Pasang borang muat naik (modal). Jika majlis tak sah/tamat/penuh,
+  // butang "Muat Naik" kekal tersembunyi supaya tetamu tak keliru.
+  const hasilUpload = pasangBorangUpload({
+    eventId,
+    majlis,
+    onBerjaya: masukkanFotoBaru,
   });
+  if (hasilUpload.boleh) {
+    butangBukaUpload?.classList.remove("hidden");
+    butangKosongUpload?.classList.remove("hidden");
+    butangBukaUpload?.addEventListener("click", bukaModal);
+    butangKosongUpload?.addEventListener("click", bukaModal);
+  }
+
+  // Pautan Live Wall — dedah hanya untuk pakej yang menyokongnya (Premium+).
+  if (pautanWall && majlis && bolehGuna(majlis, "liveWall")) {
+    pautanWall.href = `wall.html?e=${encodeURIComponent(eventId)}`;
+    pautanWall.classList.remove("hidden");
+  }
 
   butangMuatLebih.addEventListener("click", muatGambar);
   muatGambar();

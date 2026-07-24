@@ -135,7 +135,7 @@
       <h2 id="majlis-ralat-tajuk" class="font-serif-elegan text-2xl font-semibold mb-2">Majlis tidak dijumpai</h2>
       <p id="majlis-ralat-mesej" class="text-[color:var(--warna-teks-lembut)] leading-relaxed"></p>
 
-      <!-- CTA jualan: hanya didedah bila TIADA pautan majlis (?e=) — lihat js/upload.js -->
+      <!-- CTA jualan: hanya didedah bila TIADA pautan majlis (?e=) — lihat js/index.js -->
       <div id="cta-pakej" class="hidden mt-8 border-t border-[color:var(--warna-sempadan)] pt-8">
         <p class="text-sm text-[color:var(--warna-teks-lembut)] mb-3">
           Nak buat galeri polaroid untuk majlis anda sendiri?
@@ -282,7 +282,7 @@
     </footer>
   </main>
 
-  <!-- Logik upload (ES module) -->
-  <script type="module" src="js/upload.js"></script>
+  <!-- Pengawal root: redirect ke galeri (jika ?e=) atau papar CTA pakej -->
+  <script type="module" src="js/index.js"></script>
 </body>
 </html>

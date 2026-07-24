@@ -1,31 +1,23 @@
 // ============================================================
-//  LANDING MAJLIS AWAM (e.html)
+//  PENGALIH MAJLIS AWAM (e.html)
 // ------------------------------------------------------------
+//  Sasaran QR/pautan. Tugasnya ringkas: selesaikan slug -> eventId,
+//  sahkan majlis aktif & belum tamat, kemudian ALIH terus ke galeri
+//  gabungan (gallery.html?e=<eventId>) yang mengandungi galeri + modal
+//  muat naik + Live Wall. Tiada lagi skrin landing 3-butang.
+//
 //  - Baca slug dari URL: ?e=<slug>  ATAU  path /e/<slug>
 //  - Resolusi: slugs/<slug> -> eventId -> events/<eventId>
-//  - Jika majlis tidak aktif / tamat / tidak wujud -> papar mesej.
-//  - Terap tema warna + mesej aluan; bina butang ke sub-halaman
-//    (upload/galeri/wall) dengan ?e=<eventId>.
+//  - Jika majlis tidak aktif / tamat / tidak wujud -> papar mesej ralat.
 // ============================================================
 
 import { db, doc, getDoc } from "./firebase.js";
-import { formatTarikhMajlis, terapTema } from "./majlis.js";
-import { bolehGuna } from "./gating.js";
-
-const HAD_TANPA_HAD = 100000;
+import { terapTema } from "./majlis.js";
 
 const zonMemuat = document.getElementById("zon-memuat");
 const zonRalat = document.getElementById("zon-ralat");
 const ralatTajuk = document.getElementById("ralat-tajuk");
 const ralatMesej = document.getElementById("ralat-mesej");
-const zonLanding = document.getElementById("zon-landing");
-
-const lNama = document.getElementById("l-nama");
-const lTarikh = document.getElementById("l-tarikh");
-const lWelcome = document.getElementById("l-welcome");
-const lUpload = document.getElementById("l-upload");
-const lGaleri = document.getElementById("l-galeri");
-const lWall = document.getElementById("l-wall");
 
 // ------------------------------------------------------------
 //  Dapatkan slug dari URL (sokong query param & path cantik)
@@ -42,7 +34,6 @@ function dapatSlug() {
 
 function paparRalat(tajuk, mesej) {
   zonMemuat.classList.add("hidden");
-  zonLanding.classList.add("hidden");
   ralatTajuk.textContent = tajuk;
   ralatMesej.textContent = mesej;
   zonRalat.classList.remove("hidden");
@@ -91,30 +82,18 @@ function paparRalat(tajuk, mesej) {
       return;
     }
 
-    // 4) Terap tema + kandungan
+    // 4) Terap tema (elak kilatan warna berbeza sebelum galeri memuat).
     terapTema(ev);
-    lNama.textContent = ev.coupleName || "Majlis Perkahwinan";
-    const tarikh = formatTarikhMajlis(ev.weddingDate);
-    lTarikh.textContent = tarikh ? `✦ ${tarikh} ✦` : "";
-    lWelcome.textContent = ev.welcomeMessage || "";
 
-    // 5) Butang ke sub-halaman (guna eventId).
-    //    Laluan dikira dari import.meta.url (modul ini berada di <root>/js/),
-    //    jadi ASAS ialah root tapak — betul untuk ketiga-tiga keadaan:
-    //    root domain, sub-direktori (GitHub Pages project site), dan URL
-    //    cantik /e/<slug> di mana URL pelayar tidak menunjukkan lokasi
-    //    sebenar fail. Halaman muat naik = index.html.
+    // 5) Terus alih ke GALERI GABUNGAN (galeri + modal muat naik) menggunakan
+    //    eventId yang telah diselesaikan. Galeri sendiri yang mengendalikan
+    //    muat naik, Live Wall (Premium), dan tema. Tiada lagi skrin landing
+    //    3-butang. `replace` supaya butang "back" tidak balik ke halaman ini.
+    //    Laluan dikira dari import.meta.url (modul di <root>/js/) supaya betul
+    //    untuk root domain, sub-direktori, dan URL cantik /e/<slug>.
     const eid = encodeURIComponent(eventId);
-    lUpload.href = new URL(`../index.html?e=${eid}`, import.meta.url).href;
-    lGaleri.href = new URL(`../gallery.html?e=${eid}`, import.meta.url).href;
-    // Pautan Live Wall didedah untuk pakej yang menyokongnya (Premium ke atas).
-    if (bolehGuna(ev, "liveWall")) {
-      lWall.href = new URL(`../wall.html?e=${eid}`, import.meta.url).href;
-      lWall.classList.remove("hidden");
-    }
-
-    zonMemuat.classList.add("hidden");
-    zonLanding.classList.remove("hidden");
+    location.replace(new URL(`../gallery.html?e=${eid}`, import.meta.url).href);
+    return;
   } catch (err) {
     console.error("Ralat memuat majlis:", err);
     paparRalat("Ralat", "Gagal memuat majlis. Semak sambungan internet anda.");
