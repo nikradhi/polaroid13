@@ -51,10 +51,12 @@ function binaKadPakej() {
     const p = PAKEJ[id];
     const dipilih = id === pakejDipilih;
     const popular = id === "premium"; // pakej disyorkan
+    const akanDatang = id === "eksklusif"; // belum boleh ditempah
 
     const kad = document.createElement("div");
     kad.className =
       "relative rounded-2xl border p-4 flex flex-col " +
+      (akanDatang ? "opacity-70 " : "") +
       (dipilih
         ? "border-[#b76e79] bg-[#fdf1f2] ring-2 ring-[#e7c3c9]"
         : "border-[#e5d5ca] bg-white/70");
@@ -66,6 +68,15 @@ function binaKadPakej() {
         "absolute -top-2 right-3 rounded-full bg-[#b76e79] text-white text-[10px] px-2 py-0.5";
       pop.textContent = "Popular";
       kad.appendChild(pop);
+    }
+
+    // Lencana "Akan datang"
+    if (akanDatang) {
+      const soon = document.createElement("span");
+      soon.className =
+        "absolute -top-2 right-3 rounded-full bg-[#a09088] text-white text-[10px] px-2 py-0.5";
+      soon.textContent = "Akan datang";
+      kad.appendChild(soon);
     }
 
     // Nama pakej
@@ -113,12 +124,18 @@ function binaKadPakej() {
     btn.className =
       "rounded-xl py-2.5 font-medium text-sm " +
       (dipilih ? "btn-utama" : "btn-kedua");
-    btn.textContent = dipilih ? "✓ Dipilih" : "Pilih";
-    btn.addEventListener("click", () => {
-      pakejDipilih = id;
-      sembunyiAmaran();
-      binaKadPakej(); // render semula supaya serlahan dikemas kini
-    });
+    if (akanDatang) {
+      // Pakej belum boleh ditempah: lumpuhkan butang & jangan pasang klik.
+      btn.disabled = true;
+      btn.textContent = "Akan datang";
+    } else {
+      btn.textContent = dipilih ? "✓ Dipilih" : "Pilih";
+      btn.addEventListener("click", () => {
+        pakejDipilih = id;
+        sembunyiAmaran();
+        binaKadPakej(); // render semula supaya serlahan dikemas kini
+      });
+    }
     kad.appendChild(btn);
 
     kadPakej.appendChild(kad);

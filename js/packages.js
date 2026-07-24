@@ -25,7 +25,7 @@ export const HAD_TANPA_HAD = 100000;
 export const PAKEJ = {
   basic: {
     nama: "Basic",
-    harga: 149,           // TODO: laras harga sebenar (RM)
+    harga: 40,            // RM
     hadGambar: 300,       // had gambar
     tempohHari: 14,       // tempoh galeri aktif (hari)
     ciri: {
@@ -45,7 +45,7 @@ export const PAKEJ = {
 
   premium: {
     nama: "Premium",
-    harga: 299,           // TODO: laras harga sebenar (RM)
+    harga: 50,            // RM
     hadGambar: null,      // tanpa had
     tempohHari: 60,
     ciri: {
@@ -65,7 +65,7 @@ export const PAKEJ = {
 
   eksklusif: {
     nama: "Eksklusif",
-    harga: 499,           // TODO: laras harga sebenar (RM)
+    harga: 55,            // RM
     hadGambar: null,      // tanpa had
     tempohHari: 365,
     ciri: {

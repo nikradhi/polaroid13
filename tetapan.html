@@ -203,6 +203,11 @@
       <button id="butang-login" type="submit" class="btn-utama w-full rounded-xl py-3.5 font-medium">Log Masuk</button>
     </form>
 
+    <a href="pakej.html"
+       class="btn-kembali mt-3 block w-full rounded-xl py-3.5 text-center font-medium">
+      Lihat Pakej
+    </a>
+
     <p class="mt-6 text-center text-xs text-[#a09088] leading-relaxed">
       Emel &amp; kata laluan diberikan oleh admin selepas bayaran disahkan.
     </p>
@@ -228,19 +233,52 @@
     <!-- Kandungan majlis -->
     <div id="zon-majlis" class="hidden space-y-6">
 
-      <!-- Borang customize — wizard 3 langkah (satu langkah/skrin; lihat js/tetapan.js) -->
+      <!-- Info pakej (status langganan + kuota) — terus selepas emel -->
+      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-4">
+        <div class="grid grid-cols-3 gap-2 text-center text-sm">
+          <div><span class="block text-xs text-[#a09088]">Pakej</span><span id="info-pakej" class="font-medium">—</span></div>
+          <div><span class="block text-xs text-[#a09088]">Status</span><span id="info-status" class="font-medium">—</span></div>
+          <div><span class="block text-xs text-[#a09088]">Tamat</span><span id="info-tamat" class="font-medium">—</span></div>
+        </div>
+
+        <!-- Kuota gambar -->
+        <div class="mt-4">
+          <div class="flex items-center justify-between text-xs text-[#8a7a70] mb-1">
+            <span>Kuota gambar</span>
+            <span id="kuota-teks" class="font-medium">—</span>
+          </div>
+          <div id="kuota-jalur" class="h-2 rounded-full bg-[#e0cfc2] overflow-hidden">
+            <div id="kuota-bar" class="h-full rounded-full bg-[#b76e79] transition-all" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div id="amaran-majlis" class="hidden kotak-amaran mt-3"></div>
+      </div>
+
+      <!-- Borang customize — wizard 5 langkah (satu langkah/skrin; lihat js/tetapan.js) -->
       <form id="form-tetapan" class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5">
 
         <!-- Penunjuk nombor langkah (atas) -->
         <ol id="stepper-atas" class="stepper-atas">
-          <li class="stepper-item" data-lompat="1"><span class="stepper-titik">1</span><span class="stepper-label">URL</span></li>
-          <li class="stepper-item" data-lompat="2"><span class="stepper-titik">2</span><span class="stepper-label">Butiran</span></li>
-          <li class="stepper-item" data-lompat="3"><span class="stepper-titik">3</span><span class="stepper-label">Reka</span></li>
-          <li class="stepper-item" data-lompat="4"><span class="stepper-titik">4</span><span class="stepper-label">Kongsi</span></li>
+          <li class="stepper-item" data-lompat="1"><span class="stepper-titik">1</span><span class="stepper-label">Pakej</span></li>
+          <li class="stepper-item" data-lompat="2"><span class="stepper-titik">2</span><span class="stepper-label">URL</span></li>
+          <li class="stepper-item" data-lompat="3"><span class="stepper-titik">3</span><span class="stepper-label">Butiran</span></li>
+          <li class="stepper-item" data-lompat="4"><span class="stepper-titik">4</span><span class="stepper-label">Reka</span></li>
+          <li class="stepper-item" data-lompat="5"><span class="stepper-titik">5</span><span class="stepper-label">Kongsi</span></li>
         </ol>
 
-        <!-- ===== Langkah 1: URL unik ===== -->
+        <!-- ===== Langkah 1: Pakej & Ciri (paparan) ===== -->
         <section class="langkah" data-langkah="1">
+          <h3 class="font-serif-elegan text-xl font-semibold mb-1">Pakej &amp; Ciri</h3>
+          <p class="text-xs text-[#a09088] mb-4">Pakej semasa anda diserlahkan. Untuk naik taraf, hubungi admin.</p>
+          <div id="kad-pakej" class="grid gap-3 sm:grid-cols-3"></div>
+          <div class="mt-5">
+            <button type="button" class="btn-utama w-full rounded-xl py-3 font-medium" data-teruskan="1">Teruskan →</button>
+          </div>
+        </section>
+
+        <!-- ===== Langkah 2: URL unik ===== -->
+        <section class="langkah" data-langkah="2">
           <h3 class="font-serif-elegan text-xl font-semibold mb-3">URL unik majlis</h3>
           <label class="block text-sm font-medium mb-1.5">URL unik majlis anda</label>
           <div class="flex items-center gap-1 text-sm">
@@ -250,14 +288,15 @@
           <p id="slug-status" class="mt-1 text-xs h-4"></p>
           <p class="text-[11px] text-[#a09088]">Huruf kecil, nombor &amp; tanda '-' sahaja. Contoh: <b>ali-siti</b></p>
 
-          <div class="mt-5">
-            <button type="button" class="btn-utama w-full rounded-xl py-3 font-medium" data-teruskan="1">Teruskan →</button>
+          <div class="flex gap-2 mt-5">
+            <button type="button" class="btn-kembali" data-kembali="2">← Kembali</button>
+            <button type="button" class="btn-utama flex-1 rounded-xl py-3 font-medium" data-teruskan="2">Teruskan →</button>
           </div>
           <p class="kotak-ralat hidden mt-2 langkah-ralat" role="alert"></p>
         </section>
 
-        <!-- ===== Langkah 2: Butiran majlis ===== -->
-        <section class="langkah" data-langkah="2">
+        <!-- ===== Langkah 3: Butiran majlis ===== -->
+        <section class="langkah" data-langkah="3">
           <h3 class="font-serif-elegan text-xl font-semibold mb-3">Butiran majlis</h3>
           <!-- Nama pasangan -->
           <label class="block text-sm font-medium mb-1.5">Nama pasangan</label>
@@ -272,14 +311,14 @@
           <textarea id="c-welcome" rows="2" maxlength="200" class="input-elok resize-none" placeholder="cth: Terima kasih meraikan hari istimewa kami"></textarea>
 
           <div class="flex gap-2 mt-5">
-            <button type="button" class="btn-kembali" data-kembali="2">← Kembali</button>
-            <button type="button" class="btn-utama flex-1 rounded-xl py-3 font-medium" data-teruskan="2">Teruskan →</button>
+            <button type="button" class="btn-kembali" data-kembali="3">← Kembali</button>
+            <button type="button" class="btn-utama flex-1 rounded-xl py-3 font-medium" data-teruskan="3">Teruskan →</button>
           </div>
           <p class="kotak-ralat hidden mt-2 langkah-ralat" role="alert"></p>
         </section>
 
-        <!-- ===== Langkah 3: Reka bentuk ===== -->
-        <section class="langkah" data-langkah="3">
+        <!-- ===== Langkah 4: Reka bentuk ===== -->
+        <section class="langkah" data-langkah="4">
           <h3 class="font-serif-elegan text-xl font-semibold mb-3">Reka bentuk</h3>
           <!-- Tema warna -->
           <label class="block text-sm font-medium mb-1.5">Tema warna</label>
@@ -308,14 +347,14 @@
           </p>
 
           <div class="flex gap-2 mt-5">
-            <button type="button" class="btn-kembali" data-kembali="3">← Kembali</button>
-            <button type="button" class="btn-utama flex-1 rounded-xl py-3 font-medium" data-teruskan="3">Teruskan →</button>
+            <button type="button" class="btn-kembali" data-kembali="4">← Kembali</button>
+            <button type="button" class="btn-utama flex-1 rounded-xl py-3 font-medium" data-teruskan="4">Teruskan →</button>
           </div>
           <p class="kotak-ralat hidden mt-2 langkah-ralat" role="alert"></p>
         </section>
 
-        <!-- ===== Langkah 4: Kongsi (QR + Muat Turun) ===== -->
-        <section class="langkah" data-langkah="4">
+        <!-- ===== Langkah 5: Kongsi (QR + Muat Turun) ===== -->
+        <section class="langkah" data-langkah="5">
           <h3 class="font-serif-elegan text-xl font-semibold mb-3">Kongsi majlis</h3>
 
           <!-- Kad QR -->
@@ -398,7 +437,7 @@
           </div>
 
           <div class="flex gap-2 mt-6">
-            <button type="button" class="btn-kembali" data-kembali="4">← Kembali</button>
+            <button type="button" class="btn-kembali" data-kembali="5">← Kembali</button>
           </div>
         </section>
 
@@ -407,35 +446,6 @@
         <!-- Penunjuk auto-save: perubahan disimpan sendiri (tiada butang simpan) -->
         <div id="status-simpan" class="h-5 text-sm text-[#a09088]" role="status" aria-live="polite"></div>
       </form>
-
-      <!-- Info pakej -->
-      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-4">
-        <div class="grid grid-cols-3 gap-2 text-center text-sm">
-          <div><span class="block text-xs text-[#a09088]">Pakej</span><span id="info-pakej" class="font-medium">—</span></div>
-          <div><span class="block text-xs text-[#a09088]">Status</span><span id="info-status" class="font-medium">—</span></div>
-          <div><span class="block text-xs text-[#a09088]">Tamat</span><span id="info-tamat" class="font-medium">—</span></div>
-        </div>
-
-        <!-- Kuota gambar -->
-        <div class="mt-4">
-          <div class="flex items-center justify-between text-xs text-[#8a7a70] mb-1">
-            <span>Kuota gambar</span>
-            <span id="kuota-teks" class="font-medium">—</span>
-          </div>
-          <div id="kuota-jalur" class="h-2 rounded-full bg-[#e0cfc2] overflow-hidden">
-            <div id="kuota-bar" class="h-full rounded-full bg-[#b76e79] transition-all" style="width:0%"></div>
-          </div>
-        </div>
-
-        <div id="amaran-majlis" class="hidden kotak-amaran mt-3"></div>
-      </div>
-
-      <!-- Pakej & ciri (paparan jualan — tiada checkout) -->
-      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5">
-        <h2 class="font-serif-elegan text-2xl font-semibold mb-1">Pakej &amp; Ciri</h2>
-        <p class="text-xs text-[#a09088] mb-4">Pakej semasa anda diserlahkan. Untuk naik taraf, hubungi admin.</p>
-        <div id="kad-pakej" class="grid gap-3 sm:grid-cols-3"></div>
-      </div>
 
       <!-- Pautan pantas -->
       <div class="grid grid-cols-2 gap-3">

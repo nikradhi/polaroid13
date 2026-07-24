@@ -47,6 +47,7 @@
     }
     .btn-kedua:hover:not(:disabled) { background: #fff; }
     .btn-kedua:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-kedua:focus-visible { outline: 2px solid #b76e79; outline-offset: 2px; }
 
     /* Butang WhatsApp (warna jenama) */
     .btn-wasap {
@@ -184,9 +185,13 @@
         class="btn-utama rounded-xl px-6 py-3 font-medium">Seterusnya →</button>
     </div>
 
-    <p class="mt-8 text-center text-xs text-[#a09088]">
-      Sudah ada akaun? <a href="tetapan.html" class="text-[#b76e79] hover:underline">Log masuk di sini</a>.
-    </p>
+    <div class="mt-8 text-center">
+      <p class="text-xs text-[#a09088] mb-3">Sudah ada akaun?</p>
+      <a href="tetapan.html"
+        class="btn-kedua inline-flex items-center justify-center gap-1.5 rounded-xl px-6 py-3 font-medium">
+        Log masuk <span aria-hidden="true">→</span>
+      </a>
+    </div>
 
   </main>
 

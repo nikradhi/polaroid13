@@ -123,13 +123,13 @@ let slugSah = false;  // adakah slug semasa dalam input sah & tersedia
 let latarDipilih = "bunga"; // id corak latar terpilih
 let fonDipilih = "klasik-elegan"; // id pasangan font terpilih (lalai = rose-gold)
 
-// --- Keadaan wizard (borang customize 4 langkah, satu langkah/skrin) ---
-//  Langkah 1-3 = medan (ada `siap`); Langkah 4 = Kongsi (QR + Muat Turun),
-//  langkah papar yang boleh dicapai selepas 3 langkah medan siap.
-const langkahEl = {};                            // {1:<section>, .., 4:..}
-const stepperItem = {};                          // {1:<li>, .., 4:..} penunjuk atas
-const siap = { 1: false, 2: false, 3: false };   // langkah medan selesai?
-let langkahAktif = 1;                            // langkah yang sedang dipapar (1..4)
+// --- Keadaan wizard (borang customize 5 langkah, satu langkah/skrin) ---
+//  Langkah 1 = Pakej (paparan) · 2 URL · 3 Butiran · 4 Reka (medan, ada `siap`)
+//  · 5 = Kongsi (QR + Muat Turun, paparan) — dicapai bila 2-4 siap.
+const langkahEl = {};                            // {1:<section>, .., 5:..}
+const stepperItem = {};                          // {1:<li>, .., 5:..} penunjuk atas
+const siap = { 2: false, 3: false, 4: false };   // langkah medan (2-4) selesai?
+let langkahAktif = 1;                            // langkah yang sedang dipapar (1..5)
 formTetapan.querySelectorAll(".langkah").forEach((el) => {
   langkahEl[el.dataset.langkah] = el;
 });
@@ -315,15 +315,15 @@ function isiBorang() {
   kemasKiniQr();
 
   // --- Keadaan awal wizard ---
-  // Majlis sedia dikonfigurasi → mula Langkah 1, semua bulatan hijau (boleh
-  // diklik lompat), QR + Muat Turun terus nampak. Majlis baru → mula Langkah 1
-  // kosong, penunjuk kelabu, QR/Muat Turun tersembunyi sampai Selesai.
+  // Sentiasa mula di Langkah 1 (Pakej & Ciri). Langkah medan 2-4 ditandai siap
+  // ikut data sedia ada supaya bulatan hijau (boleh diklik lompat) & Langkah 5
+  // (Kongsi: QR + Muat Turun) terus boleh dicapai untuk majlis dikonfigurasi.
   const adaData = !!(eventData.slug || (eventData.coupleName || "").trim()
                      || eventData.weddingDate || eventData.welcomeMessage);
-  siap[1] = !!eventData.slug;
-  siap[2] = !!(eventData.coupleName || "").trim();
-  siap[3] = adaData; // reka bentuk ada nilai lalai → dikira siap utk majlis sedia ada
-  bukaLangkah(adaData ? (pertamaBelum() || 1) : 1);
+  siap[2] = !!eventData.slug;                        // URL
+  siap[3] = !!(eventData.coupleName || "").trim();   // Butiran (nama)
+  siap[4] = adaData; // Reka ada nilai lalai → dikira siap utk majlis sedia ada
+  bukaLangkah(1);
 }
 
 // ------------------------------------------------------------
@@ -468,6 +468,19 @@ function binaKadPakej() {
     }
     kad.appendChild(tajuk);
 
+    // Harga
+    const harga = document.createElement("p");
+    harga.className = "mb-1.5";
+    const hargaAngka = document.createElement("span");
+    hargaAngka.className = "font-semibold text-[#b76e79] text-base";
+    hargaAngka.textContent = `RM${p.harga}`;
+    const hargaUnit = document.createElement("span");
+    hargaUnit.className = "text-[#a09088]";
+    hargaUnit.textContent = " / majlis";
+    harga.appendChild(hargaAngka);
+    harga.appendChild(hargaUnit);
+    kad.appendChild(harga);
+
     // Had gambar + tempoh
     const meta = document.createElement("p");
     meta.className = "text-xs text-[#a09088] mb-2";
@@ -528,45 +541,45 @@ function terapGatingTema() {
 //  Bulatan siap boleh diklik untuk lompat balik; belum-siap tak boleh.
 // ------------------------------------------------------------
 
-// Langkah pertama yang belum siap (0 jika semua siap).
-function pertamaBelum() {
-  return [1, 2, 3].find((n) => !siap[n]) || 0;
-}
+// Semua langkah medan (2-4) sudah siap?
 function semuaSiap() {
-  return siap[1] && siap[2] && siap[3];
+  return siap[2] && siap[3] && siap[4];
 }
 
 // Adakah langkah n boleh diteruskan (validasi minimum)?
+//  2 = URL (slug sah) · 3 = Butiran (nama diisi) · 1 Pakej & 4 Reka sentiasa sah.
 function bolehTeruskan(n) {
-  if (n === 1) return slugSah && bersihkanSlug(cSlug.value).length >= 3;
-  if (n === 2) return cNama.value.trim().length > 0;
-  return true; // Langkah 3 sentiasa sah (ada nilai lalai)
+  if (n === 2) return slugSah && bersihkanSlug(cSlug.value).length >= 3;
+  if (n === 3) return cNama.value.trim().length > 0;
+  return true;
 }
 
 // Adakah langkah n boleh dicapai (untuk lompat/klik penunjuk)?
-//  1-3: bila langkah itu sudah siap.  4 (Kongsi): bila ketiga-tiga siap.
+//  1 (Pakej): sentiasa · 5 (Kongsi): bila langkah medan siap · 2-4: bila siap.
 function bolehCapai(n) {
-  return n === 4 ? semuaSiap() : siap[n];
+  if (n === 1) return true;
+  if (n === 5) return semuaSiap();
+  return siap[n];
 }
 
 // Render penunjuk atas + papar SATU langkah aktif (satu sumber kebenaran).
 function kemasStepper() {
-  for (const n of [1, 2, 3, 4]) {
+  for (const n of [1, 2, 3, 4, 5]) {
     if (langkahEl[n]) langkahEl[n].classList.toggle("langkah--aktif", n === langkahAktif);
     const it = stepperItem[n];
     if (!it) continue;
     const aktif = n === langkahAktif;
-    // Langkah 4 (Kongsi) bukan langkah medan — tiada ✓, nombor kekal; hijau =
-    // boleh dicapai. Langkah 1-3: hijau + ✓ bila siap & bukan aktif.
-    const capaiHijau = n === 4 ? (semuaSiap() && !aktif) : (siap[n] && !aktif);
+    const display = n === 1 || n === 5;        // langkah papar (Pakej / Kongsi)
+    const hijau = !aktif && bolehCapai(n);     // boleh dicapai & bukan aktif → hijau
     it.classList.toggle("stepper-item--aktif", aktif);
-    it.classList.toggle("stepper-item--siap", capaiHijau);
+    it.classList.toggle("stepper-item--siap", hijau);
     const t = it.querySelector(".stepper-titik");
-    if (t) t.textContent = (n !== 4 && capaiHijau) ? "✓" : String(n); // textContent — selamat XSS
+    // ✓ hanya untuk langkah medan yang siap; langkah papar kekal nombor.
+    if (t) t.textContent = (!display && hijau) ? "✓" : String(n); // textContent — selamat XSS
   }
 }
 
-// Papar langkah n (1..4); yang lain disorok.
+// Papar langkah n (1..5); yang lain disorok.
 function bukaLangkah(n) {
   langkahAktif = n;
   kemasStepper();
@@ -590,7 +603,7 @@ async function teruskanLangkah(n) {
 
   if (!bolehTeruskan(n)) {
     if (ralat) {
-      ralat.textContent = n === 1
+      ralat.textContent = n === 2
         ? "Sila pilih URL yang sah dan tersedia dahulu."
         : "Sila isi nama pasangan dahulu.";
       ralat.classList.remove("hidden");
@@ -599,7 +612,7 @@ async function teruskanLangkah(n) {
   }
 
   // Flush simpan supaya tiada perubahan tertinggal semasa maju.
-  if (n === 1) {
+  if (n === 2) {
     if (bersihkanSlug(cSlug.value) !== (eventData?.slug || "")) await simpanSlug();
     if (!slugSah) {
       if (ralat) {
@@ -608,12 +621,13 @@ async function teruskanLangkah(n) {
       }
       return;
     }
-  } else {
+  } else if (n === 3 || n === 4) {
     await simpanMedanBiasa();
   }
+  // n === 1 (Pakej): paparan sahaja, tiada simpan.
 
-  siap[n] = true;
-  bukaLangkah(n + 1); // Langkah 3 → 4 (Kongsi: QR + Muat Turun)
+  if (n >= 2 && n <= 4) siap[n] = true;
+  bukaLangkah(n + 1); // 1→2 (URL) … 4→5 (Kongsi)
 }
 
 // ------------------------------------------------------------
