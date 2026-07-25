@@ -8,6 +8,9 @@
   <!-- Tailwind CSS melalui CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- JSZip (bina fail ZIP di client untuk muat turun gambar pelanggan) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -44,6 +47,46 @@
       padding: 0.65rem 0.9rem;
     }
     .input-elok:focus { border-color: #b76e79; outline: none; box-shadow: 0 0 0 2px rgba(217,165,172,.5); }
+
+    /* ====== Side navigation ====== */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      border-radius: 0.75rem;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.92rem;
+      color: #6a5a52;
+      text-align: left;
+      border-left: 3px solid transparent;
+      transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.6); color: #b76e79; }
+    .nav-item[aria-current="page"],
+    .nav-item[aria-current="page"]:hover {
+      background: linear-gradient(135deg, #c07f89 0%, #b76e79 100%);
+      color: #fff;
+      font-weight: 600;
+      border-left-color: transparent;
+      box-shadow: 0 6px 16px -6px rgba(183,110,121,.55);
+    }
+    .nav-ikon { font-size: 1.05rem; line-height: 1; }
+
+    /* Laci sisi: sticky di desktop, off-canvas di telefon */
+    #nav-sisi { transition: transform .25s ease; }
+    @media (max-width: 639.98px) {
+      #nav-sisi {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        z-index: 50;
+        width: 16rem;
+        transform: translateX(-105%);
+        overflow-y: auto;
+        box-shadow: 0 12px 40px -8px rgba(90,74,66,.35);
+      }
+      #nav-sisi.buka { transform: translateX(0); }
+    }
   </style>
 </head>
 
@@ -76,15 +119,47 @@
   </section>
 
   <!-- ============ PANEL SUPER ADMIN ============ -->
-  <section id="zon-panel" class="hidden mx-auto w-full max-w-6xl px-4 sm:px-6 py-8">
+  <section id="zon-panel" class="hidden mx-auto w-full max-w-6xl px-4 sm:px-6 py-6">
+   <div class="flex gap-6">
 
-    <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <div>
-        <h1 class="font-serif-elegan text-3xl font-semibold">Pengurusan Pelanggan</h1>
-        <p class="text-sm text-[#8a7a70]">Log masuk sebagai <span id="emel-admin" class="font-medium"></span></p>
+    <!-- ============ SIDEBAR (nav) ============ -->
+    <aside id="nav-sisi"
+      class="shrink-0 w-60 self-start bg-[#fdf8f3] sm:bg-white/60 border border-[#e5d5ca] rounded-2xl p-4 flex flex-col gap-1 sm:sticky sm:top-6">
+      <div class="px-1 mb-3">
+        <p class="font-tangan text-xl text-[#b76e79] leading-none">Panel Pemilik</p>
+        <h1 class="font-serif-elegan text-2xl font-semibold">Super Admin</h1>
+        <p class="mt-1 text-xs text-[#a09088] truncate">
+          <span id="emel-admin" class="font-medium"></span>
+        </p>
       </div>
-      <button id="butang-keluar" class="rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">Log Keluar</button>
+
+      <nav class="flex flex-col gap-1" aria-label="Navigasi super admin">
+        <button type="button" class="nav-item" data-sek="papan"><span class="nav-ikon">📊</span> Papan Pemuka</button>
+        <button type="button" class="nav-item" data-sek="selenggara"><span class="nav-ikon">🧹</span> Penyelenggaraan</button>
+        <button type="button" class="nav-item" data-sek="gambar"><span class="nav-ikon">🖼️</span> Urus Gambar</button>
+        <button type="button" class="nav-item" data-sek="cipta"><span class="nav-ikon">➕</span> Cipta Akaun</button>
+        <button type="button" class="nav-item" data-sek="harga"><span class="nav-ikon">🏷️</span> Harga &amp; Promosi</button>
+        <button type="button" class="nav-item" data-sek="pakej"><span class="nav-ikon">📦</span> Butiran Pakej</button>
+        <button type="button" class="nav-item" data-sek="senarai"><span class="nav-ikon">🗂️</span> Senarai Majlis</button>
+      </nav>
+
+      <button id="butang-keluar"
+        class="mt-3 rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">
+        Log Keluar
+      </button>
+    </aside>
+
+    <!-- ============ KANDUNGAN UTAMA ============ -->
+    <div class="flex-1 min-w-0">
+
+    <header class="flex items-center gap-3 mb-6">
+      <button id="butang-menu" type="button" aria-label="Buka menu"
+        class="sm:hidden shrink-0 rounded-lg border border-[#d9a5ac] px-3 py-2 text-lg leading-none text-[#b76e79] hover:bg-white/60 transition">☰</button>
+      <h1 id="tajuk-seksyen" class="font-serif-elegan text-3xl font-semibold">Papan Pemuka</h1>
     </header>
+
+    <!-- ====== SEK: PAPAN PEMUKA ====== -->
+    <div id="sek-papan">
 
     <!-- Statistik ringkas -->
     <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
@@ -122,6 +197,11 @@
       </div>
     </div>
 
+    </div><!-- /sek-papan -->
+
+    <!-- ====== SEK: PENYELENGGARAAN ====== -->
+    <div id="sek-selenggara" class="hidden">
+
     <!-- ====== Penyelenggaraan storan ====== -->
     <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
       <h2 class="font-serif-elegan text-2xl font-semibold mb-1">🧹 Penyelenggaraan Storan</h2>
@@ -158,6 +238,52 @@
 
       <div id="selenggara-log" class="hidden mt-4 rounded-xl bg-[#fdf6ef] border border-[#e5d5ca] p-3 text-xs text-[#6a5a52] whitespace-pre-line" role="status" aria-live="polite"></div>
     </div>
+
+    </div><!-- /sek-selenggara -->
+
+    <!-- ====== SEK: URUS GAMBAR PELANGGAN ====== -->
+    <div id="sek-gambar" class="hidden">
+      <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
+        <h2 class="font-serif-elegan text-2xl font-semibold mb-1">🖼️ Urus Gambar Pelanggan</h2>
+        <p class="text-xs text-[#a09088] mb-4">
+          Cari pelanggan mengikut emel atau no. telefon, lihat semua gambar mereka
+          (termasuk yang tersembunyi), muat turun semua sebagai ZIP, atau padam.
+        </p>
+
+        <!-- Carian pelanggan -->
+        <label for="g-cari" class="block text-sm font-medium mb-1">Cari pelanggan</label>
+        <input id="g-cari" type="text" autocomplete="off"
+          placeholder="Emel, no. telefon, nama pasangan, atau slug…"
+          class="w-full rounded-lg border border-[#e5d5ca] bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]" />
+
+        <!-- Senarai padanan -->
+        <div id="g-senarai" class="mt-3 flex flex-col gap-2"></div>
+
+        <!-- Panel pelanggan dipilih -->
+        <div id="g-panel" class="hidden mt-5 pt-5 border-t border-[#e5d5ca]">
+          <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+            <div id="g-info" class="text-sm min-w-0"></div>
+            <div class="flex flex-wrap gap-2 shrink-0">
+              <button id="g-zip" type="button"
+                class="rounded-lg border border-[#d9a5ac] px-3 py-1.5 text-xs font-medium text-[#b76e79] hover:bg-white/60 transition">
+                ⬇️ Muat turun semua (ZIP)
+              </button>
+              <button id="g-padam-semua" type="button"
+                class="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                🗑️ Padam SEMUA gambar
+              </button>
+            </div>
+          </div>
+
+          <div id="g-status" class="hidden mb-3 rounded-xl bg-[#fdf6ef] border border-[#e5d5ca] p-3 text-xs text-[#6a5a52] whitespace-pre-line" role="status" aria-live="polite"></div>
+
+          <div id="g-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+        </div>
+      </div>
+    </div><!-- /sek-gambar -->
+
+    <!-- ====== SEK: CIPTA AKAUN ====== -->
+    <div id="sek-cipta" class="hidden">
 
     <!-- ====== Borang cipta pelanggan baharu ====== -->
     <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
@@ -197,6 +323,11 @@
         </div>
       </form>
     </div>
+
+    </div><!-- /sek-cipta -->
+
+    <!-- ====== SEK: HARGA & PROMOSI ====== -->
+    <div id="sek-harga" class="hidden">
 
     <!-- ====== Promosi harga pakej ====== -->
     <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
@@ -241,6 +372,11 @@
       </form>
     </div>
 
+    </div><!-- /sek-harga -->
+
+    <!-- ====== SEK: BUTIRAN PAKEJ ====== -->
+    <div id="sek-pakej" class="hidden">
+
     <!-- ====== Butiran pakej ====== -->
     <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
       <h2 class="font-serif-elegan text-2xl font-semibold mb-1">📦 Butiran Pakej</h2>
@@ -262,13 +398,34 @@
       </form>
     </div>
 
+    </div><!-- /sek-pakej -->
+
+    <!-- ====== SEK: SENARAI MAJLIS ====== -->
+    <div id="sek-senarai" class="hidden">
+
     <!-- ====== Senarai pelanggan ====== -->
     <h2 class="font-serif-elegan text-2xl font-semibold mb-3">Senarai Majlis</h2>
 
     <!-- Carian: tapis ikut nama, emel, atau URL (sisi-klien) -->
     <input id="input-cari" type="search" placeholder="Cari nama, emel, atau URL…"
-      class="w-full rounded-xl border border-[#e5d5ca] bg-white/70 px-4 py-2.5 text-sm mb-4
+      class="w-full rounded-xl border border-[#e5d5ca] bg-white/70 px-4 py-2.5 text-sm mb-2
              focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]" />
+
+    <!-- Penapis: status akaun + jenis pakej (sisi-klien) -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <select id="filter-status"
+        class="rounded-xl border border-[#e5d5ca] bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]">
+        <option value="">Semua status</option>
+        <option value="active">Aktif</option>
+        <option value="inactive">Nyahaktif</option>
+        <option value="luput">Tamat tempoh</option>
+      </select>
+      <select id="filter-pakej"
+        class="rounded-xl border border-[#e5d5ca] bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]">
+        <option value="">Semua pakej</option>
+        <!-- pilihan pakej diisi oleh JS (ikut nama pakej efektif) -->
+      </select>
+    </div>
 
     <div id="zon-memuat" class="hidden text-center py-12">
       <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#e5d5ca] border-t-[#b76e79]"></div>
@@ -280,18 +437,22 @@
     </div>
     <div id="zon-tiada-carian" class="hidden text-center py-12">
       <div class="text-5xl mb-3">🔍</div>
-      <p class="text-[#8a7a70]">Tiada majlis padan dengan carian anda.</p>
+      <p class="text-[#8a7a70]">Tiada majlis padan dengan carian atau penapis anda.</p>
     </div>
 
     <!-- Kad (mobile) + jadual (desktop) diisi oleh JS -->
     <div id="senarai" class="space-y-3"></div>
 
-    <div class="text-center mt-4">
-      <button id="butang-muat-lebih" type="button"
-        class="hidden rounded-xl border border-[#d9a5ac] px-6 py-2.5 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">
-        Muat lebih
-      </button>
-    </div>
+    <!-- Pagination (nombor halaman) diisi oleh JS -->
+    <div id="pagination" class="hidden flex flex-wrap items-center justify-center gap-1.5 mt-5"></div>
+
+    </div><!-- /sek-senarai -->
+
+    </div><!-- /kandungan utama -->
+   </div><!-- /flex -->
+
+    <!-- Overlay laci (mobile sahaja) -->
+    <div id="nav-overlay" class="hidden fixed inset-0 z-40 bg-black/40 sm:hidden"></div>
   </section>
 
   <script type="module" src="js/super-admin.js"></script>

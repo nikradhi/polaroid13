@@ -179,6 +179,7 @@ export async function muatTurunZipMajlis(
   eventId,
   {
     slug = "",
+    termasukSemua = false,
     onStatus = () => {},
     onProgres = () => {},
     onSandaran = () => {},
@@ -191,17 +192,19 @@ export async function muatTurunZipMajlis(
     throw new Error("JSZIP_TIADA");
   }
 
-  // 1) Ambil semua gambar diluluskan bagi majlis ini
-  //    (corak query sama seperti galeri, tanpa limit)
+  // 1) Ambil gambar bagi majlis ini (corak query sama seperti galeri, tanpa
+  //    limit). Secara lalai hanya gambar diluluskan; super-admin boleh minta
+  //    SEMUA gambar (termasuk yang tersembunyi) dengan termasukSemua=true.
   onStatus("Mengambil senarai gambar…", "info");
-  const snap = await getDocs(
-    query(
-      collection(db, "photos"),
-      where("eventId", "==", eventId),
-      where("approved", "==", true),
-      orderBy("created_at", "desc")
-    )
-  );
+  const kekangan = [
+    collection(db, "photos"),
+    where("eventId", "==", eventId),
+  ];
+  if (!termasukSemua) {
+    kekangan.push(where("approved", "==", true));
+  }
+  kekangan.push(orderBy("created_at", "desc"));
+  const snap = await getDocs(query(...kekangan));
 
   if (snap.empty) {
     onStatus("Belum ada gambar untuk dimuat turun.", "info");

@@ -29,6 +29,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  increment,
   query,
   where,
   orderBy,
@@ -38,6 +39,7 @@ import {
 } from "./firebase.js";
 import { compressImej, blobKeBase64, FORMAT_UTAMA } from "./imej.js";
 import { dalamTempohTangguh, HARI_TANGGUH } from "./majlis.js";
+import { muatTurunZipMajlis, mesejRalatMuatTurun } from "./muat-turun.js";
 // Konfigurasi pakej — SATU SUMBER KEBENARAN (lihat js/packages.js).
 // Nak laras had/tempoh pakej? Ubah di packages.js sahaja.
 import {
@@ -45,8 +47,6 @@ import {
   HAD_TANPA_HAD,
   LABEL_CIRI,
   CIRI_AKAN_DATANG,
-  hadGambarDB,
-  tempohHariPakej,
   pakejEfektif,
   ciriEfektif,
   tempohHariEfektif,
@@ -56,7 +56,7 @@ import {
 
 const SEHARI_MS = 24 * 60 * 60 * 1000;
 
-// Berapa majlis dipapar sekali gus; butang "Muat lebih" tambah sebanyak ini.
+// Berapa majlis setiap halaman (pagination sisi-klien).
 const SAIZ_HALAMAN = 10;
 
 // --- Indikator storan (kuota Firestore dikongsi SEMUA majlis) ---
@@ -90,7 +90,9 @@ const zonMemuat = document.getElementById("zon-memuat");
 const zonKosong = document.getElementById("zon-kosong");
 const zonTiadaCarian = document.getElementById("zon-tiada-carian");
 const inputCari = document.getElementById("input-cari");
-const butangMuatLebih = document.getElementById("butang-muat-lebih");
+const filterStatus = document.getElementById("filter-status");
+const filterPakej = document.getElementById("filter-pakej");
+const zonPagination = document.getElementById("pagination");
 const storanTeks = document.getElementById("storan-teks");
 const storanBar = document.getElementById("storan-bar");
 const storanNota = document.getElementById("storan-nota");
@@ -100,6 +102,16 @@ const butangKiraStoran = document.getElementById("butang-kira-storan");
 const butangMampat = document.getElementById("butang-mampat");
 const butangPurge = document.getElementById("butang-purge");
 const selenggaraLog = document.getElementById("selenggara-log");
+
+// --- Rujukan DOM: urus gambar pelanggan ---
+const gCari = document.getElementById("g-cari");
+const gSenarai = document.getElementById("g-senarai");
+const gPanel = document.getElementById("g-panel");
+const gInfo = document.getElementById("g-info");
+const gZip = document.getElementById("g-zip");
+const gPadamSemua = document.getElementById("g-padam-semua");
+const gStatus = document.getElementById("g-status");
+const gGrid = document.getElementById("g-grid");
 
 // --- Rujukan DOM: borang cipta ---
 const formCipta = document.getElementById("form-cipta");
@@ -130,6 +142,67 @@ const butangSimpanButiran = document.getElementById("butang-simpan-butiran");
 const butiranRalat = document.getElementById("butiran-ralat");
 const butiranJaya = document.getElementById("butiran-jaya");
 
+// --- Rujukan DOM: side navigation ---
+const butangNav = Array.from(document.querySelectorAll("[data-sek]"));
+const seksyen = {
+  papan: document.getElementById("sek-papan"),
+  selenggara: document.getElementById("sek-selenggara"),
+  gambar: document.getElementById("sek-gambar"),
+  cipta: document.getElementById("sek-cipta"),
+  harga: document.getElementById("sek-harga"),
+  pakej: document.getElementById("sek-pakej"),
+  senarai: document.getElementById("sek-senarai"),
+};
+const tajukSeksyen = document.getElementById("tajuk-seksyen");
+const butangMenu = document.getElementById("butang-menu");
+const navSisi = document.getElementById("nav-sisi");
+const navOverlay = document.getElementById("nav-overlay");
+
+// ------------------------------------------------------------
+//  SIDE NAVIGATION (tukar seksyen + laci mobile)
+// ------------------------------------------------------------
+//  Setiap butang nav (data-sek) memaparkan satu #sek-* pada satu
+//  masa. Seksyen tersembunyi tetap diisi data di latar oleh logik
+//  sedia ada, jadi bertukar view tidak perlu muat semula apa-apa.
+// ------------------------------------------------------------
+function tukarSeksyen(nama) {
+  if (!seksyen[nama]) nama = "papan"; // fallback jika hash tak sah
+  for (const [kunci, el] of Object.entries(seksyen)) {
+    if (el) el.classList.toggle("hidden", kunci !== nama);
+  }
+  let label = "";
+  for (const btn of butangNav) {
+    const aktif = btn.dataset.sek === nama;
+    if (aktif) {
+      btn.setAttribute("aria-current", "page");
+      label = btn.textContent.trim();
+    } else {
+      btn.removeAttribute("aria-current");
+    }
+  }
+  if (tajukSeksyen && label) tajukSeksyen.textContent = label;
+  if (location.hash.slice(1) !== nama) {
+    history.replaceState(null, "", "#" + nama);
+  }
+  tutupLaci();
+}
+
+function bukaLaci() {
+  navSisi?.classList.add("buka");
+  navOverlay?.classList.remove("hidden");
+}
+function tutupLaci() {
+  navSisi?.classList.remove("buka");
+  navOverlay?.classList.add("hidden");
+}
+
+butangNav.forEach((btn) =>
+  btn.addEventListener("click", () => tukarSeksyen(btn.dataset.sek))
+);
+butangMenu?.addEventListener("click", bukaLaci);
+navOverlay?.addEventListener("click", tutupLaci);
+window.addEventListener("hashchange", () => tukarSeksyen(location.hash.slice(1)));
+
 // Config butiran pakej (settings/pakej) — dimuat sekali di init.
 // null = belum dimuat / tiada override -> resolver fallback ke lalai kod.
 let cfgPakejSemasa = null;
@@ -141,7 +214,9 @@ let petaEmel = new Map();   // eventId -> ownerEmail (dari eventsPrivate)
 let petaTelefon = new Map();// eventId -> telefon (dari eventsPrivate)
 
 let istilahCari = "";              // teks carian semasa (huruf kecil)
-let jumlahDipapar = SAIZ_HALAMAN;  // berapa baris ditunjuk (pagination sisi-klien)
+let statusPilih = "";              // penapis status: "" | "active" | "inactive" | "luput"
+let pakejPilih = "";               // penapis jenis pakej: "" | id pakej
+let halamanSemasa = 1;             // halaman aktif (pagination sisi-klien, mula 1)
 
 let storanTepatBait = null;  // hasil "Kira tepat" (null = guna anggaran)
 let storanTepatBil = 0;      // bilangan dokumen gambar yang diimbas
@@ -266,6 +341,7 @@ onAuthStateChanged(auth, async (user) => {
     zonLogin.classList.add("hidden");
     zonPanel.classList.remove("hidden");
     emelAdmin.textContent = user.email || "admin";
+    tukarSeksyen(location.hash.slice(1) || "papan");
     mulaLangganan();
     muatPromo();
     muatButiranPakej();
@@ -752,6 +828,8 @@ async function muatButiranPakej() {
     });
     kemasHadButiran(id);
   });
+
+  isiPilihanPakej(); // segarkan label penapis pakej ikut nama efektif
 }
 
 formButiran.addEventListener("submit", async (e) => {
@@ -814,6 +892,7 @@ formButiran.addEventListener("submit", async (e) => {
 
     // Segarkan config dalam-ingatan + render semula senarai (nama pakej).
     cfgPakejSemasa = data;
+    isiPilihanPakej(); // segarkan label penapis pakej
     paparSenarai();
 
     butiranJaya.textContent =
@@ -892,13 +971,27 @@ function keWaMe(tel) {
   return d;
 }
 
-// Tapis ikut istilah carian: padan pada nama pasangan / emel / telefon / slug
+// Tapis ikut carian teks + penapis status + penapis jenis pakej (semua bergabung AND)
 function tapisEvents() {
-  if (!istilahCari) return dataEvents;
   return dataEvents.filter((ev) => {
-    const teks = [ev.coupleName, emelEvent(ev), telefonEvent(ev), ev.slug]
-      .filter(Boolean).join(" ").toLowerCase();
-    return teks.includes(istilahCari);
+    // Carian teks: padan pada nama pasangan / emel / telefon / slug
+    if (istilahCari) {
+      const teks = [ev.coupleName, emelEvent(ev), telefonEvent(ev), ev.slug]
+        .filter(Boolean).join(" ").toLowerCase();
+      if (!teks.includes(istilahCari)) return false;
+    }
+    // Status: 3 keadaan berasingan — luput diutamakan (padan lencana kad)
+    if (statusPilih) {
+      const luput = sudahLuput(ev.expiresAt);
+      const keadaan = luput ? "luput" : (ev.status === "active" ? "active" : "inactive");
+      if (keadaan !== statusPilih) return false;
+    }
+    // Jenis pakej: normalisasi ke "basic" bila hilang/tak sah (sama seperti binaBaris)
+    if (pakejPilih) {
+      const idPakej = PAKEJ[ev.package] ? ev.package : "basic";
+      if (idPakej !== pakejPilih) return false;
+    }
+    return true;
   });
 }
 
@@ -917,7 +1010,12 @@ function paparSenarai() {
   statPremium.textContent = premium;
 
   const tertapis = tapisEvents();
-  tertapis.slice(0, jumlahDipapar).forEach((ev) => {
+
+  // Pagination: hadkan halaman semasa dalam julat sah, potong tetingkap halaman
+  const jumlahHalaman = Math.max(1, Math.ceil(tertapis.length / SAIZ_HALAMAN));
+  if (halamanSemasa > jumlahHalaman) halamanSemasa = jumlahHalaman;
+  const mula = (halamanSemasa - 1) * SAIZ_HALAMAN;
+  tertapis.slice(mula, mula + SAIZ_HALAMAN).forEach((ev) => {
     senarai.appendChild(binaBaris(ev.id, ev, emelEvent(ev)));
   });
 
@@ -928,26 +1026,106 @@ function paparSenarai() {
       "hidden", !(dataEvents.length > 0 && tertapis.length === 0)
     );
   }
-  // Butang "Muat lebih" hanya jika masih ada baris tersembunyi
-  if (butangMuatLebih) {
-    butangMuatLebih.classList.toggle("hidden", jumlahDipapar >= tertapis.length);
-  }
+  binaPagination(jumlahHalaman);
   paparStoran();
 }
+
+// Hasilkan senarai nombor halaman (tetingkap: 1, semasa±1, akhir + elipsis)
+function nomborHalaman(semasa, jumlah) {
+  const set = new Set([1, jumlah, semasa, semasa - 1, semasa + 1]);
+  const senaraiN = [...set].filter((n) => n >= 1 && n <= jumlah).sort((a, b) => a - b);
+  const hasil = [];
+  let prev = 0;
+  senaraiN.forEach((n) => {
+    if (n - prev > 1) hasil.push("…");
+    hasil.push(n);
+    prev = n;
+  });
+  return hasil;
+}
+
+// Bina kawalan pagination (Sebelum / nombor / Seterusnya)
+function binaPagination(jumlahHalaman) {
+  if (!zonPagination) return;
+  zonPagination.innerHTML = "";
+  // Sembunyi jika hanya satu halaman (atau kosong)
+  if (jumlahHalaman <= 1) {
+    zonPagination.classList.add("hidden");
+    return;
+  }
+  zonPagination.classList.remove("hidden");
+
+  const asasBtn =
+    "min-w-[2.25rem] rounded-lg border border-[#e5d5ca] px-3 py-1.5 text-sm transition";
+  const bolehKlik = "bg-white/70 text-[#8a7a70] hover:bg-white";
+  const aktifKls = "bg-[#b76e79] border-[#b76e79] text-white font-medium";
+  const matiKls = "opacity-40 cursor-not-allowed";
+
+  const tambahBtn = (label, kePutus, { aktif = false, mati = false } = {}) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.className = `${asasBtn} ${aktif ? aktifKls : bolehKlik} ${mati ? matiKls : ""}`;
+    if (mati || aktif) b.disabled = mati;
+    if (!mati && kePutus != null) {
+      b.addEventListener("click", () => pergiHalaman(kePutus));
+    }
+    zonPagination.appendChild(b);
+  };
+
+  tambahBtn("‹", halamanSemasa - 1, { mati: halamanSemasa <= 1 });
+  nomborHalaman(halamanSemasa, jumlahHalaman).forEach((n) => {
+    if (n === "…") {
+      const s = document.createElement("span");
+      s.textContent = "…";
+      s.className = "px-1 text-[#a09088] select-none";
+      zonPagination.appendChild(s);
+    } else {
+      tambahBtn(String(n), n, { aktif: n === halamanSemasa });
+    }
+  });
+  tambahBtn("›", halamanSemasa + 1, { mati: halamanSemasa >= jumlahHalaman });
+}
+
+// Tukar halaman + render semula; skrol ke atas senarai untuk konteks
+function pergiHalaman(n) {
+  halamanSemasa = n;
+  paparSenarai();
+  senarai.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Isi pilihan penapis pakej (label ikut nama pakej efektif — boleh di-override admin)
+function isiPilihanPakej() {
+  if (!filterPakej) return;
+  filterPakej.innerHTML =
+    `<option value="">Semua pakej</option>` +
+    Object.keys(PAKEJ).map((k) =>
+      `<option value="${k}" ${pakejPilih === k ? "selected" : ""}>${esc(pakejEfektif(k, cfgPakejSemasa).nama)}</option>`
+    ).join("");
+}
+isiPilihanPakej();
 
 // --- Carian: reset ke halaman pertama setiap kali istilah berubah ---
 if (inputCari) {
   inputCari.addEventListener("input", () => {
     istilahCari = inputCari.value.trim().toLowerCase();
-    jumlahDipapar = SAIZ_HALAMAN;
+    halamanSemasa = 1;
     paparSenarai();
   });
 }
 
-// --- Muat lebih: tambah satu halaman ---
-if (butangMuatLebih) {
-  butangMuatLebih.addEventListener("click", () => {
-    jumlahDipapar += SAIZ_HALAMAN;
+// --- Penapis status & jenis pakej: reset ke halaman pertama ---
+if (filterStatus) {
+  filterStatus.addEventListener("change", () => {
+    statusPilih = filterStatus.value;
+    halamanSemasa = 1;
+    paparSenarai();
+  });
+}
+if (filterPakej) {
+  filterPakej.addEventListener("change", () => {
+    pakejPilih = filterPakej.value;
+    halamanSemasa = 1;
     paparSenarai();
   });
 }
@@ -1206,6 +1384,252 @@ if (butangPurge) {
     } finally {
       butangPurge.disabled = false;
       butangPurge.textContent = teksAsal;
+    }
+  });
+}
+
+// ------------------------------------------------------------
+//  URUS GAMBAR PELANGGAN (cari -> lihat -> ZIP -> padam)
+// ------------------------------------------------------------
+//  Super-admin pilih seorang pelanggan (ikut emel/telefon/nama/slug),
+//  lihat SEMUA gambar (termasuk tersembunyi), muat turun ZIP, atau padam.
+//  Guna semula dataEvents (real-time) + emelEvent/telefonEvent +
+//  padamGambarMajlis + muatTurunZipMajlis — tiada bacaan tambahan.
+
+let eventIdGambar = null; // majlis yang sedang dipapar dalam seksyen ini
+
+function eventById(id) {
+  return dataEvents.find((ev) => ev.id === id) || null;
+}
+
+// Status/progres untuk seksyen ini (elemen #g-status)
+function gLapor(mesej) {
+  if (!gStatus) return;
+  gStatus.textContent = mesej;
+  gStatus.classList.remove("hidden");
+}
+
+// --- Carian pelanggan (nama / emel / telefon / slug) ---
+function cariPelanggan(terma) {
+  const t = terma.trim().toLowerCase();
+  if (!t) return [];
+  return dataEvents.filter((ev) => {
+    const teks = [ev.coupleName, emelEvent(ev), telefonEvent(ev), ev.slug]
+      .filter(Boolean).join(" ").toLowerCase();
+    return teks.includes(t);
+  });
+}
+
+function paparSenaraiPelanggan(terma) {
+  if (!gSenarai) return;
+  gSenarai.innerHTML = "";
+  const t = (terma || "").trim();
+  if (!t) {
+    gSenarai.innerHTML =
+      `<p class="text-xs text-[#a09088]">Taip emel, no. telefon, nama pasangan, atau slug untuk mencari.</p>`;
+    return;
+  }
+  const hasil = cariPelanggan(t);
+  if (!hasil.length) {
+    gSenarai.innerHTML =
+      `<p class="text-xs text-[#a09088]">Tiada pelanggan padanan untuk "${esc(t)}".</p>`;
+    return;
+  }
+  hasil.slice(0, 20).forEach((ev) => {
+    const baris = document.createElement("div");
+    baris.className =
+      "flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#e5d5ca] bg-white/60 p-3";
+    baris.innerHTML = `
+      <div class="min-w-0 text-sm">
+        <p class="font-medium truncate">${esc(ev.coupleName || "(tanpa nama)")}</p>
+        <p class="text-xs text-[#a09088] truncate">${esc(emelEvent(ev) || "—")} · ${esc(telefonEvent(ev) || "tiada telefon")}</p>
+        <p class="text-xs text-[#a09088]">${esc(ev.package || "—")} · ${ev.status === "active" ? "aktif" : "tidak aktif"} · ${ev.photoCount || 0} gambar</p>
+      </div>
+      <button type="button" data-act="pilih" data-id="${esc(ev.id)}"
+        class="rounded-lg border border-[#d9a5ac] px-3 py-1.5 text-xs font-medium text-[#b76e79] hover:bg-white/60 transition shrink-0">
+        Lihat gambar
+      </button>`;
+    gSenarai.appendChild(baris);
+  });
+  if (hasil.length > 20) {
+    const nota = document.createElement("p");
+    nota.className = "text-xs text-[#a09088]";
+    nota.textContent = `Menunjukkan 20 daripada ${hasil.length} padanan — perhalusi carian.`;
+    gSenarai.appendChild(nota);
+  }
+}
+
+if (gCari) {
+  gCari.addEventListener("input", () => paparSenaraiPelanggan(gCari.value));
+}
+if (gSenarai) {
+  paparSenaraiPelanggan(""); // teks bantuan awal
+  gSenarai.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-act="pilih"]');
+    if (btn) pilihPelanggan(btn.dataset.id);
+  });
+}
+
+async function pilihPelanggan(id) {
+  const ev = eventById(id);
+  if (!ev) return;
+  eventIdGambar = id;
+  gPanel.classList.remove("hidden");
+  gStatus.classList.add("hidden");
+  gInfo.innerHTML = `
+    <p class="font-medium">${esc(ev.coupleName || "(tanpa nama)")}</p>
+    <p class="text-xs text-[#a09088]">${esc(emelEvent(ev) || "—")} · ${esc(telefonEvent(ev) || "tiada telefon")}</p>`;
+  await muatGambarPelanggan(id);
+}
+
+async function muatGambarPelanggan(id) {
+  gGrid.innerHTML = `<p class="col-span-full text-xs text-[#a09088]">Memuat gambar…</p>`;
+  try {
+    // Tanpa tapis approved — super-admin nampak SEMUA (sama seperti admin.js).
+    const snap = await getDocs(
+      query(
+        collection(db, "photos"),
+        where("eventId", "==", id),
+        orderBy("created_at", "desc")
+      )
+    );
+    if (snap.empty) {
+      gGrid.innerHTML = `<p class="col-span-full text-xs text-[#a09088]">Tiada gambar untuk pelanggan ini.</p>`;
+      return;
+    }
+    gGrid.innerHTML = "";
+    snap.forEach((d) => gGrid.appendChild(binaKadGambar(d.id, d.data())));
+  } catch (err) {
+    console.error("Ralat memuat gambar:", err);
+    const hint = String(err?.message || err).toLowerCase().includes("index")
+      ? " (indeks Firestore mungkin diperlukan — semak konsol untuk pautan)"
+      : "";
+    gGrid.innerHTML = `<p class="col-span-full text-xs text-red-600">✗ Gagal memuat gambar.${hint}</p>`;
+  }
+}
+
+function binaKadGambar(fotoId, p) {
+  const url = p.image_url || p.thumb_url || "";
+  const kad = document.createElement("div");
+  kad.className =
+    "relative rounded-xl overflow-hidden border border-[#e5d5ca] bg-white/60";
+  kad.dataset.foto = fotoId;
+
+  const img = document.createElement("img");
+  img.src = url;
+  img.alt = p.name || "Gambar tetamu";
+  img.loading = "lazy";
+  img.className = "w-full aspect-square object-cover";
+  kad.appendChild(img);
+
+  if (p.approved === false) {
+    const badge = document.createElement("span");
+    badge.className =
+      "absolute top-1 left-1 rounded bg-amber-500/90 text-white text-[10px] px-1.5 py-0.5";
+    badge.textContent = "Tersembunyi";
+    kad.appendChild(badge);
+  }
+
+  const nama = document.createElement("p");
+  nama.className = "px-2 py-1 text-[11px] text-[#6a5a52] truncate";
+  nama.textContent = p.name || "Tetamu"; // textContent — elak XSS
+  kad.appendChild(nama);
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.dataset.act = "padam-satu";
+  btn.dataset.foto = fotoId;
+  btn.title = "Padam gambar ini";
+  btn.className =
+    "absolute top-1 right-1 rounded-full bg-white/90 border border-red-300 text-red-600 w-6 h-6 text-xs leading-none hover:bg-red-50 transition";
+  btn.textContent = "✕";
+  kad.appendChild(btn);
+
+  return kad;
+}
+
+// Delegasi: padam satu gambar
+if (gGrid) {
+  gGrid.addEventListener("click", async (e) => {
+    const btn = e.target.closest('[data-act="padam-satu"]');
+    if (!btn || !eventIdGambar) return;
+    const fotoId = btn.dataset.foto;
+    if (!confirm("Padam gambar ini? Tidak boleh dipulihkan.")) return;
+    btn.disabled = true;
+    try {
+      await deleteDoc(doc(db, "photos", fotoId));
+      // Susutkan kaunter kuota — pemilik tak boleh betulkannya sendiri
+      await updateDoc(doc(db, "events", eventIdGambar), {
+        photoCount: increment(-1),
+      });
+      gGrid.querySelector(`[data-foto="${CSS.escape(fotoId)}"]`)?.remove();
+      storanTepatBait = null; // angka storan lama tidak lagi sah
+      if (!gGrid.children.length) {
+        gGrid.innerHTML = `<p class="col-span-full text-xs text-[#a09088]">Tiada gambar untuk pelanggan ini.</p>`;
+      }
+    } catch (err) {
+      console.error("Ralat padam gambar:", err);
+      alert("Gagal memadam gambar. Semak konsol pelayar & sambungan.");
+      btn.disabled = false;
+    }
+  });
+}
+
+// Muat turun SEMUA gambar (termasuk tersembunyi) sebagai ZIP
+if (gZip) {
+  gZip.addEventListener("click", async () => {
+    if (!eventIdGambar) return;
+    const ev = eventById(eventIdGambar);
+    gZip.disabled = true;
+    const teksAsal = gZip.textContent;
+    gZip.textContent = "Menyediakan…";
+    try {
+      const hasil = await muatTurunZipMajlis(eventIdGambar, {
+        slug: ev?.slug || ev?.coupleName || eventIdGambar,
+        termasukSemua: true,
+        onStatus: (m) => gLapor(m),
+        onProgres: (pct) => gLapor(`Memampatkan… ${Math.round(pct)}%`),
+        onSandaran: ({ url, nama }) => {
+          // Pautan sandaran jika pelayar menyekat muat turun automatik
+          gStatus.insertAdjacentHTML(
+            "beforeend",
+            ` <a href="${url}" download="${esc(nama)}" class="underline text-[#b76e79]">Klik di sini jika muat turun tak bermula.</a>`
+          );
+        },
+      });
+      if (hasil.jumlah === 0) gLapor("Tiada gambar untuk dimuat turun.");
+    } catch (err) {
+      console.error("Ralat muat turun ZIP:", err);
+      gLapor("✗ " + mesejRalatMuatTurun(err));
+    } finally {
+      gZip.disabled = false;
+      gZip.textContent = teksAsal;
+    }
+  });
+}
+
+// Padam SEMUA gambar pelanggan (guna semula padamGambarMajlis)
+if (gPadamSemua) {
+  gPadamSemua.addEventListener("click", async () => {
+    if (!eventIdGambar) return;
+    const ev = eventById(eventIdGambar);
+    const nama = ev?.coupleName || eventIdGambar;
+    if (!confirm(`Padam SEMUA gambar pelanggan "${nama}"?\n\nTidak boleh dipulihkan.`)) return;
+    gPadamSemua.disabled = true;
+    const teksAsal = gPadamSemua.textContent;
+    gPadamSemua.textContent = "Memadam…";
+    try {
+      gLapor("Memadam semua gambar…");
+      const bil = await padamGambarMajlis(eventIdGambar);
+      gGrid.innerHTML = `<p class="col-span-full text-xs text-[#a09088]">Tiada gambar untuk pelanggan ini.</p>`;
+      gLapor(`✓ ${bil} gambar dipadam.`);
+      storanTepatBait = null; // angka storan lama tidak lagi sah
+    } catch (err) {
+      console.error("Ralat padam semua:", err);
+      gLapor("✗ Gagal memadam. Semak konsol pelayar & sambungan.");
+    } finally {
+      gPadamSemua.disabled = false;
+      gPadamSemua.textContent = teksAsal;
     }
   });
 }
