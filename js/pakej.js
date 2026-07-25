@@ -56,32 +56,76 @@ const wTelefon = document.getElementById("w-telefon");
 const wEmel = document.getElementById("w-emel");
 
 // ------------------------------------------------------------
+//  Tagline ringkas ikut id pakej (statik — hiasan sahaja).
+//  Id tak dikenali -> "" (tiada tagline).
+// ------------------------------------------------------------
+const TAGLINE_PAKEJ = {
+  basic: "Untuk majlis santai",
+  premium: "Pilihan paling popular",
+  eksklusif: "Pengalaman penuh",
+};
+
+// ------------------------------------------------------------
+//  ikonSemak(warna) -> SVG tick bulat kecil (ganti emoji ✅).
+//  `warna` = warna hex garisan tick (rose untuk kad terang,
+//  emas untuk kad mewah).
+// ------------------------------------------------------------
+function ikonSemak(warna) {
+  const span = document.createElement("span");
+  span.className = "shrink-0 mt-0.5";
+  span.innerHTML =
+    `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">` +
+    `<circle cx="10" cy="10" r="9" fill="${warna}" fill-opacity="0.16"/>` +
+    `<path d="M6 10.5l2.5 2.5L14 7.5" stroke="${warna}" stroke-width="2" ` +
+    `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return span;
+}
+
+// ------------------------------------------------------------
+//  ciriBenar(p) -> senarai kunci ciri yang `true` bagi pakej `p`,
+//  mengikut turutan LABEL_CIRI.
+// ------------------------------------------------------------
+function ciriBenar(p) {
+  return Object.keys(LABEL_CIRI).filter((k) => !!p.ciri?.[k]);
+}
+
+// ------------------------------------------------------------
 //  LANGKAH 1 — bina kad pakej (harga + ciri + butang Pilih)
 // ------------------------------------------------------------
 function binaKadPakej() {
   kadPakej.innerHTML = "";
 
-  Object.keys(PAKEJ).forEach((id) => {
+  const idPakej = Object.keys(PAKEJ); // turutan: basic -> premium -> eksklusif
+
+  idPakej.forEach((id, i) => {
     const p = pakejEfektif(id, cfgPakej); // butiran berkesan (override super-admin)
     const dipilih = id === pakejDipilih;
     const badge = badgePakej(id, cfgPakej);
-    const popular = badge === "popular"; // pakej disyorkan
+    const popular = badge === "popular"; // pakej disyorkan -> kad mewah
     const akanDatang = badge === "akanDatang"; // belum boleh ditempah
+
+    // Warna aksen ikut jenis kad (emas atas kad mewah, rose atas kad terang).
+    const warnaSemak = popular ? "#e3c08a" : "#b76e79";
 
     const kad = document.createElement("div");
     kad.className =
-      "relative rounded-2xl border p-4 flex flex-col " +
+      "relative rounded-3xl border p-5 flex flex-col transition-transform " +
       (akanDatang ? "opacity-70 " : "") +
-      (dipilih
-        ? "border-[#b76e79] bg-[#fdf1f2] ring-2 ring-[#e7c3c9]"
-        : "border-[#e5d5ca] bg-white/70");
+      (popular ? "kad-mewah z-10 sm:scale-[1.04] sm:-my-1 " : "shadow-sm hover:-translate-y-0.5 ") +
+      (popular
+        ? dipilih
+          ? "ring-2 ring-[#e3c08a]"
+          : ""
+        : dipilih
+          ? "border-[#b76e79] bg-[#fdf1f2] ring-2 ring-[#e7c3c9]"
+          : "border-[#ecd9cf] bg-white/80");
 
-    // Lencana "Popular"
+    // Lencana "Popular" (pil emas di atas kad mewah)
     if (popular) {
       const pop = document.createElement("span");
       pop.className =
-        "absolute -top-2 right-3 rounded-full bg-[#b76e79] text-white text-[10px] px-2 py-0.5";
-      pop.textContent = "Popular";
+        "badge-emas absolute -top-2 left-1/2 -translate-x-1/2 rounded-full text-[10px] font-semibold px-3 py-0.5";
+      pop.textContent = "★ Popular";
       kad.appendChild(pop);
     }
 
@@ -101,48 +145,89 @@ function binaKadPakej() {
     if (hg.adaPromo) {
       const promo = document.createElement("span");
       promo.className =
-        "absolute -top-2 left-3 rounded-full bg-[#b76e79] text-white text-[10px] px-2 py-0.5";
+        "absolute -top-2 left-3 rounded-full bg-[#b76e79] text-white text-[10px] px-2 py-0.5" +
+        (popular ? " ring-1 ring-[#e3c08a]" : "");
       promo.textContent = "Promo";
       kad.appendChild(promo);
     }
 
     // Nama pakej
     const nama = document.createElement("p");
-    nama.className = "font-serif-elegan text-xl font-semibold text-[#5a4a42]";
+    nama.className =
+      "font-serif-elegan text-xl font-semibold " +
+      (popular ? "text-[#fdf1f2]" : "text-[#5a4a42]");
     nama.textContent = p.nama;
     kad.appendChild(nama);
 
+    // Tagline ringkas (hiasan)
+    const tagline = TAGLINE_PAKEJ[id];
+    if (tagline) {
+      const tl = document.createElement("p");
+      tl.className =
+        "text-[11px] mb-2 " + (popular ? "text-[#e7c9cd]" : "text-[#a09088]");
+      tl.textContent = tagline;
+      kad.appendChild(tl);
+    }
+
     // Harga (papar harga asal dicoret + harga promo bila ada promo)
+    const warnaHarga = popular ? "text-[#e3c08a]" : "text-[#b76e79]";
+    const warnaCoret = popular ? "text-[#e7c9cd]" : "text-[#a09088]";
     const harga = document.createElement("p");
-    harga.className = "mb-1";
+    harga.className = "mb-2";
     harga.innerHTML = hg.adaPromo
-      ? `<span class="text-sm text-[#a09088] line-through mr-1">RM${hg.asal}</span>` +
-        `<span class="text-2xl font-bold text-[#b76e79]">RM${hg.promo}</span>` +
-        `<span class="text-xs text-[#a09088]"> / majlis</span>`
-      : `<span class="text-2xl font-bold text-[#b76e79]">RM${hg.asal}</span>` +
-        `<span class="text-xs text-[#a09088]"> / majlis</span>`;
+      ? `<span class="text-sm ${warnaCoret} line-through mr-1">RM${hg.asal}</span>` +
+        `<span class="text-3xl font-bold ${warnaHarga}">RM${hg.promo}</span>` +
+        `<span class="text-xs ${warnaCoret} whitespace-nowrap"> / majlis</span>`
+      : `<span class="text-3xl font-bold ${warnaHarga}">RM${hg.asal}</span>` +
+        `<span class="text-xs ${warnaCoret} whitespace-nowrap"> / majlis</span>`;
     kad.appendChild(harga);
 
-    // Meta: had gambar + tempoh
+    // Meta: had gambar + tempoh (pil kecil)
     const meta = document.createElement("p");
-    meta.className = "text-xs text-[#a09088] mb-3";
+    meta.className =
+      "inline-block self-start rounded-full px-2.5 py-0.5 text-[11px] mb-4 " +
+      (popular ? "bg-white/15 text-[#fdf1f2]" : "bg-[#fbeef0] text-[#8a7a70]");
     meta.textContent =
       `${p.hadGambar == null ? "Gambar tanpa had" : p.hadGambar + " gambar"} · ${p.tempohHari} hari`;
     kad.appendChild(meta);
 
-    // Senarai ciri
+    // Senarai ciri — sembunyi ciri berkunci; papar "Semua ciri {prev} +"
     const ul = document.createElement("ul");
-    ul.className = "space-y-1 leading-tight text-xs mb-4 flex-1";
-    Object.keys(LABEL_CIRI).forEach((namaCiri) => {
-      const ada = !!p.ciri?.[namaCiri];
-      const akanDatang = CIRI_AKAN_DATANG.includes(namaCiri);
+    ul.className = "space-y-1.5 leading-tight text-xs mb-5 flex-1";
+
+    const ciriIni = ciriBenar(p);
+    let ciriPapar = ciriIni; // fallback: senarai penuh ciri disertakan
+
+    if (i > 0) {
+      const pPrev = pakejEfektif(idPakej[i - 1], cfgPakej);
+      const ciriPrev = ciriBenar(pPrev);
+      // Superset? (config memang bersarang; guard untuk kes override jarang)
+      const superset = ciriPrev.every((k) => ciriIni.includes(k));
+      if (superset) {
+        // Baris ringkasan "Semua ciri {namaPrev}"
+        const li0 = document.createElement("li");
+        li0.className =
+          "flex items-start gap-1.5 font-semibold " +
+          (popular ? "text-[#fdf1f2]" : "text-[#5a4a42]");
+        li0.appendChild(ikonSemak(warnaSemak));
+        const t0 = document.createElement("span");
+        t0.textContent = `Semua ciri ${pPrev.nama}`;
+        li0.appendChild(t0);
+        ul.appendChild(li0);
+        // Hanya ciri TAMBAHAN berbanding pakej sebelum
+        ciriPapar = ciriIni.filter((k) => !ciriPrev.includes(k));
+      }
+    }
+
+    ciriPapar.forEach((namaCiri) => {
       const li = document.createElement("li");
-      li.className = "flex items-start gap-1 " + (ada ? "text-[#5a4a42]" : "text-[#b8aaa1]");
-      const ikon = document.createElement("span");
-      ikon.textContent = ada ? "✅" : "🔒";
+      li.className =
+        "flex items-start gap-1.5 " + (popular ? "text-[#f4dfe2]" : "text-[#5a4a42]");
+      li.appendChild(ikonSemak(warnaSemak));
       const teks = document.createElement("span");
-      teks.textContent = LABEL_CIRI[namaCiri] + (ada && akanDatang ? " (akan datang)" : "");
-      li.appendChild(ikon);
+      teks.textContent =
+        LABEL_CIRI[namaCiri] +
+        (CIRI_AKAN_DATANG.includes(namaCiri) ? " (akan datang)" : "");
       li.appendChild(teks);
       ul.appendChild(li);
     });
@@ -151,9 +236,8 @@ function binaKadPakej() {
     // Butang Pilih
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className =
-      "rounded-xl py-2.5 font-medium text-sm " +
-      (dipilih ? "btn-utama" : "btn-kedua");
+    const kelasButang = popular ? "btn-emas" : dipilih ? "btn-utama" : "btn-kedua";
+    btn.className = "rounded-xl py-2.5 font-medium text-sm " + kelasButang;
     if (akanDatang) {
       // Pakej belum boleh ditempah: lumpuhkan butang & jangan pasang klik.
       btn.disabled = true;

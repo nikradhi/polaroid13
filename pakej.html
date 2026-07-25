@@ -49,6 +49,32 @@
     .btn-kedua:disabled { opacity: .5; cursor: not-allowed; }
     .btn-kedua:focus-visible { outline: 2px solid #b76e79; outline-offset: 2px; }
 
+    /* ---- Kad "mewah" (pakej disyorkan / popular) ---- */
+    .kad-mewah {
+      background: linear-gradient(160deg, #6e3f47 0%, #94525c 55%, #b76e79 100%);
+      border: 1px solid #e3c08a;
+      box-shadow: 0 20px 44px -14px rgba(110,63,71,.6),
+                  inset 0 1px 0 rgba(227,192,138,.55);
+    }
+
+    /* Butang emas (di atas kad mewah) */
+    .btn-emas {
+      background: linear-gradient(135deg, #e6c88a 0%, #d4a96a 100%);
+      color: #5a3a3f;
+      transition: transform .15s ease, box-shadow .2s ease, opacity .2s;
+      box-shadow: 0 8px 20px -6px rgba(212,169,106,.6);
+    }
+    .btn-emas:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn-emas:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-emas:focus-visible { outline: 2px solid #e3c08a; outline-offset: 2px; }
+
+    /* Pil badge emas */
+    .badge-emas {
+      background: linear-gradient(135deg, #e6c88a 0%, #d4a96a 100%);
+      color: #5a3a3f;
+      box-shadow: 0 4px 12px -3px rgba(212,169,106,.7);
+    }
+
     /* Butang WhatsApp (warna jenama) */
     .btn-wasap {
       background: #25D366;
