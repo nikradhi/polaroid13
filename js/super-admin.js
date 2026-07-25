@@ -43,8 +43,15 @@ import { dalamTempohTangguh, HARI_TANGGUH } from "./majlis.js";
 import {
   PAKEJ,
   HAD_TANPA_HAD,
+  LABEL_CIRI,
+  CIRI_AKAN_DATANG,
   hadGambarDB,
   tempohHariPakej,
+  pakejEfektif,
+  ciriEfektif,
+  tempohHariEfektif,
+  hadGambarDBEfektif,
+  badgePakej,
 } from "./packages.js";
 
 const SEHARI_MS = 24 * 60 * 60 * 1000;
@@ -99,6 +106,7 @@ const formCipta = document.getElementById("form-cipta");
 const cEmel = document.getElementById("c-emel");
 const cKataLaluan = document.getElementById("c-kata-laluan");
 const cNama = document.getElementById("c-nama");
+const cTelefon = document.getElementById("c-telefon");
 const cPakej = document.getElementById("c-pakej");
 const butangCipta = document.getElementById("butang-cipta");
 const ciptaRalat = document.getElementById("cipta-ralat");
@@ -115,10 +123,22 @@ const butangSimpanPromo = document.getElementById("butang-simpan-promo");
 const promoRalat = document.getElementById("promo-ralat");
 const promoJaya = document.getElementById("promo-jaya");
 
+// --- Rujukan DOM: borang butiran pakej ---
+const formButiran = document.getElementById("form-butiran");
+const butiranPakej = document.getElementById("butiran-pakej"); // bekas blok per-pakej
+const butangSimpanButiran = document.getElementById("butang-simpan-butiran");
+const butiranRalat = document.getElementById("butiran-ralat");
+const butiranJaya = document.getElementById("butiran-jaya");
+
+// Config butiran pakej (settings/pakej) — dimuat sekali di init.
+// null = belum dimuat / tiada override -> resolver fallback ke lalai kod.
+let cfgPakejSemasa = null;
+
 // Langganan senarai (dua koleksi: events + eventsPrivate)
 let unsubs = [];
 let dataEvents = [];        // [{ id, ...medan event }]
 let petaEmel = new Map();   // eventId -> ownerEmail (dari eventsPrivate)
+let petaTelefon = new Map();// eventId -> telefon (dari eventsPrivate)
 
 let istilahCari = "";              // teks carian semasa (huruf kecil)
 let jumlahDipapar = SAIZ_HALAMAN;  // berapa baris ditunjuk (pagination sisi-klien)
@@ -132,6 +152,7 @@ function hentikanLangganan() {
   unsubs = [];
   dataEvents = [];
   petaEmel = new Map();
+  petaTelefon = new Map();
   storanTepatBait = null;
   storanTepatBil = 0;
   storanTepatMasa = "";
@@ -247,6 +268,7 @@ onAuthStateChanged(auth, async (user) => {
     emelAdmin.textContent = user.email || "admin";
     mulaLangganan();
     muatPromo();
+    muatButiranPakej();
   } else {
     hentikanLangganan();
     sembunyiBukanAdmin();
@@ -335,11 +357,17 @@ formCipta.addEventListener("submit", async (e) => {
   const emel = cEmel.value.trim();
   const kataLaluan = cKataLaluan.value;
   const nama = cNama.value.trim();
+  const telefon = cTelefon.value.trim();
   const pakej = cPakej.value;
   const cfg = PAKEJ[pakej];
 
   if (!emel || kataLaluan.length < 6 || !cfg) {
     ciptaRalat.textContent = "Sila isi emel dan kata laluan (min. 6 aksara).";
+    ciptaRalat.classList.remove("hidden");
+    return;
+  }
+  if (!telefon) {
+    ciptaRalat.textContent = "Sila isi no. telefon pelanggan.";
     ciptaRalat.classList.remove("hidden");
     return;
   }
@@ -367,21 +395,26 @@ formCipta.addEventListener("submit", async (e) => {
       welcomeMessage: "",
       package: pakej,
       status: "active",
-      photoLimit: hadGambarDB(pakej),
+      photoLimit: hadGambarDBEfektif(pakej, cfgPakejSemasa),
       photoCount: 0,
       preModeration: false,
-      expiresAt: new Date(Date.now() + cfg.tempohHari * SEHARI_MS),
+      // Snapshot keupayaan pakej BERKESAN (override super-admin) supaya
+      // gating berkuat kuasa sebenar untuk majlis ini walau butiran pakej
+      // diubah kemudian. Majlis lama tanpa medan ini fallback ke lalai kod.
+      ciri: ciriEfektif(pakej, cfgPakejSemasa),
+      expiresAt: new Date(Date.now() + tempohHariEfektif(pakej, cfgPakejSemasa) * SEHARI_MS),
       createdAt: serverTimestamp(),
       createdBy: auth.currentUser.uid,
     });
     batch.set(doc(db, "eventsPrivate", ref.id), {
       ownerEmail: emel,
       ownerUid: uid,
+      telefon,
     });
     await batch.commit();
 
     ciptaJaya.innerHTML =
-      `✓ Akaun <b>${esc(emel)}</b> (${cfg.nama}) dicipta.<br>` +
+      `✓ Akaun <b>${esc(emel)}</b> (${pakejEfektif(pakej, cfgPakejSemasa).nama}) dicipta.<br>` +
       `Beritahu pelanggan: log masuk di <b>tetapan.html</b> guna emel &amp; kata laluan ini untuk pilih URL &amp; tema majlis.`;
     ciptaJaya.classList.remove("hidden");
     formCipta.reset();
@@ -599,6 +632,203 @@ formPromo.addEventListener("submit", async (e) => {
   }
 });
 
+// ============================================================
+//  BUTIRAN PAKEJ (dokumen settings/pakej)
+// ------------------------------------------------------------
+//  Super-admin custom nama / had gambar / tempoh / senarai ciri /
+//  lencana setiap pakej. Satu dokumen global; baca awam (tetamu di
+//  pakej.html perlu nampak butiran), tulis admin sahaja (rules).
+//
+//  Blok input per-pakej dibina dinamik ke dalam #butiran-pakej.
+//  Nilai berkesan (lalai ditindih override) dikira di packages.js.
+// ------------------------------------------------------------
+
+// Rujukan input untuk satu pakej (dibina oleh binaBarisButiran).
+function inputButiran(id) {
+  return {
+    nama: document.getElementById(`bn-${id}`),
+    unl: document.getElementById(`bh-unl-${id}`),
+    had: document.getElementById(`bh-${id}`),
+    tempoh: document.getElementById(`bt-${id}`),
+    badge: document.getElementById(`bb-${id}`),
+    ciri: (k) => document.getElementById(`bc-${id}-${k}`),
+  };
+}
+
+// Baca satu input nombor -> int positif atau null (kosong/tak sah).
+function bacaIntInput(el) {
+  if (!el) return null;
+  const v = el.value.trim();
+  if (v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+}
+
+// Toggle: bila "Tanpa had" dicek, lumpuhkan input had.
+function kemasHadButiran(id) {
+  const el = inputButiran(id);
+  if (el.had && el.unl) el.had.disabled = el.unl.checked;
+}
+
+// Bina blok input untuk semua pakej ke dalam #butiran-pakej.
+function binaBarisButiran() {
+  if (!butiranPakej) return;
+  butiranPakej.innerHTML = "";
+  Object.keys(PAKEJ).forEach((id) => {
+    const p = PAKEJ[id];
+    const blok = document.createElement("div");
+    blok.className = "rounded-xl border border-[#e5d5ca] bg-white/60 p-4";
+
+    const ciriHtml = Object.keys(LABEL_CIRI).map((k) => {
+      const hint = CIRI_AKAN_DATANG.includes(k) ? " (akan datang)" : "";
+      return (
+        `<label class="inline-flex items-center gap-2 text-xs">` +
+          `<input id="bc-${id}-${k}" type="checkbox" class="h-4 w-4 rounded border-[#d9a5ac] text-[#b76e79]" /> ` +
+          `${LABEL_CIRI[k]}${hint}` +
+        `</label>`
+      );
+    }).join("");
+
+    blok.innerHTML =
+      `<p class="font-medium text-sm mb-2">${p.nama} <span class="text-[#a09088] font-normal">· lalai</span></p>` +
+      `<div class="grid sm:grid-cols-2 gap-3 mb-3">` +
+        `<div>` +
+          `<label class="block text-xs font-medium mb-1">Nama pakej</label>` +
+          `<input id="bn-${id}" type="text" maxlength="40" class="input-elok" placeholder="lalai: ${p.nama}" />` +
+        `</div>` +
+        `<div>` +
+          `<label class="block text-xs font-medium mb-1">Lencana</label>` +
+          `<select id="bb-${id}" class="input-elok">` +
+            `<option value="">Tiada</option>` +
+            `<option value="popular">Popular</option>` +
+            `<option value="akanDatang">Akan datang</option>` +
+          `</select>` +
+        `</div>` +
+        `<div>` +
+          `<label class="block text-xs font-medium mb-1">Had gambar</label>` +
+          `<label class="inline-flex items-center gap-2 text-xs mb-1">` +
+            `<input id="bh-unl-${id}" type="checkbox" class="h-4 w-4 rounded border-[#d9a5ac] text-[#b76e79]" /> Tanpa had` +
+          `</label>` +
+          `<input id="bh-${id}" type="number" min="1" step="1" class="input-elok" placeholder="cth: 300" />` +
+        `</div>` +
+        `<div>` +
+          `<label class="block text-xs font-medium mb-1">Tempoh aktif (hari)</label>` +
+          `<input id="bt-${id}" type="number" min="1" step="1" class="input-elok" placeholder="cth: 14" />` +
+        `</div>` +
+      `</div>` +
+      `<p class="text-xs font-medium mb-1.5">Ciri disertakan</p>` +
+      `<div class="grid sm:grid-cols-2 gap-x-4 gap-y-1.5">${ciriHtml}</div>`;
+
+    butiranPakej.appendChild(blok);
+
+    const el = inputButiran(id);
+    el.unl?.addEventListener("change", () => kemasHadButiran(id));
+  });
+}
+binaBarisButiran();
+
+// Isi borang dari settings/pakej (guna nilai BERKESAN supaya kotak
+// dipenuhi walaupun override tiada — pratonton yang jelas untuk admin).
+async function muatButiranPakej() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "pakej"));
+    cfgPakejSemasa = snap.exists() ? snap.data() : null;
+  } catch (err) {
+    console.warn("Gagal memuat butiran pakej:", err);
+    cfgPakejSemasa = null;
+  }
+
+  Object.keys(PAKEJ).forEach((id) => {
+    const el = inputButiran(id);
+    const eff = pakejEfektif(id, cfgPakejSemasa);
+    if (el.nama) el.nama.value = eff.nama;
+    if (el.unl) el.unl.checked = eff.hadGambar == null;
+    if (el.had) el.had.value = eff.hadGambar == null ? "" : eff.hadGambar;
+    if (el.tempoh) el.tempoh.value = eff.tempohHari;
+    if (el.badge) el.badge.value = badgePakej(id, cfgPakejSemasa);
+    Object.keys(LABEL_CIRI).forEach((k) => {
+      const cek = el.ciri(k);
+      if (cek) cek.checked = !!eff.ciri[k];
+    });
+    kemasHadButiran(id);
+  });
+}
+
+formButiran.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  butiranRalat.classList.add("hidden");
+  butiranJaya.classList.add("hidden");
+
+  // Kumpul butiran berkesan setiap pakej.
+  const pakej = {};
+  for (const id of Object.keys(PAKEJ)) {
+    const el = inputButiran(id);
+    const nama = el.nama?.value.trim();
+    if (!nama) {
+      butiranRalat.textContent = `Sila isi nama untuk pakej ${PAKEJ[id].nama}.`;
+      butiranRalat.classList.remove("hidden");
+      return;
+    }
+
+    const tanpaHad = !!el.unl?.checked;
+    let hadGambar = null;
+    if (!tanpaHad) {
+      hadGambar = bacaIntInput(el.had);
+      if (hadGambar == null) {
+        butiranRalat.textContent = `Isi had gambar (nombor positif) untuk pakej ${nama}, atau tanda "Tanpa had".`;
+        butiranRalat.classList.remove("hidden");
+        return;
+      }
+    }
+
+    const tempohHari = bacaIntInput(el.tempoh);
+    if (tempohHari == null) {
+      butiranRalat.textContent = `Isi tempoh aktif (hari, nombor positif) untuk pakej ${nama}.`;
+      butiranRalat.classList.remove("hidden");
+      return;
+    }
+
+    const ciri = {};
+    Object.keys(LABEL_CIRI).forEach((k) => {
+      ciri[k] = !!el.ciri(k)?.checked;
+    });
+
+    const badgeVal = el.badge?.value;
+    const badge = ["", "popular", "akanDatang"].includes(badgeVal) ? badgeVal : "";
+
+    pakej[id] = { nama, hadGambar, tempohHari, ciri, badge };
+  }
+
+  butangSimpanButiran.disabled = true;
+  const teksAsal = butangSimpanButiran.textContent;
+  butangSimpanButiran.textContent = "Sedang menyimpan…";
+
+  try {
+    // Tulis PENUH (tanpa merge) supaya ciri yang dimatikan benar-benar off.
+    const data = {
+      pakej,
+      dikemasOleh: auth.currentUser.uid,
+      dikemasPada: serverTimestamp(),
+    };
+    await setDoc(doc(db, "settings", "pakej"), data);
+
+    // Segarkan config dalam-ingatan + render semula senarai (nama pakej).
+    cfgPakejSemasa = data;
+    paparSenarai();
+
+    butiranJaya.textContent =
+      "✓ Butiran pakej disimpan. Dipapar di halaman jualan & kad pelanggan; berkuat kuasa pada majlis baharu.";
+    butiranJaya.classList.remove("hidden");
+  } catch (err) {
+    console.error("Ralat simpan butiran pakej:", err);
+    butiranRalat.textContent = "Gagal menyimpan (semak sambungan / rules Firestore).";
+    butiranRalat.classList.remove("hidden");
+  } finally {
+    butangSimpanButiran.disabled = false;
+    butangSimpanButiran.textContent = teksAsal;
+  }
+});
+
 // ------------------------------------------------------------
 //  LANGGANAN SENARAI MAJLIS (real-time)
 // ------------------------------------------------------------
@@ -626,6 +856,7 @@ function mulaLangganan() {
     collection(db, "eventsPrivate"),
     (snap) => {
       petaEmel = new Map(snap.docs.map((d) => [d.id, d.data().ownerEmail]));
+      petaTelefon = new Map(snap.docs.map((d) => [d.id, d.data().telefon || ""]));
       paparSenarai();
     },
     (err) => {
@@ -647,11 +878,25 @@ function emelEvent(ev) {
   return petaEmel.get(ev.id) || ev.ownerEmail || "";
 }
 
-// Tapis ikut istilah carian: padan pada nama pasangan / emel / slug
+// No. telefon majlis (koleksi peribadi — admin sahaja)
+function telefonEvent(ev) {
+  return petaTelefon.get(ev.id) || "";
+}
+
+// Tukar no. telefon Malaysia -> format wa.me antarabangsa (cth. "60123456789").
+// Buang bukan-digit; "0xx" -> "60xx". Pulang "" jika tiada digit.
+function keWaMe(tel) {
+  let d = (tel || "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.startsWith("0")) d = "60" + d.slice(1);
+  return d;
+}
+
+// Tapis ikut istilah carian: padan pada nama pasangan / emel / telefon / slug
 function tapisEvents() {
   if (!istilahCari) return dataEvents;
   return dataEvents.filter((ev) => {
-    const teks = [ev.coupleName, emelEvent(ev), ev.slug]
+    const teks = [ev.coupleName, emelEvent(ev), telefonEvent(ev), ev.slug]
       .filter(Boolean).join(" ").toLowerCase();
     return teks.includes(istilahCari);
   });
@@ -991,18 +1236,28 @@ function binaBaris(id, ev, emel = "") {
   };
   const idPakej = PAKEJ[ev.package] ? ev.package : "basic";
   const lencanaPakej =
-    `<span class="rounded-full ${gayaPakej[idPakej] || gayaPakej.basic} text-xs px-2 py-0.5">${PAKEJ[idPakej].nama}</span>`;
+    `<span class="rounded-full ${gayaPakej[idPakej] || gayaPakej.basic} text-xs px-2 py-0.5">${esc(pakejEfektif(idPakej, cfgPakejSemasa).nama)}</span>`;
 
   const hadTeks = ev.photoLimit >= HAD_TANPA_HAD ? "∞" : ev.photoLimit;
   const slugTeks = ev.slug
     ? `<a href="e.html?e=${encodeURIComponent(ev.slug)}" target="_blank" class="text-[#b76e79] hover:underline">/e/${esc(ev.slug)}</a>`
     : `<span class="text-[#a09088] italic">belum ditetapkan</span>`;
 
+  // Baris telefon: pautan wa.me bila boleh dinormalkan, jika tidak teks biasa
+  const telefon = telefonEvent(ev);
+  const wa = keWaMe(telefon);
+  const telefonHtml = telefon
+    ? (wa
+        ? `<a href="https://wa.me/${wa}" target="_blank" rel="noopener" class="text-[#b76e79] hover:underline">📱 ${esc(telefon)}</a>`
+        : `<span>📱 ${esc(telefon)}</span>`)
+    : "";
+
   kad.innerHTML = `
     <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
       <div class="min-w-0">
         <p class="font-medium text-[#5a4a42] truncate">${esc(ev.coupleName) || "(tiada nama)"}</p>
         <p class="text-xs text-[#a09088] truncate">${esc(emel)}</p>
+        ${telefonHtml ? `<p class="text-xs text-[#a09088] truncate">${telefonHtml}</p>` : ""}
       </div>
       <div class="flex items-center gap-1.5 shrink-0">${lencanaPakej} ${lencanaStatus}</div>
     </div>
@@ -1027,7 +1282,7 @@ function binaBaris(id, ev, emel = "") {
 
       <select data-act="pakej" class="rounded-lg border border-[#e5d5ca] bg-white px-2 py-1.5 text-sm">
         ${Object.keys(PAKEJ).map((k) =>
-          `<option value="${k}" ${idPakej === k ? "selected" : ""}>${PAKEJ[k].nama}</option>`
+          `<option value="${k}" ${idPakej === k ? "selected" : ""}>${esc(pakejEfektif(k, cfgPakejSemasa).nama)}</option>`
         ).join("")}
       </select>
 
@@ -1110,10 +1365,11 @@ function binaBaris(id, ev, emel = "") {
   // --- Tukar pakej (naik/turun taraf) — kemas kini photoLimit sekali ---
   kad.querySelector('[data-act="pakej"]').addEventListener("change", async (e) => {
     const pakejBaru = e.currentTarget.value;
-    const cfg = PAKEJ[pakejBaru];
-    if (!cfg) return;
-    const hadBaru = hadGambarDB(pakejBaru);
-    if (!confirm(`Tukar pakej kepada ${cfg.nama}? Had gambar akan jadi ${cfg.hadGambar == null ? "tanpa had" : cfg.hadGambar}.`)) {
+    if (!PAKEJ[pakejBaru]) return;
+    // Guna butiran BERKESAN (override super-admin) — had & ciri.
+    const eff = pakejEfektif(pakejBaru, cfgPakejSemasa);
+    const hadBaru = hadGambarDBEfektif(pakejBaru, cfgPakejSemasa);
+    if (!confirm(`Tukar pakej kepada ${eff.nama}? Had gambar akan jadi ${eff.hadGambar == null ? "tanpa had" : eff.hadGambar}. (Tarikh tamat tidak berubah.)`)) {
       e.currentTarget.value = idPakej; // pulih pilihan
       return;
     }
@@ -1121,6 +1377,7 @@ function binaBaris(id, ev, emel = "") {
       await updateDoc(doc(db, "events", id), {
         package: pakejBaru,
         photoLimit: hadBaru,
+        ciri: ciriEfektif(pakejBaru, cfgPakejSemasa), // re-snapshot keupayaan
       });
     } catch (err) {
       console.error(err);

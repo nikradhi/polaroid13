@@ -179,6 +179,10 @@
           <input id="c-nama" type="text" class="input-elok" placeholder="cth: Ali &amp; Siti" />
         </div>
         <div>
+          <label class="block text-sm font-medium mb-1.5">No. telefon (WhatsApp)</label>
+          <input id="c-telefon" type="tel" inputmode="tel" required autocomplete="off" class="input-elok" placeholder="cth: 012-3456789" />
+        </div>
+        <div>
           <label class="block text-sm font-medium mb-1.5">Pakej</label>
           <select id="c-pakej" class="input-elok">
             <option value="basic">Basic — 300 gambar, 14 hari</option>
@@ -233,6 +237,27 @@
           <div id="promo-ralat" class="hidden kotak-ralat mb-3" role="alert"></div>
           <div id="promo-jaya" class="hidden kotak-jaya mb-3" role="status"></div>
           <button id="butang-simpan-promo" type="submit" class="btn-utama rounded-xl px-6 py-3 font-medium">Simpan Harga & Promosi</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ====== Butiran pakej ====== -->
+    <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 mb-8">
+      <h2 class="font-serif-elegan text-2xl font-semibold mb-1">📦 Butiran Pakej</h2>
+      <p class="text-xs text-[#a09088] mb-4">
+        Custom <b>nama</b>, <b>had gambar</b>, <b>tempoh</b>, <b>senarai ciri</b> &amp; <b>lencana</b> setiap pakej.
+        Kosong = guna nilai lalai sistem. Perubahan dipapar di halaman jualan &amp; kad pelanggan, dan berkuat kuasa
+        pada majlis <b>baharu</b> (majlis sedia ada kekal seperti asal).
+      </p>
+
+      <form id="form-butiran" class="space-y-4">
+        <!-- Blok per pakej diisi oleh JS -->
+        <div id="butiran-pakej" class="space-y-3"></div>
+
+        <div>
+          <div id="butiran-ralat" class="hidden kotak-ralat mb-3" role="alert"></div>
+          <div id="butiran-jaya" class="hidden kotak-jaya mb-3" role="status"></div>
+          <button id="butang-simpan-butiran" type="submit" class="btn-utama rounded-xl px-6 py-3 font-medium">Simpan Butiran Pakej</button>
         </div>
       </form>
     </div>

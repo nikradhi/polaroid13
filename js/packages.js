@@ -210,3 +210,78 @@ export function hargaPakej(idPakej, cfg, sekarang = new Date()) {
   }
   return { asal, promo: null, adaPromo: false };
 }
+
+// ============================================================
+//  BUTIRAN PAKEJ — dikawal super-admin (dokumen settings/pakej)
+// ------------------------------------------------------------
+//  Sama corak dengan promosi harga di atas: helper TULEN yang
+//  terima objek `cfg` (data dokumen settings/pakej) sebagai
+//  argumen — TIADA gandingan Firestore. Super-admin boleh custom
+//  nama, had gambar, tempoh, senarai ciri & lencana setiap pakej;
+//  override menindih nilai lalai PAKEJ[id] dalam kod.
+//
+//  Bentuk cfg (semua medan pilihan / mungkin tiada):
+//    { pakej: { basic: { nama, hadGambar: number|null, tempohHari,
+//                        ciri: {kunci:bool}, badge }, premium:{…}, … } }
+// ============================================================
+
+// null (tanpa had) dibenarkan; selain itu int positif atau fallback.
+function nomborHad(nilai, fallback) {
+  if (nilai === null) return null;
+  const n = Number(nilai);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+// Int positif atau fallback (untuk tempohHari).
+function intPositif(nilai, fallback) {
+  const n = Number(nilai);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
+// Objek pakej BERKESAN: default PAKEJ[id] ditindih override tervalidasi.
+// Gabung `ciri` PER-KUNCI supaya kunci ciri baharu (belum ada dalam
+// override lama) sentiasa fallback ke nilai lalai.
+export function pakejEfektif(idPakej, cfg) {
+  const asas = PAKEJ[idPakej] || PAKEJ[PAKEJ_LALAI];
+  const o = cfg?.pakej?.[idPakej] || {};
+
+  const nama =
+    typeof o.nama === "string" && o.nama.trim() ? o.nama.trim() : asas.nama;
+  const hadGambar =
+    "hadGambar" in o ? nomborHad(o.hadGambar, asas.hadGambar) : asas.hadGambar;
+  const tempohHari = intPositif(o.tempohHari, asas.tempohHari);
+
+  const ciri = { ...asas.ciri };
+  if (o.ciri && typeof o.ciri === "object") {
+    for (const k of Object.keys(asas.ciri)) {
+      if (typeof o.ciri[k] === "boolean") ciri[k] = o.ciri[k];
+    }
+  }
+
+  return { ...asas, nama, hadGambar, tempohHari, ciri };
+}
+
+// Pintasan untuk medan tunggal (elak bina objek penuh bila tak perlu).
+export function ciriEfektif(idPakej, cfg) {
+  return pakejEfektif(idPakej, cfg).ciri;
+}
+export function tempohHariEfektif(idPakej, cfg) {
+  return pakejEfektif(idPakej, cfg).tempohHari;
+}
+
+// Had gambar BERKESAN untuk disimpan pada photoLimit (null -> HAD_TANPA_HAD).
+export function hadGambarDBEfektif(idPakej, cfg) {
+  const h = pakejEfektif(idPakej, cfg).hadGambar;
+  return h == null ? HAD_TANPA_HAD : h;
+}
+
+// Lencana BERKESAN untuk satu pakej: "popular" | "akanDatang" | "".
+// Default kekalkan tingkah laku semasa supaya tiada regresi bila
+// belum ada override (premium=Popular, eksklusif=Akan datang).
+export function badgePakej(idPakej, cfg) {
+  const b = cfg?.pakej?.[idPakej]?.badge;
+  if (b === "popular" || b === "akanDatang" || b === "") return b;
+  if (idPakej === "premium") return "popular";
+  if (idPakej === "eksklusif") return "akanDatang";
+  return "";
+}

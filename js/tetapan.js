@@ -36,11 +36,14 @@ import {
   PASANGAN_FONT, fontIdSah, muatFontTema, tumpukFont,
 } from "./tema.js";
 // Had & konfig pakej — SATU SUMBER KEBENARAN (js/packages.js).
-import { HAD_TANPA_HAD, PAKEJ, CIRI_AKAN_DATANG, LABEL_CIRI, hargaPakej } from "./packages.js";
+import { HAD_TANPA_HAD, PAKEJ, CIRI_AKAN_DATANG, LABEL_CIRI, hargaPakej, pakejEfektif } from "./packages.js";
 import { bolehGuna, namaPakej, pakejEvent, bakiGambar, tanpaHad } from "./gating.js";
 
 // Data promosi harga (settings/promo). null = belum dimuat / tiada.
 let promoSemasa = null;
+
+// Data butiran pakej (settings/pakej). null = belum dimuat / tiada override.
+let cfgPakej = null;
 
 // Warna tema pratetap
 const TEMA_PILIHAN = [
@@ -446,8 +449,14 @@ function binaKadPakej() {
   kadPakej.innerHTML = "";
 
   Object.keys(PAKEJ).forEach((id) => {
-    const p = PAKEJ[id];
+    const p = pakejEfektif(id, cfgPakej); // butiran berkesan (override super-admin)
     const semasa = id === idSemasa;
+    // Untuk kad "Pakej anda", papar ciri SEBENAR yang majlis ini ada
+    // (snapshot pada dokumen event), bukan definisi pemasaran semasa.
+    const ciriPapar =
+      semasa && eventData?.ciri && typeof eventData.ciri === "object"
+        ? { ...p.ciri, ...eventData.ciri }
+        : p.ciri;
 
     const kad = document.createElement("div");
     kad.className =
@@ -502,7 +511,7 @@ function binaKadPakej() {
     const ul = document.createElement("ul");
     ul.className = "space-y-1 leading-tight";
     Object.keys(LABEL_CIRI).forEach((namaCiri) => {
-      const ada = !!p.ciri?.[namaCiri];
+      const ada = !!ciriPapar?.[namaCiri];
       const akanDatang = CIRI_AKAN_DATANG.includes(namaCiri);
       const li = document.createElement("li");
       li.className = "flex items-start gap-1 " + (ada ? "text-[#5a4a42]" : "text-[#b8aaa1]");
@@ -524,10 +533,14 @@ function binaKadPakej() {
 // jika majlis sudah dimuat. Gagal = senyap (harga biasa dipapar).
 async function muatPromo() {
   try {
-    const snap = await getDoc(doc(db, "settings", "promo"));
-    if (snap.exists()) promoSemasa = snap.data();
+    const [snapPromo, snapPakej] = await Promise.all([
+      getDoc(doc(db, "settings", "promo")),
+      getDoc(doc(db, "settings", "pakej")),
+    ]);
+    if (snapPromo.exists()) promoSemasa = snapPromo.data();
+    if (snapPakej.exists()) cfgPakej = snapPakej.data();
   } catch (err) {
-    console.warn("Gagal memuat promosi:", err);
+    console.warn("Gagal memuat promosi/butiran pakej:", err);
     return;
   }
   if (eventData) binaKadPakej();

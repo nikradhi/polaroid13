@@ -19,6 +19,8 @@ import {
   NOMBOR_WHATSAPP,
   hargaPakej,
   promoAktifSekarang,
+  pakejEfektif,
+  badgePakej,
 } from "./packages.js";
 import { db, doc, getDoc } from "./firebase.js";
 
@@ -29,6 +31,9 @@ const JUM_LANGKAH = 4;
 
 // Data promosi harga (settings/promo). null = belum dimuat / tiada.
 let promoSemasa = null;
+
+// Data butiran pakej (settings/pakej). null = belum dimuat / tiada override.
+let cfgPakej = null;
 
 // --- Rujukan DOM ---
 const kadPakej = document.getElementById("kad-pakej");
@@ -57,10 +62,11 @@ function binaKadPakej() {
   kadPakej.innerHTML = "";
 
   Object.keys(PAKEJ).forEach((id) => {
-    const p = PAKEJ[id];
+    const p = pakejEfektif(id, cfgPakej); // butiran berkesan (override super-admin)
     const dipilih = id === pakejDipilih;
-    const popular = id === "premium"; // pakej disyorkan
-    const akanDatang = id === "eksklusif"; // belum boleh ditempah
+    const badge = badgePakej(id, cfgPakej);
+    const popular = badge === "popular"; // pakej disyorkan
+    const akanDatang = badge === "akanDatang"; // belum boleh ditempah
 
     const kad = document.createElement("div");
     kad.className =
@@ -229,7 +235,7 @@ function sembunyiAmaran() {
 //  LANGKAH 4 — bina ringkasan + pautan WhatsApp
 // ------------------------------------------------------------
 function binaRingkasan() {
-  const p = PAKEJ[pakejDipilih] || PAKEJ[PAKEJ_LALAI];
+  const p = pakejEfektif(pakejDipilih || PAKEJ_LALAI, cfgPakej);
   const hg = hargaPakej(pakejDipilih, promoSemasa);
   ringkasan.innerHTML = "";
 
@@ -336,11 +342,15 @@ function formatTarikhBanner(nilai) {
 
 async function muatPromo() {
   try {
-    const snap = await getDoc(doc(db, "settings", "promo"));
-    if (snap.exists()) promoSemasa = snap.data();
+    const [snapPromo, snapPakej] = await Promise.all([
+      getDoc(doc(db, "settings", "promo")),
+      getDoc(doc(db, "settings", "pakej")),
+    ]);
+    if (snapPromo.exists()) promoSemasa = snapPromo.data();
+    if (snapPakej.exists()) cfgPakej = snapPakej.data();
   } catch (err) {
-    // Bukan kritikal — jika gagal, harga biasa dipapar.
-    console.warn("Gagal memuat promosi:", err);
+    // Bukan kritikal — jika gagal, harga & butiran lalai dipapar.
+    console.warn("Gagal memuat promosi/butiran pakej:", err);
   }
 
   // Banner promosi (hanya bila promo aktif)

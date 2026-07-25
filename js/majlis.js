@@ -88,6 +88,10 @@ export function adalahPremium(ev) {
 // import). Untuk semakan umum di halaman lain, guna bolehGuna() dari
 // js/gating.js — ini versi dalaman untuk bolehMuatTurun sahaja.
 function cirianEvent(ev, namaCiri) {
+  // Utamakan snapshot `ciri` per-majlis (lihat gating.bolehGuna),
+  // fallback ke lalai kod untuk majlis lama.
+  const snap = ev?.ciri;
+  if (snap && typeof snap[namaCiri] === "boolean") return snap[namaCiri];
   const id = PAKEJ[ev?.package] ? ev.package : PAKEJ_LALAI;
   return !!PAKEJ[id].ciri?.[namaCiri];
 }

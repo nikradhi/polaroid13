@@ -37,6 +37,11 @@ export function pakejEvent(ev) {
 //  Contoh: bolehGuna(ev, "downloadZip"), bolehGuna(ev, "liveWall").
 // ------------------------------------------------------------
 export function bolehGuna(ev, namaCiri) {
+  // Keupayaan BERKESAN majlis: guna snapshot `ciri` pada dokumen event
+  // (diambil semasa provisioning bila super-admin custom butiran pakej).
+  // Fallback ke lalai kod untuk majlis lama yang tiada snapshot.
+  const snap = ev?.ciri;
+  if (snap && typeof snap[namaCiri] === "boolean") return snap[namaCiri];
   const id = pakejEvent(ev);
   return !!PAKEJ[id].ciri?.[namaCiri];
 }
