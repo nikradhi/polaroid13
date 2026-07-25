@@ -85,6 +85,9 @@ const butangKeluar = document.getElementById("butang-keluar");
 const statSemua = document.getElementById("stat-semua");
 const statAktif = document.getElementById("stat-aktif");
 const statPremium = document.getElementById("stat-premium");
+const statNonaktif = document.getElementById("stat-nonaktif");
+const statBasic = document.getElementById("stat-basic");
+const statEksklusif = document.getElementById("stat-eksklusif");
 const senarai = document.getElementById("senarai");
 const zonMemuat = document.getElementById("zon-memuat");
 const zonKosong = document.getElementById("zon-kosong");
@@ -999,15 +1002,23 @@ function paparSenarai() {
   zonMemuat.classList.add("hidden");
   senarai.innerHTML = "";
 
-  // Stat dikira dari KESELURUHAN dataEvents — tidak terjejas carian/halaman
-  let aktif = 0, premium = 0;
+  // Stat dikira dari KESELURUHAN dataEvents — tidak terjejas carian/halaman.
+  // Normalisasi pakej sama seperti tapisEvents(): majlis lama tanpa medan
+  // `package` dikira sebagai Basic, jadi basic+premium+eksklusif === jumlah.
+  let aktif = 0, basic = 0, premium = 0, eksklusif = 0;
   dataEvents.forEach((ev) => {
     if (ev.status === "active") aktif++;
-    if (ev.package === "premium") premium++;
+    const idPakej = PAKEJ[ev.package] ? ev.package : "basic";
+    if (idPakej === "basic") basic++;
+    else if (idPakej === "premium") premium++;
+    else if (idPakej === "eksklusif") eksklusif++;
   });
   statSemua.textContent = dataEvents.length;
   statAktif.textContent = aktif;
+  statNonaktif.textContent = dataEvents.length - aktif;   // semua bukan-aktif
+  statBasic.textContent = basic;
   statPremium.textContent = premium;
+  statEksklusif.textContent = eksklusif;
 
   const tertapis = tapisEvents();
 
