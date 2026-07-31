@@ -292,6 +292,10 @@ function tunjukLangkah(n) {
 // ------------------------------------------------------------
 //  VALIDASI setiap langkah sebelum boleh maju
 // ------------------------------------------------------------
+function emelSah(nilai) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(nilai);
+}
+
 function validasiLangkah(n) {
   if (n === 1) {
     if (!pakejDipilih) return "Sila pilih satu pakej untuk teruskan.";
@@ -303,6 +307,9 @@ function validasiLangkah(n) {
   if (n === 3) {
     if (!wNamaAnda.value.trim()) return "Sila isi nama anda.";
     if (!wTelefon.value.trim()) return "Sila isi no. telefon anda.";
+    const emel = wEmel.value.trim();
+    if (!emel) return "Sila isi emel anda.";
+    if (!emelSah(emel)) return "Format emel tidak sah. Cth: nama@email.com";
   }
   return null; // sah
 }
@@ -336,7 +343,7 @@ function binaRingkasan() {
     ["URL pilihan", wSlug.value.trim() || "—"],
     ["Nama anda", wNamaAnda.value.trim()],
     ["No. telefon", wTelefon.value.trim()],
-    ["Emel", wEmel.value.trim() || "—"],
+    ["Emel", wEmel.value.trim()],
   ];
 
   baris.forEach(([label, nilai]) => {
@@ -369,7 +376,6 @@ function binaRingkasan() {
 
 function binaMesejWasap(p) {
   const slug = wSlug.value.trim();
-  const emel = wEmel.value.trim();
   const hg = hargaPakej(pakejDipilih, promoSemasa);
   const teksPakej = hg.adaPromo
     ? `${p.nama} (RM${hg.promo} promo, asal RM${hg.asal})`
@@ -383,7 +389,7 @@ function binaMesejWasap(p) {
     slug ? `URL pilihan: ${slug}` : null,
     `Nama saya: ${wNamaAnda.value.trim()}`,
     `No. telefon: ${wTelefon.value.trim()}`,
-    emel ? `Emel: ${emel}` : null,
+    `Emel: ${wEmel.value.trim()}`,
     "",
     "Mohon bantu setup akaun selepas pembayaran. Terima kasih!",
   ].filter((x) => x !== null);

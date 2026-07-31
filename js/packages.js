@@ -96,7 +96,7 @@ export const CIRI_AKAN_DATANG = ["muzikLatar", "voiceRecording"];
 //  Contoh Malaysia: "60123456789".
 //  No. admin: 018-905 4144 -> format wa.me (kod negara 60, buang '0' depan).
 // ------------------------------------------------------------
-export const NOMBOR_WHATSAPP = "60189054144";
+export const NOMBOR_WHATSAPP = "601118809054";
 
 // ------------------------------------------------------------
 //  Label mesra Bahasa Melayu untuk setiap ciri — SATU SUMBER
