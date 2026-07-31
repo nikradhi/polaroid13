@@ -20,33 +20,147 @@
   />
 
   <style>
-    body {
-      background:
+    /* ============================================================
+       TOKEN WARNA PANEL (mod terang / gelap)
+       ------------------------------------------------------------
+       Namespace --sa-* SENGAJA berasingan daripada --warna-* milik
+       js/tema.js. Sebabnya: terapTema() menulis --warna-* sebagai
+       gaya INLINE pada <html>, dan gaya inline mengalahkan mana-mana
+       helaian gaya. Panel pemilik juga tidak mengikut tema majlis
+       pelanggan — ia ada identiti sendiri.
+
+       Lajur :root di bawah mesti kekal SAMA PERSIS dengan warna asal
+       panel: menambah mod gelap tidak boleh mengubah rupa terang.
+       ============================================================ */
+    :root {
+      color-scheme: light;
+
+      --sa-latar:
         radial-gradient(1200px 600px at 50% -10%, #fbeef0 0%, transparent 60%),
         linear-gradient(180deg, #fdf8f3 0%, #f7efe6 100%);
-      color: #5a4a42;
+
+      --sa-teks: #5a4a42;
+      --sa-teks-lembut: #8a7a70;
+      --sa-teks-samar: #a09088;
+      --sa-nav-teks: #6a5a52;
+
+      --sa-permukaan: rgba(255,255,255,0.7);
+      --sa-permukaan-2: rgba(255,255,255,0.6);
+      --sa-permukaan-3: #fdf6ef;
+      --sa-input: rgba(255,255,255,0.7);
+      --sa-hover: rgba(255,255,255,0.6);
+      --sa-hover-kuat: #ffffff;
+
+      --sa-sempadan: #e5d5ca;
+      --sa-sempadan-kuat: #e5d5ca;
+
+      --sa-aksen: #b76e79;
+      --sa-aksen-sempadan: #d9a5ac;
+      --sa-aksen-pejal: #b76e79;
+
+      --sa-btn: linear-gradient(135deg, #c07f89 0%, #b76e79 100%);
+      --sa-btn-bayang: 0 8px 20px -6px rgba(183,110,121,.6);
+      --sa-nav-bayang: 0 6px 16px -6px rgba(183,110,121,.55);
+      --sa-laci-bayang: 0 12px 40px -8px rgba(90,74,66,.35);
+      --sa-cincin: rgba(217,165,172,.5);
+
+      --sa-trek: #e0cfc2;
+      --sa-ralat-latar: #fbe4e4;
+      --sa-ralat-teks: #a13a3a;
+      --sa-jaya-latar: #e4f7e8;
+      --sa-jaya-teks: #2f7a43;
+      --sa-terakota: #a0715f;
+      --sa-emas: #a67c52;
+    }
+
+    /* Arang SUAM (condong merah/perang, bukan kelabu-biru) supaya aksen
+       rose-gold tidak nampak seperti tampalan. Aksen #b76e79 cuma 2.0:1
+       atas permukaan gelap, jadi ia diangkat ke #e8a3ad (7.58:1).
+       Gradien butang pula jadi LEBIH GELAP, bukan lebih cerah — teks
+       putih atas #b76e79 sudah pun cuma 3.80:1 hari ini; mencerahkannya
+       memburukkan lagi. #a85f6a -> #94505b beri 4.66:1 -> 5.90:1. */
+    html.gelap {
+      /* color-scheme ialah SEBAB kelas ini duduk pada <html> dan bukan
+         <body>: ia hanya berkuat kuasa dari elemen akar. Ia yang
+         menggelapkan dialog confirm() natif (panel ini ada 12, tiada
+         modal tersuai), bar skrol, kotak semak UA, dan ikon pemilih
+         <input type="date"> yang kalau tidak jadi hitam atas hitam. */
+      color-scheme: dark;
+      /* Tiada plugin @tailwindcss/forms di sini, jadi text-[#b76e79]
+         pada ~20 kotak semak memang tidak berkesan. Ini gantinya. */
+      accent-color: var(--sa-aksen-pejal);
+
+      --sa-latar:
+        radial-gradient(1200px 600px at 50% -10%, #33272b 0%, transparent 60%),
+        linear-gradient(180deg, #1f191c 0%, #171214 100%);
+
+      --sa-teks: #f0e6e2;
+      --sa-teks-lembut: #c4b4ae;
+      /* Bukan #9d8c86: nilai itu beri 4.82:1 atas kad luar tetapi cuma
+         4.34:1 (GAGAL) atas blok bersarang bg-white/60 — dan di situlah
+         text-[#a09088] paling banyak diguna, pada saiz text-xs. */
+      --sa-teks-samar: #a89791;
+      --sa-nav-teks: #c4b4ae;
+
+      --sa-permukaan: #2a2226;
+      --sa-permukaan-2: #322a2e;
+      --sa-permukaan-3: #2f2529;
+      --sa-input: #211b1e;
+      --sa-hover: rgba(255,255,255,0.07);
+      --sa-hover-kuat: #3a3135;
+
+      --sa-sempadan: #4d4247;
+      /* Sempadan medan input perlu 3:1 (WCAG 1.4.11, sempadan kawalan);
+         nilai garis halus kad di atas terlalu samar untuk itu. */
+      --sa-sempadan-kuat: #7d6b71;
+
+      --sa-aksen: #e8a3ad;
+      --sa-aksen-sempadan: #8d666e;
+      --sa-aksen-pejal: #a85f6a;
+
+      --sa-btn: linear-gradient(135deg, #a85f6a 0%, #94505b 100%);
+      --sa-btn-bayang: 0 8px 20px -8px rgba(0,0,0,.75);
+      --sa-nav-bayang: 0 6px 16px -6px rgba(0,0,0,.6);
+      --sa-laci-bayang: 0 12px 40px -8px rgba(0,0,0,.7);
+      --sa-cincin: rgba(232,163,173,.45);
+
+      --sa-trek: #3d3438;
+      --sa-ralat-latar: #3a1c1c;
+      --sa-ralat-teks: #f6b3b3;
+      --sa-jaya-latar: #16301f;
+      --sa-jaya-teks: #9ae6b4;
+      --sa-terakota: #d9a084;
+      --sa-emas: #e0b271;
+    }
+
+    body {
+      background: var(--sa-latar);
+      color: var(--sa-teks);
       min-height: 100vh;
     }
     .font-serif-elegan { font-family: 'Cormorant Garamond', serif; }
     .font-tangan { font-family: 'Caveat', cursive; }
     .btn-utama {
-      background: linear-gradient(135deg, #c07f89 0%, #b76e79 100%);
+      background: var(--sa-btn);
       color: #fff;
       transition: transform .15s ease, box-shadow .2s ease, opacity .2s;
-      box-shadow: 0 8px 20px -6px rgba(183,110,121,.6);
+      box-shadow: var(--sa-btn-bayang);
     }
     .btn-utama:hover:not(:disabled) { transform: translateY(-1px); }
     .btn-utama:disabled { opacity: .6; cursor: not-allowed; }
-    .kotak-ralat { background: #fbe4e4; color: #a13a3a; border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
-    .kotak-jaya { background: #e4f7e8; color: #2f7a43; border-radius: 12px; padding: 10px 14px; font-size: .9rem; }
+    .kotak-ralat { background: var(--sa-ralat-latar); color: var(--sa-ralat-teks); border-radius: 12px; padding: 10px 14px; font-size: .9rem; text-align: center; }
+    .kotak-jaya { background: var(--sa-jaya-latar); color: var(--sa-jaya-teks); border-radius: 12px; padding: 10px 14px; font-size: .9rem; }
     .input-elok {
       width: 100%;
       border-radius: 0.75rem;
-      border: 1px solid #e5d5ca;
-      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--sa-sempadan-kuat);
+      background: var(--sa-input);
+      /* Jangan bergantung pada warisan warna daripada body: sebaik latar
+         medan berbeza daripada latar halaman, warisan itu jadi salah. */
+      color: var(--sa-teks);
       padding: 0.65rem 0.9rem;
     }
-    .input-elok:focus { border-color: #b76e79; outline: none; box-shadow: 0 0 0 2px rgba(217,165,172,.5); }
+    .input-elok:focus { border-color: var(--sa-aksen); outline: none; box-shadow: 0 0 0 2px var(--sa-cincin); }
 
     /* ====== Side navigation ====== */
     .nav-item {
@@ -57,19 +171,19 @@
       border-radius: 0.75rem;
       padding: 0.6rem 0.8rem;
       font-size: 0.92rem;
-      color: #6a5a52;
+      color: var(--sa-nav-teks);
       text-align: left;
       border-left: 3px solid transparent;
       transition: background .15s ease, color .15s ease, border-color .15s ease;
     }
-    .nav-item:hover { background: rgba(255,255,255,0.6); color: #b76e79; }
+    .nav-item:hover { background: var(--sa-hover); color: var(--sa-aksen); }
     .nav-item[aria-current="page"],
     .nav-item[aria-current="page"]:hover {
-      background: linear-gradient(135deg, #c07f89 0%, #b76e79 100%);
+      background: var(--sa-btn);
       color: #fff;
       font-weight: 600;
       border-left-color: transparent;
-      box-shadow: 0 6px 16px -6px rgba(183,110,121,.55);
+      box-shadow: var(--sa-nav-bayang);
     }
     .nav-ikon { font-size: 1.05rem; line-height: 1; }
 
@@ -83,11 +197,142 @@
         width: 16rem;
         transform: translateX(-105%);
         overflow-y: auto;
-        box-shadow: 0 12px 40px -8px rgba(90,74,66,.35);
+        box-shadow: var(--sa-laci-bayang);
       }
       #nav-sisi.buka { transform: translateX(0); }
     }
+
+    /* ============================================================
+       LAPISAN SERASI — memetakan semula kelas Tailwind untuk mod gelap
+       ------------------------------------------------------------
+       KENAPA WUJUD: sebahagian besar warna panel ini hidup sebagai kelas
+       Tailwind mentah di dalam string template js/super-admin.js (kad
+       majlis, lencana, butang tindakan, baris promo, grid gambar,
+       pagination, warna bar storan). Memetakan semula ~30 kelas di sini
+       lebih selamat daripada mengedit ~200 tempat panggilan di sana —
+       dan markup yang dijana JS jadi gelap secara percuma.
+
+       KENAPA IA MENANG: kekhususan, BUKAN susunan sumber. Tailwind Play
+       CDN menulis semula helaian gayanya pada setiap rebuild, jadi
+       kedudukannya tidak boleh dipercayai. `html.gelap .bg-white\/70`
+       = (0,2,1) sentiasa mengalahkan `.bg-white\/70` = (0,1,0).
+       Ini pecah HANYA jika projek bertukar ke binaan Tailwind dengan
+       important:true — bukan kes di sini (CDN kosong, tiada config).
+
+       VARIAN: Tailwind menjana `.hover\:bg-white\/60:hover`, jadi
+       tampalan varian MESTI bawa pseudo-kelas yang sama. Tanpa `:hover`
+       peraturan itu senyap-senyap tidak pernah padan.
+
+       JANGAN guna pemilih kad bebas seperti [class*="text-["] —
+       text-[10px] / text-[11px] ialah SAIZ FONT, bukan warna.
+
+       MENAMBAH KELAS WARNA BAHARU dalam js/super-admin.js? Tambah
+       pemetaan gelapnya di sini juga, kalau tidak ia kekal terang.
+       ============================================================ */
+
+    /* ---- Latar ---- */
+    html.gelap .bg-white\/70,
+    html.gelap .bg-\[\#fdf8f3\]        { background-color: var(--sa-permukaan); }
+    html.gelap .bg-white\/60,
+    html.gelap .sm\:bg-white\/60       { background-color: var(--sa-permukaan-2); }
+    html.gelap .bg-\[\#fdf6ef\]        { background-color: var(--sa-permukaan-3); }
+    html.gelap .bg-white               { background-color: var(--sa-input); }
+    html.gelap .bg-white\/90           { background-color: rgba(30,24,27,.9); }
+    html.gelap .bg-\[\#e0cfc2\]        { background-color: var(--sa-trek); }
+    html.gelap .bg-\[\#b76e79\]        { background-color: var(--sa-aksen-pejal); }
+    html.gelap .hover\:bg-white\/60:hover { background-color: var(--sa-hover); }
+    html.gelap .hover\:bg-white:hover  { background-color: var(--sa-hover-kuat); }
+
+    /* ---- Teks ---- */
+    html.gelap .text-\[\#5a4a42\]      { color: var(--sa-teks); }
+    html.gelap .text-\[\#6a5a52\],
+    html.gelap .text-\[\#8a7a70\]      { color: var(--sa-teks-lembut); }
+    html.gelap .text-\[\#a09088\]      { color: var(--sa-teks-samar); }
+    html.gelap .text-\[\#b76e79\],
+    html.gelap .hover\:text-\[\#b76e79\]:hover { color: var(--sa-aksen); }
+    html.gelap .text-\[\#a0715f\]      { color: var(--sa-terakota); }
+    html.gelap .text-\[\#a67c52\]      { color: var(--sa-emas); }
+    html.gelap .text-\[\#9a7b2e\]      { color: #e6c97a; }
+
+    /* ---- Sempadan & cincin fokus ---- */
+    html.gelap .border-\[\#e5d5ca\]    { border-color: var(--sa-sempadan); }
+    /* Medan input perlu sempadan lebih kuat daripada garis halus kad
+       (WCAG 1.4.11). Kelayakan elemen beri (0,2,2) — menang bersih. */
+    html.gelap input.border-\[\#e5d5ca\],
+    html.gelap select.border-\[\#e5d5ca\] { border-color: var(--sa-sempadan-kuat); }
+    html.gelap .border-\[\#d9a5ac\]    { border-color: var(--sa-aksen-sempadan); }
+    html.gelap .border-\[\#b76e79\]    { border-color: var(--sa-aksen); }
+    /* Lengkung pemutar "Memuatkan…" — border-TOP sahaja. */
+    html.gelap .border-t-\[\#b76e79\]  { border-top-color: var(--sa-aksen); }
+    html.gelap .focus\:ring-\[\#d9a5ac\]:focus {
+      --tw-ring-color: var(--sa-aksen-sempadan);
+      --tw-ring-offset-color: var(--sa-permukaan);
+    }
+
+    /* ---- Lencana pakej (Eksklusif / Premium / Basic) ---- */
+    html.gelap .bg-\[\#efe3c8\]        { background-color: #4a3d22; }
+    html.gelap .bg-\[\#f3dfe3\]        { background-color: #4a2f36; }
+    html.gelap .bg-\[\#eee6de\]        { background-color: #3a3236; }
+
+    /* ---- Palet semantik (lencana status + butang tindakan kad) ---- */
+    html.gelap .bg-green-100           { background-color: #1e3a2a; }
+    html.gelap .bg-green-50            { background-color: #14301f; }
+    html.gelap .hover\:bg-green-100:hover { background-color: #1c4029; }
+    html.gelap .text-green-700         { color: #7ee0a0; }
+    html.gelap .text-green-600         { color: #4ade80; }
+    html.gelap .bg-amber-100           { background-color: #422f13; }
+    html.gelap .text-amber-700         { color: #fcd34d; }
+    html.gelap .bg-red-50,
+    html.gelap .hover\:bg-red-50:hover { background-color: #3a1a1c; }
+    html.gelap .hover\:bg-red-100:hover { background-color: #4a2124; }
+    html.gelap .text-red-600           { color: #fca5a5; }
+    html.gelap .bg-blue-50             { background-color: #14263d; }
+    html.gelap .hover\:bg-blue-100:hover { background-color: #1b3352; }
+    html.gelap .text-blue-700          { color: #93c5fd; }
+    html.gelap .bg-gray-200            { background-color: #3f3a3c; }
+    html.gelap .bg-gray-100            { background-color: #3a3336; }
+    html.gelap .hover\:bg-gray-200:hover { background-color: #463d41; }
+    /* Kawalan nyahdaya — 3.3:1 sengaja rendah; WCAG 1.4.3 mengecualikan
+       kawalan tidak aktif, dan ia perlu KELIHATAN nyahdaya. */
+    html.gelap .bg-gray-50             { background-color: #2b2528; }
+    html.gelap .text-gray-400          { color: #8a807c; }
+    html.gelap .text-gray-600          { color: #cfc6c2; }
+    html.gelap .text-gray-700          { color: #ded5d1; }
+    html.gelap .border-red-300         { border-color: #7a3f42; }
+    html.gelap .border-amber-300       { border-color: #8a6a2a; }
+    /* Isian bar storan — ditetapkan dari JS (storanBar.className). */
+    html.gelap .bg-green-500           { background-color: #34d399; }
+    html.gelap .bg-amber-500           { background-color: #fbbf24; }
+    html.gelap .bg-red-500             { background-color: #f87171; }
+
+    /* ---- Bukan-utiliti ---- */
+    html.gelap ::placeholder           { color: var(--sa-teks-samar); opacity: 1; }
+    html.gelap code                    { color: var(--sa-teks-lembut); }
+
+    /* SENGAJA TIDAK DITAMPAL: text-white; bg-amber-500/90 (lencana
+       "Tersembunyi" yang duduk ATAS gambar tetamu, bukan atas permukaan
+       tema); bg-black/40 (overlay laci). Jangan letak filter global pada
+       body — ia akan meredupkan grid gambar tetamu (#g-grid). */
   </style>
+
+  <script>
+    /* Pasang mod paparan SEBELUM lukisan pertama supaya tiada kelipan
+       putih. Sengaja skrip klasik, bukan module: modul ES dalam
+       js/super-admin.js hanya berjalan selepas HTML selesai dihurai —
+       terlalu lewat, skrin sempat berkelip terang dahulu.
+
+       Lalai = TERANG. prefers-color-scheme sengaja TIDAK diikut supaya
+       rupa panel tidak berubah tanpa admin memilihnya sendiri.
+
+       Nilai localStorage tidak dipercayai: kelas hanya DITAMBAH bila
+       nilainya betul-betul "gelap" — corak putih-senarai yang sama
+       seperti latarSah()/warnaSah() dalam js/tema.js. */
+    try {
+      if (localStorage.getItem("polaroid_sa_mod") === "gelap") {
+        document.documentElement.classList.add("gelap");
+      }
+    } catch (e) { /* mod peribadi / storan disekat — kekal terang */ }
+  </script>
 </head>
 
 <body class="antialiased">
@@ -116,6 +361,16 @@
     <p class="mt-6 text-center text-xs text-[#a09088] leading-relaxed">
       Hanya akaun yang disenaraikan dalam koleksi <code>admins</code> boleh masuk.
     </p>
+
+    <!-- Salinan kedua butang mod paparan. Sidebar hanya wujud selepas log
+         masuk, jadi tanpa butang ini admin yang menghidupkan mod gelap lalu
+         log keluar terperangkap pada skrin gelap tanpa jalan pulang. -->
+    <p class="mt-4 text-center">
+      <button type="button" data-tukar-tema aria-pressed="false"
+        class="text-xs font-medium text-[#8a7a70] underline underline-offset-4 hover:text-[#b76e79] transition">
+        <span data-label-tema>🌙 Mod Gelap</span>
+      </button>
+    </p>
   </section>
 
   <!-- ============ PANEL SUPER ADMIN ============ -->
@@ -143,8 +398,15 @@
         <button type="button" class="nav-item" data-sek="senarai"><span class="nav-ikon">🗂️</span> Senarai Majlis</button>
       </nav>
 
+      <!-- Mod paparan: keutamaan per-peranti (localStorage), bukan
+           per-akaun — admins/{uid} ialah write:false dalam rules. -->
+      <button type="button" data-tukar-tema aria-pressed="false"
+        class="mt-3 rounded-xl border border-[#e5d5ca] px-4 py-2 text-sm font-medium text-[#8a7a70] hover:bg-white/60 transition">
+        <span data-label-tema>🌙 Mod Gelap</span>
+      </button>
+
       <button id="butang-keluar"
-        class="mt-3 rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">
+        class="mt-1 rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">
         Log Keluar
       </button>
     </aside>

@@ -206,6 +206,72 @@ butangMenu?.addEventListener("click", bukaLaci);
 navOverlay?.addEventListener("click", tutupLaci);
 window.addEventListener("hashchange", () => tukarSeksyen(location.hash.slice(1)));
 
+// ------------------------------------------------------------
+//  MOD PAPARAN (terang / gelap)
+// ------------------------------------------------------------
+//  Kelas `gelap` diletak pada <html> — BUKAN <body> — kerana
+//  color-scheme hanya berkuat kuasa dari elemen akar. Itu yang
+//  menggelapkan dialog confirm() natif, pemilih <input type="date">
+//  dan bar skrol.
+//
+//  Keutamaan ini per-PERANTI (localStorage), bukan per-akaun:
+//  admins/{uid} ialah write:false dalam firestore.rules, jadi klien
+//  memang tidak boleh menyimpannya di Firestore.
+//
+//  Semua warna gelap ditakrif dalam <style> super-admin.html: satu
+//  blok token --sa-* + satu LAPISAN SERASI yang memetakan semula
+//  kelas Tailwind. Sebab itu fail ini tidak perlu tahu apa-apa
+//  tentang warna — TETAPI kalau anda menambah kelas warna baharu
+//  pada mana-mana string template di bawah, tambah juga pemetaan
+//  gelapnya di sana, kalau tidak ia senyap-senyap kekal terang.
+//
+//  Pemasangan awal dibuat oleh skrip kecil dalam <head> (elak
+//  kelipan putih); di sini kita cuma segerakkan label butang dan
+//  kendalikan klik.
+// ------------------------------------------------------------
+const KUNCI_MOD = "polaroid_sa_mod";
+
+// Hanya dua nilai dibenarkan — corak sama seperti latarSah()/warnaSah()
+// dalam tema.js. Nilai tersimpan tidak pernah disuntik terus ke CSS.
+function modSah(nilai) {
+  return nilai === "gelap" || nilai === "terang" ? nilai : null;
+}
+
+function simpanMod(mod) {
+  try { localStorage.setItem(KUNCI_MOD, mod); } catch { /* abai */ }
+}
+
+// Sumber kebenaran = kelas pada <html>, bukan localStorage. Skrip
+// <head> sudah menetapkannya sebelum modul ini dimuat.
+function modSemasa() {
+  return document.documentElement.classList.contains("gelap") ? "gelap" : "terang";
+}
+
+function terapMod(mod) {
+  const gelap = modSah(mod) === "gelap";
+  document.documentElement.classList.toggle("gelap", gelap);
+  // Ada dua butang (sidebar + skrin log masuk); [data-tukar-tema]
+  // melayan kedua-duanya, jadi butang ketiga boleh ditambah pada
+  // markup bila-bila masa tanpa menyentuh fail ini.
+  document.querySelectorAll("[data-tukar-tema]").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(gelap));
+    btn.title = gelap ? "Tukar ke paparan terang" : "Tukar ke paparan gelap";
+    const label = btn.querySelector("[data-label-tema]");
+    if (label) label.textContent = gelap ? "☀️ Mod Terang" : "🌙 Mod Gelap";
+  });
+}
+
+document.querySelectorAll("[data-tukar-tema]").forEach((btn) =>
+  btn.addEventListener("click", () => {
+    const baru = modSemasa() === "gelap" ? "terang" : "gelap";
+    simpanMod(baru);
+    terapMod(baru);
+  })
+);
+
+// Segerakkan label butang dengan kelas yang sudah dipasang skrip <head>.
+terapMod(modSemasa());
+
 // Config butiran pakej (settings/pakej) — dimuat sekali di init.
 // null = belum dimuat / tiada override -> resolver fallback ke lalai kod.
 let cfgPakejSemasa = null;

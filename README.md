@@ -302,6 +302,27 @@ Semua dikuatkuasakan di **Firestore Security Rules**, bukan frontend sahaja:
       padam, `photoCount` majlis itu jadi 0.
 - [ ] Butang **↻** di sebelah kiraan gambar menyelaraskan `photoCount` dengan gambar sebenar.
 
+**Mod gelap (`super-admin.html`)**
+- [ ] Mod **terang** tidak berubah langsung berbanding sebelum ini (banding tangkapan skrin).
+- [ ] Tekan **🌙 Mod Gelap** → panel bertukar serta-merta; label jadi **☀️ Mod Terang**.
+- [ ] F5 → kekal gelap, **tiada kelipan putih** (uji juga dengan throttle "Slow 3G").
+- [ ] `localStorage.clear()` + F5 → terang, **walaupun OS dalam mod gelap** (lalai sengaja terang).
+- [ ] `localStorage.setItem("polaroid_sa_mod","xyz")` + F5 → jatuh ke terang, tiada ralat konsol.
+- [ ] Log keluar → skrin log masuk juga gelap, dan butang toggle di situ berfungsi.
+- [ ] Layari ketujuh-tujuh seksyen — tiada kad, kotak atau teks tertinggal putih:
+      kotak statistik & bar storan (paksa ≥70% dan ≥90% → ambar, kemudian merah);
+      `#selenggara-log`; kad majlis + lencana pakej & status (ketiga-tiga jenis) +
+      butang Nyahaktif/Aktifkan/Reset/Padam termasuk versi nyahdaya; pagination
+      (butang aktif, `‹`/`›` nyahdaya, elipsis `…`); blok promo & butiran pakej.
+- [ ] `<select>` pakej & `<input type="date">`: **ikon pemilih tarikh kelihatan**, kalendar gelap.
+- [ ] Kotak semak ciri pakej bertanda jelas (bukti `accent-color`).
+- [ ] **Urus Gambar** → gambar tetamu kekal **warna penuh, tidak diredupkan**.
+- [ ] Kad majlis **tamat tempoh** → sempadan ambar masih jelas berbeza daripada kad biasa.
+- [ ] Telefon (<640px): laci ☰ **legap** (bukan lut sinar), overlay & bayang laci kelihatan.
+- [ ] Dialog `confirm()` boleh dibaca. Nota: warnanya ikut pelayar — gelap di Chrome/Edge,
+      mungkin kekal terang di Firefox/Safari. Itu **bukan** kegagalan.
+- [ ] `admin.html`, `tetapan.html`, `gallery.html` kekal terang seperti biasa.
+
 **Customize pelanggan (`tetapan.html`)**
 - [ ] Taip URL → papar **"✓ tersedia"** atau **"✗ sudah diambil"** secara langsung.
 - [ ] Sempang boleh ditaip (cth `ali-siti`), huruf besar & simbol dibersihkan automatik.
