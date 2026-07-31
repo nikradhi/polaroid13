@@ -94,7 +94,7 @@ export const CIRI_AKAN_DATANG = ["muzikLatar", "voiceRecording"];
 //  No. WhatsApp admin untuk terima tempahan (halaman pakej.html).
 //  Format antarabangsa TANPA '+' atau '0' di depan (untuk wa.me).
 //  Contoh Malaysia: "60123456789".
-//  No. admin: 018-905 4144 -> format wa.me (kod negara 60, buang '0' depan).
+//  No. admin: 011-1880 9054 -> format wa.me (kod negara 60, buang '0' depan).
 // ------------------------------------------------------------
 export const NOMBOR_WHATSAPP = "601118809054";
 
