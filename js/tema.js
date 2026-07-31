@@ -82,6 +82,10 @@ const CORAK_IMEJ = {
   reben:   new URL("../img/latar-reben.jpeg",   import.meta.url).href,
   taburan: new URL("../img/latar-taburan.jpeg", import.meta.url).href,
   botani:  new URL("../img/latar-botani.jpeg",  import.meta.url).href,
+  daisi:   new URL("../img/latar-daisi.jpeg",   import.meta.url).href,
+  gingham: new URL("../img/latar-gingham.jpeg", import.meta.url).href,
+  hati:    new URL("../img/latar-hati.jpeg",    import.meta.url).href,
+  marun:   new URL("../img/latar-marun.jpeg",   import.meta.url).href,
 };
 
 // ------------------------------------------------------------
@@ -163,6 +167,9 @@ const CORAK_SVG = {
 // Senarai untuk UI + urutan paparan. `jenis`:
 //   "imej"  — corak bunga JPEG kongsi (lalai; diwarnakan via corakTapis).
 //   "foto"  — wallpaper penuh-warna dari CORAK_IMEJ (tanpa penapis tema).
+//   "jubin" — JPEG dari CORAK_IMEJ yang SEAMLESS; diulang pada saiz tetap
+//             (`saiz`) dan bukan diregang `cover`, supaya corak kekal
+//             kecil & tajam pada skrin lebar. `saiz` wajib untuk jenis ini.
 //   "svg"   — corak dijana, tertinta warna tema.
 //   "warna" — tiada corak; warna latar tema sahaja.
 export const LATAR_PILIHAN = [
@@ -171,6 +178,10 @@ export const LATAR_PILIHAN = [
   { id: "reben",   nama: "Reben Pink",    jenis: "foto" },
   { id: "taburan", nama: "Bunga Taburan", jenis: "foto" },
   { id: "botani",  nama: "Botani Vintaj", jenis: "foto" },
+  { id: "daisi",   nama: "Daisi Krim",    jenis: "jubin", saiz: "380px auto" },
+  { id: "gingham", nama: "Gingham Pink",  jenis: "jubin", saiz: "300px auto" },
+  { id: "hati",    nama: "Hati Linen",    jenis: "jubin", saiz: "260px auto" },
+  { id: "marun",   nama: "Marun Baldu",   jenis: "foto" },
   { id: "geo",     nama: "Geometri",      jenis: "svg" },
   { id: "titik",   nama: "Titik Halus",   jenis: "svg" },
   { id: "dedaun",  nama: "Dedaun",        jenis: "svg" },
@@ -390,10 +401,32 @@ export function fontIdSah(id) {
 //  CORAK_WARNA_NEUTRAL yang tetap, foto dipapar tanpa tinta tema.
 //  Dipanggil dengan corakTapis/corakOpacity pra-set untuk kekalkan
 //  tingkah laku asal corak bunga.
+//
+//  `pratonton` — untuk jubin kecil dalam panel tetapan. Corak "jubin"
+//  diulang pada saiz tetap (cth 380px); dalam butang ~90px ia cuma
+//  memaparkan sekeping kecil dan nampak seperti blok kosong. Mod ini
+//  memuatkan seluruh imej ke dalam jubin sebaliknya. Jenis lain tidak
+//  terjejas.
 // ------------------------------------------------------------
-export function gayaLatar(latarId, corakTapis = "none", corakOpacity = "1") {
+export function gayaLatar(
+  latarId,
+  corakTapis = "none",
+  corakOpacity = "1",
+  pratonton = false,
+) {
   const pilihan = LATAR_PILIHAN.find((l) => l.id === latarId) || LATAR_PILIHAN[0];
 
+  if (pilihan.jenis === "jubin") {
+    // Imej seamless: ulang pada saiz tetap, bukan regang penuh skrin.
+    const latar = pratonton
+      ? `center / cover no-repeat`
+      : `0 0 / ${pilihan.saiz} repeat`;
+    return {
+      imej: `url("${CORAK_IMEJ[pilihan.id]}") ${latar}`,
+      tapis: "none",
+      opacity: "1",
+    };
+  }
   if (pilihan.jenis === "svg") {
     const c = CORAK_SVG[pilihan.id];
     return {

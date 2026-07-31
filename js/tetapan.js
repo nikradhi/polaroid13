@@ -718,7 +718,9 @@ function binaJubinLatar() {
     btn.title = l.nama;
     btn.dataset.latar = l.id;
 
-    const g = gayaLatar(l.id);
+    // pratonton=true: corak "jubin" dimuatkan penuh dalam jubin kecil ini
+    // (kalau tidak, hanya sekeping kecil corak kelihatan).
+    const g = gayaLatar(l.id, "none", "1", true);
     // "Tiada Corak" (imej: none) -> basuhan neutral halus (bukan warna tema;
     // latar tidak ikut themeColor).
     btn.style.background = g.imej === "none" ? "#9a8c8014" : g.imej;
