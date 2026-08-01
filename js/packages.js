@@ -113,7 +113,7 @@ export const LABEL_CIRI = {
   downloadIndividu: "Muat turun gambar individu",
   downloadZip:      "Muat turun semua (ZIP)",
   liveWall:         "Live Wall (skrin majlis)",
-  photobooth:       "Photobooth 3-syot",
+  photobooth:       "Photobooth digital (3 syot)",
   temaPraset:       "Tema pra-set",
   kustomWarnaFont:  "Kustom warna & font",
   guestbook:        "Ucapan/guestbook digital",

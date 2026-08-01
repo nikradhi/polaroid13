@@ -389,7 +389,7 @@ Semua dikuatkuasakan di **Firestore Security Rules**, bukan frontend sahaja:
 - [ ] **iOS Safari**: video kekal dalam modal, **tidak** skrin penuh (bukti `playsinline`).
 - [ ] Super-admin **Mampat semula** → jalur **dilangkau** (di bawah `HAD_LANGKAU_MAMPAT`);
       jalankan kali kedua, masih dilangkau; kapsyen **masih tajam**.
-- [ ] `pakej.html` & `tetapan.html` memapar "Photobooth 3-syot" secara automatik
+- [ ] `pakej.html` & `tetapan.html` memapar "Photobooth digital (3 syot)" secara automatik
       (propagasi `LABEL_CIRI`, tiada kod khusus).
 
 **Galeri & Live Wall**
