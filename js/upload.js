@@ -7,7 +7,7 @@
 //  pasangBorangUpload() dan dipanggil oleh js/gallery.js.
 //
 //  - Validasi input (nama wajib, jenis & saiz fail)
-//  - Anti-spam: cooldown (localStorage) + honeypot
+//  - Anti-spam: medan honeypot
 //  - Compress ADAPTIF: satu gambar base64 disimpan dalam `photos.image_url`
 //    (tiada Firebase Storage diperlukan)
 //  - Autolulus: setiap gambar terus tampil (tiada pra-moderasi)
@@ -16,8 +16,8 @@
 //  - Pada kejayaan: panggil onBerjaya(fotoBaru) supaya galeri boleh
 //    memasukkan gambar baharu serta-merta (tanpa refresh).
 //
-//  Fail ini hanya urus UI/borang. Kelayakan majlis, cooldown dan
-//  laluan tulis Firestore duduk di js/hantar-foto.js — DIKONGSI
+//  Fail ini hanya urus UI/borang. Kelayakan majlis dan laluan
+//  tulis Firestore duduk di js/hantar-foto.js — DIKONGSI
 //  dengan js/photobooth.js. Jangan salin logik itu balik ke sini.
 // ============================================================
 
@@ -25,12 +25,11 @@ import { createPolaroid, pasangGayaPolaroid } from "./polaroid.js";
 import { compressImej } from "./imej.js";
 import { bakiGambar, tanpaHad } from "./gating.js";
 // Laluan tulis + had dikongsi dengan js/photobooth.js — JANGAN salin
-// semula di sini (kunci cooldown & batch atomik mesti sama).
+// semula di sini (batch atomik mesti sama).
 import {
   SAIZ_FAIL_MAKS,
   HAD_UCAPAN,
   semakKelayakanMajlis,
-  bakiCooldown,
   semakBolehHantar,
   hantarFoto,
   mesejRalatHantar,
@@ -275,15 +274,6 @@ export function pasangBorangUpload({ eventId, majlis, onBerjaya } = {}) {
     }
     if (!failDipilih) {
       tunjukStatus("Sila pilih atau ambil gambar dahulu.", "gagal");
-      return;
-    }
-    // Anti-spam: cooldown antara upload (halangan client, boleh dipintas)
-    const bakiSaat = bakiCooldown();
-    if (bakiSaat > 0) {
-      tunjukStatus(
-        `Terima kasih! Sila tunggu ${bakiSaat} saat sebelum hantar gambar seterusnya.`,
-        "info"
-      );
       return;
     }
     const bolehHantar = semakBolehHantar();

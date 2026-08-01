@@ -276,7 +276,7 @@ Semua dikuatkuasakan di **Firestore Security Rules**, bukan frontend sahaja:
 ### Had yang perlu anda tahu
 
 - `firebaseConfig` **memang selamat** didedah di client — keselamatan datang dari rules.
-- **Anti-spam upload** (cooldown localStorage + honeypot) ialah halangan client sahaja,
+- **Anti-spam upload** (medan honeypot) ialah halangan client sahaja,
   boleh dipintas. Had kuota di rules ialah perlindungan sebenar.
 - Gating **pakej** (Live Wall & ZIP untuk Premium) dan **tempoh tangguh 30 hari** ialah
   gate produk di frontend. Yang dikuatkuasa server ialah **pemilikan** — lihat di bawah.
@@ -376,7 +376,7 @@ Semua dikuatkuasakan di **Firestore Security Rules**, bukan frontend sahaja:
       **satu** dokumen `photos` sahaja dicipta.
 - [ ] `image_url` jalur ≈ **60–80 KB** (semak di Firestore Console) — di bawah had rules 1 MB,
       dan **lebih kecil** daripada gambar biasa dalam majlis yang sama.
-- [ ] Hantar jalur, kemudian cuba **gambar biasa** dalam 45 saat → cooldown **dikongsi** menyekat.
+- [ ] Hantar jalur, kemudian terus hantar **gambar biasa** → tiada sekatan jeda.
 - [ ] **🔄** tukar ke kamera belakang → preview **tidak** dicermin; jalur tersimpan juga tidak.
 - [ ] Tutup modal (×, Escape, klik latar) semasa kira undur → kira undur berhenti,
       **lampu kamera padam**, tiada ralat konsol.

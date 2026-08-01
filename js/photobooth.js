@@ -8,7 +8,7 @@
 //
 //  Jalur dihantar sebagai SATU gambar biasa ke koleksi `photos`
 //  melalui js/hantar-foto.js — laluan tulis yang SAMA dengan
-//  muat naik biasa (kunci cooldown & batch atomik dikongsi).
+//  muat naik biasa (batch atomik dikongsi).
 //
 //  KUOTA: jalur 480x1480 dimampat ke ~45KB -> base64 ~59 KiB
 //  tersimpan, iaitu LEBIH KECIL daripada gambar biasa (~78 KiB)
@@ -24,7 +24,6 @@ import { bolehGuna, bakiGambar, tanpaHad } from "./gating.js";
 import {
   HAD_UCAPAN,
   semakKelayakanMajlis,
-  bakiCooldown,
   semakBolehHantar,
   hantarFoto,
   mesejRalatHantar,
@@ -714,15 +713,6 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     }
     if (!kanvasJalur) {
       tunjukStatus("Sila ambil jalur photobooth dahulu.", "gagal");
-      return;
-    }
-    // Cooldown DIKONGSI dengan muat naik biasa — kunci localStorage sama.
-    const bakiSaat = bakiCooldown();
-    if (bakiSaat > 0) {
-      tunjukStatus(
-        `Terima kasih! Sila tunggu ${bakiSaat} saat sebelum hantar gambar seterusnya.`,
-        "info"
-      );
       return;
     }
     const bolehHantar = semakBolehHantar();
