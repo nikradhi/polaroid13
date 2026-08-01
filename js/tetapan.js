@@ -30,7 +30,7 @@ import {
   writeBatch,
 } from "./firebase.js";
 import { bolehMuatTurun, formatTarikhMajlis } from "./majlis.js";
-import { muatTurunZipMajlis, mesejRalatMuatTurun } from "./muat-turun.js";
+import { muatTurunZipMajlis, mesejRalatMuatTurun, cetusMuatTurun, namaBersih } from "./muat-turun.js";
 import {
   LATAR_PILIHAN, gayaLatar, latarSah,
   PASANGAN_FONT, fontIdSah, muatFontTema, tumpukFont,
@@ -111,9 +111,10 @@ const zonQr = document.getElementById("zon-qr");
 const qrcodeEl = document.getElementById("qrcode");
 const qrUrl = document.getElementById("qr-url");
 const qrAyat = document.getElementById("qr-ayat");
-const butangKongsiWa = document.getElementById("butang-kongsi-wa");
-const butangSalinAyat = document.getElementById("butang-salin-ayat");
+// Butang kongsi/salin TIADA rujukan di sini: ia wujud di dua tempat dan
+// diikat melalui atribut data ([data-kongsi-wa] dsb.), bukan id.
 const butangCetak = document.getElementById("butang-cetak");
+const butangMuatQr = document.getElementById("butang-muat-qr");
 
 // --- DOM: kad cetak (tersembunyi di skrin, muncul semasa @media print) ---
 const cetakNama = document.getElementById("cetak-nama");
@@ -1027,6 +1028,7 @@ formTetapan.addEventListener("click", (e) => {
 // ------------------------------------------------------------
 let qr = null;
 let ayatJemputan = ""; // ayat jemputan terkini (dikongsi butang WhatsApp & Salin)
+let pautanMajlis = ""; // URL landing terkini (dikongsi butang "Salin pautan")
 function kemasKiniQr() {
   // Keterlihatan QR dikawal oleh keaktifan Langkah 4 (kemasStepper), bukan di sini.
   // Tanpa slug tiada apa nak dibina — biar Langkah 4 kekal kosong (tak tercapai).
@@ -1035,16 +1037,25 @@ function kemasKiniQr() {
   const urlLanding = new URL(`e.html?e=${encodeURIComponent(eventData.slug)}`, window.location.href).href;
   qrUrl.textContent = urlLanding;
   qrUrl.href = urlLanding;
+  pautanMajlis = urlLanding;
 
-  // Contoh ayat jemputan (paparan sahaja) — isi nama & pautan sebenar.
+  // Contoh ayat jemputan (paparan sahaja) — isi nama, tarikh & pautan sebenar.
   // textContent, bukan innerHTML: coupleName boleh diubah pengguna.
+  //
+  // JANGAN pecahkan baris di tengah ayat: WhatsApp membalut teks ikut
+  // lebar skrin penerima, jadi \n yang dipaksa nampak pincang pada
+  // telefon sempit. Pecah hanya pada titik logik (perenggan, tarikh, URL).
   const namaMajlis = eventData.coupleName || "kami";
+  const tarikhMajlis = formatTarikhMajlis(eventData.weddingDate || "");
   ayatJemputan =
     "Assalamualaikum & Salam Sejahtera 🤍\n\n" +
-    `Jemput kongsi gambar & ucapan di majlis ${namaMajlis}!\n` +
-    "Imbas QR atau klik pautan untuk muat naik terus dari telefon:\n" +
+    `Jemput kongsi gambar & ucapan di majlis ${namaMajlis}` +
+    // Baris tarikh digugurkan sepenuhnya jika pelanggan belum isi tarikh —
+    // lebih baik daripada emoji kalendar yang tergantung tanpa tarikh.
+    (tarikhMajlis ? `\n🗓️ ${tarikhMajlis}` : "") +
+    "\n\nImbas QR atau klik pautan untuk muat naik terus dari telefon anda:\n" +
     `${urlLanding}\n\n` +
-    "Terima kasih meraikan hari istimewa kami 💐";
+    "Setiap gambar & ucapan anda amat bermakna buat kami 💐";
   qrAyat.textContent = ayatJemputan;
 
   qrcodeEl.innerHTML = "";
@@ -1102,30 +1113,97 @@ butangCetak.addEventListener("click", () => {
   window.print();
 });
 
-// Kongsi ayat jemputan terus ke WhatsApp (pemilih penerima muncul;
-// berfungsi di telefon & WhatsApp Web).
-butangKongsiWa.addEventListener("click", () => {
-  if (!ayatJemputan) return;
-  window.open("https://wa.me/?text=" + encodeURIComponent(ayatJemputan), "_blank", "noopener");
+// Muat turun kod QR sahaja sebagai PNG resolusi tinggi.
+// QR skrin hanya 220px — terlalu kecil untuk kad jemputan bercetak, jadi
+// jana semula pada 1024px dalam <div> luar-DOM semasa klik.
+butangMuatQr.addEventListener("click", () => {
+  if (!eventData?.slug) return;
+  const urlLanding = new URL(`e.html?e=${encodeURIComponent(eventData.slug)}`, window.location.href).href;
+
+  const bekas = document.createElement("div");
+  new QRCode(bekas, {
+    text: urlLanding,
+    width: 1024,
+    height: 1024,
+    colorDark: "#3f3630", // sama seperti QR kad cetak — kontras tinggi
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+
+  // qrcodejs melukis ke <canvas> lalu menyalin ke <img>; ambil mana-mana yang ada.
+  // Canvas tidak "tainted" (fillRect sahaja, tiada imej luar), jadi toDataURL sah.
+  const kanvas = bekas.querySelector("canvas");
+  const img = bekas.querySelector("img");
+  const dataUri = kanvas ? kanvas.toDataURL("image/png") : img?.src;
+  if (!dataUri) return;
+
+  // kunci "qr" tersendiri — jangan kongsi dengan "zip", supaya muat turun QR
+  // tidak membatalkan objectURL pautan sandaran ZIP (#mt-pautan).
+  cetusMuatTurun(dataUri, `qr-${namaBersih(eventData.slug)}.png`, { kunci: "qr" });
+
+  maklumBalasButang(butangMuatQr, "✓ Dimuat turun");
 });
 
-// Salin ayat jemputan ke clipboard, dengan fallback untuk pelayar lama
-// / konteks bukan-HTTPS (cth localhost) di mana navigator.clipboard tiada.
-butangSalinAyat.addEventListener("click", async () => {
-  if (!ayatJemputan) return;
+// ------------------------------------------------------------
+//  KONGSI PAUTAN JEMPUTAN
+// ------------------------------------------------------------
+//  Butang kongsi wujud di DUA tempat: pintasan terus di bawah
+//  pautan, dan blok penuh "Kongsi dengan tetamu" di bawah kad QR.
+//  Sebab itu pengendali diikat pada ATRIBUT DATA, bukan id —
+//  menambah butang ketiga pada markup tidak perlu sentuh fail ini.
+// ------------------------------------------------------------
+
+// Fallback diperlukan untuk konteks bukan-HTTPS (cth localhost) dan
+// pelayar lama, di mana navigator.clipboard langsung tiada.
+async function salinTeks(teks) {
   try {
-    await navigator.clipboard.writeText(ayatJemputan);
+    await navigator.clipboard.writeText(teks);
   } catch {
     const ta = document.createElement("textarea");
-    ta.value = ayatJemputan;
+    ta.value = teks;
     ta.style.position = "fixed";
     ta.style.opacity = "0";
     document.body.appendChild(ta);
     ta.select();
-    try { document.execCommand("copy"); } catch {}
+    try { document.execCommand("copy"); } catch { /* abai */ }
     ta.remove();
   }
-  const asal = butangSalinAyat.textContent;
-  butangSalinAyat.textContent = "✓ Disalin";
-  setTimeout(() => { butangSalinAyat.textContent = asal; }, 1500);
-});
+}
+
+// Maklum balas pada butang itu sendiri — projek ini tiada sistem toast.
+// Guna butang yang DIKLIK, bukan rujukan tetap: label berbeza antara
+// pintasan ("📋 Salin ayat") dan blok penuh ("📋 Salin"), jadi setiap
+// satu mesti pulih ke labelnya sendiri.
+function maklumBalasButang(btn, teks) {
+  const asal = btn.textContent;
+  btn.textContent = teks;
+  setTimeout(() => { btn.textContent = asal; }, 1500);
+}
+
+// Kongsi ayat jemputan terus ke WhatsApp (pemilih penerima muncul;
+// berfungsi di telefon & WhatsApp Web).
+document.querySelectorAll("[data-kongsi-wa]").forEach((btn) =>
+  btn.addEventListener("click", () => {
+    if (!ayatJemputan) return;
+    window.open("https://wa.me/?text=" + encodeURIComponent(ayatJemputan), "_blank", "noopener");
+  })
+);
+
+// Salin ayat jemputan penuh (nama + tarikh + pautan).
+document.querySelectorAll("[data-salin-ayat]").forEach((btn) =>
+  btn.addEventListener("click", async () => {
+    if (!ayatJemputan) return;
+    await salinTeks(ayatJemputan);
+    maklumBalasButang(btn, "✓ Disalin");
+  })
+);
+
+// Salin URL sahaja — untuk ditampal ke bio Instagram, kad jemputan
+// digital, atau mana-mana tempat yang ayat penuh tidak muat.
+document.querySelectorAll("[data-salin-pautan]").forEach((btn) =>
+  btn.addEventListener("click", async () => {
+    if (!pautanMajlis) return;
+    await salinTeks(pautanMajlis);
+    maklumBalasButang(btn, "✓ Disalin");
+  })
+);

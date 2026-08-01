@@ -365,7 +365,32 @@
             </div>
             <a id="qr-url" target="_blank" rel="noopener"
                class="mt-3 inline-block break-all text-xs text-[#b76e79] underline underline-offset-2 hover:text-[#a13a3a] py-1"></a>
-            <button id="butang-cetak" class="no-print btn-utama mt-4 rounded-xl px-5 py-2.5 text-sm font-medium">🖨️ Cetak Kad QR</button>
+
+            <!-- Pintasan kongsi — terus di bawah pautan supaya pelanggan tidak
+                 perlu skrol ke blok penuh di bawah. Kedua-dua tempat guna ayat
+                 dan pengendali yang SAMA (diikat pada atribut data). -->
+            <div class="no-print mt-3 flex flex-wrap items-center justify-center gap-2">
+              <button type="button" data-kongsi-wa
+                      class="btn-utama rounded-xl px-4 py-2 text-sm font-medium">💬 WhatsApp</button>
+              <button type="button" data-salin-pautan
+                      class="rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">🔗 Salin pautan</button>
+              <button type="button" data-salin-ayat
+                      class="rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">📋 Salin ayat</button>
+            </div>
+
+            <div class="no-print mt-4 flex items-start justify-center gap-2">
+              <div class="flex flex-col items-center gap-1">
+                <button id="butang-cetak" class="btn-utama rounded-xl px-5 py-2.5 text-sm font-medium">🖨️ Cetak Kad QR</button>
+                <span class="text-[11px] text-[#a09088]">(untuk printing)</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <button id="butang-muat-qr" type="button"
+                        class="shrink-0 rounded-xl border border-[#d9a5ac] px-4 py-2.5 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">
+                  ⬇️ Muat Turun QR
+                </button>
+                <span class="text-[11px] text-[#a09088]">(fail PNG)</span>
+              </div>
+            </div>
             <p class="no-print mt-2 text-[11px] text-[#a09088] leading-relaxed">
               Dalam dialog cetak, tandakan <b>“Background graphics”</b> / <b>“Grafik latar”</b>
               supaya corak bunga turut dicetak.
@@ -383,11 +408,11 @@
 
               <!-- Butang kongsi WhatsApp + salin ayat ke clipboard -->
               <div class="mt-3 flex gap-2">
-                <button id="butang-kongsi-wa" type="button"
+                <button id="butang-kongsi-wa" type="button" data-kongsi-wa
                         class="btn-utama flex-1 rounded-xl py-2.5 text-sm font-medium">
                   💬 Kongsi WhatsApp
                 </button>
-                <button id="butang-salin-ayat" type="button"
+                <button id="butang-salin-ayat" type="button" data-salin-ayat
                         class="shrink-0 rounded-xl border border-[#d9a5ac] px-4 py-2.5 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">
                   📋 Salin
                 </button>

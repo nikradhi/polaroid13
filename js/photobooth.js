@@ -29,21 +29,43 @@ import {
   hantarFoto,
   mesejRalatHantar,
 } from "./hantar-foto.js";
+import {
+  BIL_SYOT,
+  JURANG,
+  BINGKAI_PILIHAN,
+  bingkaiSah,
+  cariBingkai,
+  geometriJalur,
+  lukisPratontonBingkai,
+  tinggiPratonton,
+} from "./bingkai.js";
 
 // --- Geometri jalur (semua dalam piksel) ---
-const BIL_SYOT = 3;
-const PADDING = 16; // bingkai putih kiri/kanan/atas
-const JURANG = 10; // jarak antara syot
-const TINGGI_KAKI = 100; // ruang nama + tarikh di bawah
-const SISI_FOTO = LEBAR_JALUR - PADDING * 2; // 448 — syot PERSEGI
-const TINGGI_JALUR =
-  PADDING + BIL_SYOT * SISI_FOTO + (BIL_SYOT - 1) * JURANG + TINGGI_KAKI; // 1480
+//  Margin BUKAN pemalar lagi — setiap bingkai isytihar marginnya
+//  sendiri, jadi ukuran dikira melalui geometriJalur() (bingkai.js).
+//
+//  Syot pula ditangkap pada saiz TETAP & TERBESAR (padding terkecil,
+//  iaitu "Klasik"), kemudian diskala turun semasa melukis. Dengan itu
+//  tukar bingkai tidak pernah memerlukan syot baharu, dan bingkai
+//  bermargin luas tidak kehilangan kualiti berbanding tangkapan asal.
+const PADDING_MIN = 16;
+const SISI_TANGKAP = LEBAR_JALUR - PADDING_MIN * 2; // 448 — syot PERSEGI
 
 // --- Masa turutan kira detik (ms) ---
 const MS_SESAAT = 1000;
 const MS_SENYUM = 450;
 const MS_KILAT = 220;
-const MS_ANTARA_SYOT = 1100;
+
+// Syot pertama diberi kira detik penuh (tetamu perlu masa bersedia);
+// syot berikutnya lebih pendek kerana mereka sudah berpose dan kamera
+// sudah hidup. Tiada jeda langsung ANTARA syot — penanda 3 titik sudah
+// memberi maklum balas kemajuan.
+const KIRA_SYOT_PERTAMA = 3;
+const KIRA_SYOT_SETERUSNYA = 2;
+
+// Butang snap ialah bulatan tanpa label (gaya apl kamera), jadi arahan
+// dipapar dalam lapisan #pb-kiraan sehingga sesi bermula.
+const PETUNJUK_MULA = "Tekan bulatan untuk 3 syot";
 
 const WARNA_KERTAS = "#fffdf9"; // sepadan --warna-kad lalai
 const WARNA_TEKS = "#4a3f3a";
@@ -98,6 +120,11 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
   const kilat = document.getElementById("pb-kilat");
   const penandaSyot = document.getElementById("pb-penanda-syot");
   const zonPratonton = document.getElementById("pb-zon-pratonton");
+  // Pemilih bingkai — ADIK-BERADIK kepada #pb-zon-pratonton, bukan anak:
+  // paparJalur() melakukan zonPratonton.innerHTML = "" setiap kali jalur
+  // dilukis semula, jadi pemilih di dalamnya akan terpadam.
+  const bingkaiZon = document.getElementById("pb-bingkai-zon");
+  const bingkaiPilihan = document.getElementById("pb-bingkai-pilihan");
   const zonKawalan = document.getElementById("pb-zon-kawalan");
   const butangMula = document.getElementById("pb-butang-mula");
   const butangTukarKamera = document.getElementById("pb-butang-tukar-kamera");
@@ -114,12 +141,18 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
   // --- Keadaan modul ---
   let strim = null; // MediaStream aktif
   let arahKamera = "user"; // "user" (selfie) | "environment" (belakang)
-  let syot = []; // canvas setiap syot
-  let blobJalur = null; // jalur siap, sudah dimampat
+  let syot = []; // canvas setiap syot (SISI_TANGKAP x SISI_TANGKAP)
+  let kanvasJalur = null; // jalur siap dilukis (belum dimampat)
+  let bingkaiDipilih = "klasik"; // id dari BINGKAI_PILIHAN
   let urlPratonton = null; // objectURL pratonton — di-revoke bila diganti
   let sedangSyot = false;
   let sedangHantar = false;
   let dibatalkan = false; // diset bila modal ditutup di tengah sesi
+  let ralatKamera = null; // diisi jika mulaKamera() gagal semasa sesi berjalan
+  // Janji yang settle HANYA bila kamera gagal — dilumbakan dengan setiap
+  // saat kira detik supaya ralat muncul serta-merta. Diganti setiap sesi.
+  let isyaratRalatKamera = new Promise(() => {});
+  let tandakanRalatKamera = () => {};
 
   const namaPasangan = (majlis?.coupleName || "Majlis Kami").trim();
   const tarikhTeks = formatTarikhMajlis(majlis?.weddingDate || "");
@@ -273,24 +306,43 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     const sy = (vh - sisi) / 2;
 
     const k = document.createElement("canvas");
-    k.width = SISI_FOTO;
-    k.height = SISI_FOTO;
+    k.width = SISI_TANGKAP;
+    k.height = SISI_TANGKAP;
     const c = k.getContext("2d");
     // Selfie: cermin imej TERSIMPAN juga, bukan pratonton sahaja —
     // itu yang tetamu lihat semasa berpose.
     if (arahKamera === "user") {
-      c.translate(SISI_FOTO, 0);
+      c.translate(SISI_TANGKAP, 0);
       c.scale(-1, 1);
     }
-    c.drawImage(video, sx, sy, sisi, sisi, 0, 0, SISI_FOTO, SISI_FOTO);
+    c.drawImage(video, sx, sy, sisi, sisi, 0, 0, SISI_TANGKAP, SISI_TANGKAP);
     return k;
   }
 
+  // Kilat ialah maklum balas "sudah dirakam" SELEPAS ambilSyot(), bukan
+  // jeda sebelum rakaman — lihat gelung dalam mulaSesiSyot().
   async function kilatkan() {
     kilat.classList.add("nyala");
     await jeda(60);
     kilat.classList.remove("nyala");
     await jeda(MS_KILAT);
+  }
+
+  // Kira detik `dari` -> 1. Pulangkan false jika sesi patut berhenti
+  // (modal ditutup, atau kamera gagal dibuka semasa kiraan berjalan).
+  //
+  // Setiap saat dilumbakan dengan `isyaratRalatKamera` supaya kebenaran
+  // yang DITOLAK memaparkan ralat serta-merta, bukan selepas kiraan
+  // semasa habis. Isyarat itu hanya settle bila kamera GAGAL — kejayaan
+  // tidak memendekkan kiraan.
+  async function kiraDetik(dari) {
+    for (let s = dari; s >= 1; s--) {
+      if (dibatalkan || ralatKamera) return false;
+      setKiraan(String(s));
+      await Promise.race([jeda(MS_SESAAT), isyaratRalatKamera]);
+      if (ralatKamera) return false;
+    }
+    return !dibatalkan && !ralatKamera;
   }
 
   // ----------------------------------------------------------
@@ -315,7 +367,8 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     return potong.trimEnd() + "…";
   }
 
-  function lukisKaki(c, yKaki) {
+  function lukisKaki(c, g) {
+    const yKaki = g.yKaki;
     const tengah = LEBAR_JALUR / 2;
     const warna = warnaTema();
     c.textAlign = "center";
@@ -334,7 +387,8 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     c.font = "14px serif";
     c.fillText("♥", tengah, yKaki + 25);
 
-    const lebarTeksMaks = LEBAR_JALUR - PADDING * 2 - 16;
+    // Margin bingkai berbeza-beza, jadi ruang teks ikut geometri semasa.
+    const lebarTeksMaks = LEBAR_JALUR - g.padding * 2 - 16;
 
     // Nama pasangan — kecutkan (dan pendekkan) supaya tak terkeluar tepi
     c.fillStyle = WARNA_TEKS;
@@ -351,19 +405,52 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     }
   }
 
-  async function binaJalur() {
+  // ----------------------------------------------------------
+  //  LUKIS jalur -> canvas. SEGERAK dan pantas.
+  // ------------------------------------------------------------
+  //  Sengaja DIPISAHKAN daripada mampatan: tetamu boleh tukar
+  //  bingkai berulang kali, dan mampatan ~1.8 saat setiap klik akan
+  //  menjadikan pemilih terasa rosak. Mampatan berlaku SEKALI sahaja
+  //  semasa hantar (lihat mampatJalur).
+  // ----------------------------------------------------------
+  function lukisJalur(idBingkai) {
+    const bingkai = cariBingkai(idBingkai);
+    const g = geometriJalur(bingkai.padding);
+
     const k = document.createElement("canvas");
-    k.width = LEBAR_JALUR;
-    k.height = TINGGI_JALUR;
+    k.width = g.lebar;
+    k.height = g.tinggi;
     const c = k.getContext("2d");
 
     c.fillStyle = WARNA_KERTAS;
-    c.fillRect(0, 0, LEBAR_JALUR, TINGGI_JALUR);
+    c.fillRect(0, 0, g.lebar, g.tinggi);
+    // Syot ditangkap pada SISI_TANGKAP (448); diskala ke g.sisi di sini.
     for (let i = 0; i < BIL_SYOT; i++) {
-      c.drawImage(syot[i], PADDING, PADDING + i * (SISI_FOTO + JURANG));
+      c.drawImage(
+        syot[i],
+        g.padding,
+        g.padding + i * (g.sisi + JURANG),
+        g.sisi,
+        g.sisi
+      );
     }
-    lukisKaki(c, PADDING + BIL_SYOT * SISI_FOTO + (BIL_SYOT - 1) * JURANG);
+    // Bingkai dilukis SELEPAS foto supaya hiasan penjuru boleh
+    // menyentuh tepi foto, tetapi SEBELUM kaki supaya nama pasangan
+    // sentiasa berada di lapisan paling atas dan kekal terbaca.
+    if (bingkai.lukis) {
+      c.save();
+      bingkai.lukis(c, g, warnaTema());
+      c.restore();
+    }
+    c.globalAlpha = 1;
+    lukisKaki(c, g);
+    return k;
+  }
 
+  // ----------------------------------------------------------
+  //  MAMPAT jalur -> Blob siap hantar. Lambat (~1.8s), sekali sahaja.
+  // ----------------------------------------------------------
+  async function mampatJalur(k) {
     // JPEG q0.95 sebagai perantaraan, BUKAN WebP: canvas.toBlob(…,"image/webp")
     // diam-diam pulangkan PNG pada pelayar tanpa sokongan (PNG 0.71 MP ≈ 2 MB).
     const mentah = await new Promise((r) => k.toBlob(r, "image/jpeg", 0.95));
@@ -384,7 +471,10 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     return blob;
   }
 
-  function paparJalur(blob) {
+  // Pratonton terus dari canvas — TIADA compressImej di sini, supaya
+  // tukar bingkai terasa serta-merta.
+  async function paparJalur(k) {
+    const blob = await new Promise((r) => k.toBlob(r, "image/jpeg", 0.88));
     if (urlPratonton) URL.revokeObjectURL(urlPratonton);
     urlPratonton = URL.createObjectURL(blob);
     zonPratonton.innerHTML = "";
@@ -394,6 +484,76 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     zonPratonton.appendChild(img);
   }
 
+  // Lukis semula dengan bingkai terpilih & segarkan pratonton.
+  async function segarkanJalur() {
+    if (!syot.length) return;
+    kanvasJalur = lukisJalur(bingkaiDipilih);
+    await paparJalur(kanvasJalur);
+  }
+
+  // ----------------------------------------------------------
+  //  PEMILIH BINGKAI — cerminan binaJubinLatar() dalam tetapan.js
+  // ----------------------------------------------------------
+  function binaJubinBingkai() {
+    if (!bingkaiPilihan) return;
+    bingkaiPilihan.innerHTML = "";
+    const warna = warnaTema();
+
+    BINGKAI_PILIHAN.forEach((b) => {
+      const item = document.createElement("div");
+      item.className = "bingkai-item";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "bingkai-jubin";
+      btn.title = b.nama;
+      btn.dataset.bingkai = b.id;
+
+      // Jubin mempratonton dirinya sendiri: guna lukis() yang SAMA
+      // pada skala kecil, jadi tiada aset pratonton yang boleh lapuk.
+      const kanvas = document.createElement("canvas");
+      const lebarJubin = 96;
+      // Saiz WAJIB ditetapkan sebelum melukis — menetapkan .width/.height
+      // mengosongkan canvas.
+      kanvas.width = lebarJubin;
+      kanvas.height = tinggiPratonton(b, lebarJubin);
+      lukisPratontonBingkai(
+        kanvas.getContext("2d"),
+        b,
+        warna,
+        lebarJubin,
+        WARNA_KERTAS
+      );
+      btn.appendChild(kanvas);
+
+      btn.addEventListener("click", async () => {
+        if (sedangHantar) return;
+        bingkaiDipilih = b.id;
+        tandaBingkaiTerpilih();
+        await segarkanJalur();
+      });
+
+      const nama = document.createElement("div");
+      nama.className = "bingkai-nama";
+      nama.textContent = b.nama;
+
+      item.append(btn, nama);
+      bingkaiPilihan.appendChild(item);
+    });
+
+    tandaBingkaiTerpilih();
+  }
+
+  function tandaBingkaiTerpilih() {
+    if (!bingkaiPilihan) return;
+    bingkaiPilihan.querySelectorAll(".bingkai-item").forEach((it) => {
+      const jubin = it.querySelector(".bingkai-jubin");
+      const on = jubin?.dataset.bingkai === bingkaiDipilih;
+      it.classList.toggle("terpilih", on);
+      jubin?.classList.toggle("terpilih", on);
+    });
+  }
+
   // ----------------------------------------------------------
   //  SESI SYOT — 3 kali kira detik
   // ----------------------------------------------------------
@@ -401,22 +561,29 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     if (sedangSyot) return;
     sorokStatus();
     dibatalkan = false;
+    ralatKamera = null;
     syot = [];
-    blobJalur = null;
+    kanvasJalur = null;
     setPenanda(0);
 
     // Kamera dimulakan HANYA di sini (gerak isyarat pengguna) — gesaan
     // kebenaran iOS memerlukannya, dan lampu kamera tak menyala tanpa niat.
-    try {
-      butangMula.disabled = true;
-      setKiraan("Membuka kamera…", true);
-      await mulaKamera();
-    } catch (err) {
-      butangMula.disabled = false;
-      setKiraan("");
-      tunjukStatus(mesejRalatKamera(err), "gagal");
-      return;
-    }
+    // Ia TIDAK di-await di sini: getUserMedia kekal dipanggil dalam tugas
+    // pengendali klik ini (itu syarat gesaan iOS), tetapi kira detik syot
+    // pertama berjalan SERENTAK kamera membuka supaya tetamu tidak
+    // menunggu dua kali berturut-turut.
+    butangMula.disabled = true;
+    let kameraSiap = false;
+    isyaratRalatKamera = new Promise((r) => (tandakanRalatKamera = r));
+    const janjiKamera = mulaKamera().then(
+      () => {
+        kameraSiap = true;
+      },
+      (err) => {
+        ralatKamera = err;
+        tandakanRalatKamera();
+      },
+    );
 
     sedangSyot = true;
     butangTukarKamera.disabled = true;
@@ -425,44 +592,54 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
 
     try {
       for (let i = 0; i < BIL_SYOT; i++) {
-        for (let s = 3; s >= 1; s--) {
-          if (dibatalkan) return;
-          setKiraan(String(s));
-          await jeda(MS_SESAAT);
+        const kiraan = i === 0 ? KIRA_SYOT_PERTAMA : KIRA_SYOT_SETERUSNYA;
+        if (!(await kiraDetik(kiraan))) break;
+
+        if (i === 0 && !kameraSiap) {
+          // Kamera lebih lambat daripada kira detik — biasanya kerana
+          // gesaan kebenaran masih terbuka. Tunggu ia siap, kemudian ULANG
+          // kira detik penuh; jangan foto tetamu yang belum sempat bersedia.
+          setKiraan("Membuka kamera…", true);
+          await janjiKamera;
+          if (dibatalkan || ralatKamera) break;
+          if (!(await kiraDetik(KIRA_SYOT_PERTAMA))) break;
         }
-        if (dibatalkan) return;
+
         setKiraan("SENYUM! 😄", true);
         await jeda(MS_SENYUM);
         if (dibatalkan) return;
 
-        await kilatkan();
-        if (dibatalkan) return;
+        // Rakam SERENTAK kilat menyala, bukan selepasnya — kalau tidak
+        // tetamu nampak kilat, relaks, baru bingkai dirakam.
         syot.push(ambilSyot());
         setPenanda(syot.length);
-
-        if (i < BIL_SYOT - 1) {
-          setKiraan(`Syot ${i + 1} daripada ${BIL_SYOT} siap`, true);
-          await jeda(MS_ANTARA_SYOT);
-        }
+        await kilatkan();
+        if (dibatalkan) return;
       }
+
+      if (ralatKamera) {
+        setKiraan("");
+        tunjukStatus(mesejRalatKamera(ralatKamera), "gagal");
+        return;
+      }
+      if (dibatalkan) return;
 
       // Kamera tidak diperlukan lagi — padamkan lampu SERTA-MERTA
       // supaya tetamu nampak ia mati semasa mereka menaip nama.
       hentikanKamera();
       setKiraan("");
 
-      setKiraan("Menyusun jalur…", true);
-      blobJalur = await binaJalur();
+      kanvasJalur = lukisJalur(bingkaiDipilih);
       if (dibatalkan) return;
-      setKiraan("");
-      paparJalur(blobJalur);
+      await paparJalur(kanvasJalur);
 
       zonKamera.classList.add("hidden");
       zonPratonton.classList.remove("hidden");
+      bingkaiZon?.classList.remove("hidden");
       zonKawalan.classList.add("hidden");
       butangUlang.classList.remove("hidden");
       butangHantar.disabled = false;
-      tunjukStatus("Jalur anda siap! Isi nama anda dan hantar.", "berjaya");
+      tunjukStatus("Jalur anda siap! Pilih bingkai, isi nama, dan hantar.", "berjaya");
       inputNama.focus();
     } finally {
       sedangSyot = false;
@@ -481,14 +658,17 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
       urlPratonton = null;
     }
     syot = [];
-    blobJalur = null;
+    kanvasJalur = null;
+    bingkaiDipilih = "klasik";
+    tandaBingkaiTerpilih();
     zonPratonton.innerHTML = "";
     zonPratonton.classList.add("hidden");
+    bingkaiZon?.classList.add("hidden");
     zonKamera.classList.remove("hidden");
     zonKawalan.classList.remove("hidden");
     butangUlang.classList.add("hidden");
     butangHantar.disabled = true;
-    setKiraan("");
+    setKiraan(PETUNJUK_MULA, true);
     setPenanda(0);
     sorokStatus();
   }
@@ -496,6 +676,9 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
   // ----------------------------------------------------------
   //  PENGENDALI
   // ----------------------------------------------------------
+  binaJubinBingkai();
+  setKiraan(PETUNJUK_MULA, true);
+
   butangMula.addEventListener("click", mulaSesiSyot);
   butangTukarKamera.addEventListener("click", tukarKamera);
   butangUlang.addEventListener("click", ulangSesi);
@@ -529,7 +712,7 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
       inputNama.focus();
       return;
     }
-    if (!blobJalur) {
+    if (!kanvasJalur) {
       tunjukStatus("Sila ambil jalur photobooth dahulu.", "gagal");
       return;
     }
@@ -555,10 +738,14 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     butangHantar.disabled = true;
     butangHantar.dataset.teksAsal = butangHantar.textContent;
     butangHantar.textContent = "Sedang menghantar…";
-    tunjukStatus("Menyimpan gambar…", "info");
+    tunjukStatus("Memproses gambar…", "info");
 
     try {
-      const foto = await hantarFoto({ eventId, nama, ucapan, blob: blobJalur });
+      // Mampatan berlaku DI SINI, bukan semasa pratonton — supaya tukar
+      // bingkai tadi terasa serta-merta. Jumlah masa sama, cuma berpindah.
+      const blob = await mampatJalur(kanvasJalur);
+      tunjukStatus("Menyimpan gambar…", "info");
+      const foto = await hantarFoto({ eventId, nama, ucapan, blob });
       if (typeof onBerjaya === "function") onBerjaya(foto);
 
       form.classList.add("hidden");

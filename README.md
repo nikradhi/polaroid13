@@ -390,6 +390,22 @@ Semua dikuatkuasakan di **Firestore Security Rules**, bukan frontend sahaja:
 - [ ] Super-admin **Mampat semula** → jalur **dilangkau** (di bawah `HAD_LANGKAU_MAMPAT`);
       jalankan kali kedua, masih dilangkau; kapsyen **masih tajam**.
 - [ ] `pakej.html` & `tetapan.html` memapar "Photobooth digital (3 syot)" secara automatik
+
+**Bingkai jalur photobooth**
+- [ ] Selepas 3 syot siap → pemilih **11 bingkai** muncul di bawah pratonton.
+- [ ] Setiap jubin memapar motif sebenar (bukan kotak kelabu kosong).
+- [ ] Klik bingkai → jalur bertukar **serta-merta** (<100 ms, tiada jeda mampatan).
+- [ ] Cincin jubin terpilih & nama bingkai ikut **warna tema majlis**.
+- [ ] **Klasik** → jalur 480×1480, margin 16px — identik dengan jalur sebelum ciri ini wujud.
+- [ ] Bingkai lain → 480×1390, foto 412×412; hiasan di margin, **tidak menutup muka**.
+- [ ] Nama pasangan panjang masih dipendekkan betul pada margin 34px yang lebih sempit.
+- [ ] Songket & Pucuk Rebung memapar motif Melayu, bukan kotak kosong.
+- [ ] Hantar → jeda "Memproses gambar…" (~2 saat) sebelum "Menyimpan gambar…" — ini normal,
+      mampatan sengaja dipindah ke masa hantar.
+- [ ] `image_url` setiap bingkai **≤ 95 KiB** (diukur: 41–57 KiB) supaya alat mampat semula
+      super-admin melangkaunya.
+- [ ] **↺ Ambil Semula** → pemilih bingkai disorok, pilihan reset ke Klasik.
+- [ ] Majlis bertema warna lain → bingkai bertukar warna mengikut tema.
       (propagasi `LABEL_CIRI`, tiada kod khusus).
 
 **Galeri & Live Wall**

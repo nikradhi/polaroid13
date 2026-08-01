@@ -368,15 +368,105 @@
       opacity: 0; pointer-events: none; transition: opacity .18s ease;
     }
     #pb-kilat.nyala { opacity: 1; transition: none; }
-    #pb-penanda-syot { display: flex; gap: .5rem; justify-content: center; }
+
+    /* Penanda syot — bertindih di atas pratonton, jadi warnanya untuk latar gelap */
+    #pb-penanda-syot {
+      position: absolute; top: 12px; left: 0; right: 0; z-index: 2;
+      display: flex; gap: .5rem; justify-content: center;
+      pointer-events: none;
+    }
     #pb-penanda-syot span {
       width: 9px; height: 9px; border-radius: 999px;
-      background: var(--warna-sempadan); transition: background .25s;
+      background: rgba(255,255,255,.4);
+      box-shadow: 0 1px 3px rgba(0,0,0,.4);
+      transition: background .25s;
     }
-    #pb-penanda-syot span.siap { background: var(--tema); }
+    #pb-penanda-syot span.siap { background: #fff; }
+
+    /* ---------- Kawalan kamera bertindih (gaya apl kamera telefon) ---------- */
+    /* Grid 3 lajur: ikon tukar kamera | butang snap | ruang penyeimbang.
+       Lajur ketiga kosong supaya bulatan betul-betul di tengah lebar. */
+    #pb-zon-kawalan {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+      padding: 0 1rem 1rem;
+      background: linear-gradient(to top, rgba(0,0,0,.5), transparent);
+    }
+    /* WAJIB: mengatasi `display: grid` di atas bila JS menogol .hidden.
+       Jangan bergantung pada susunan CSS — Tailwind Play CDN menulis semula
+       lembaran gayanya pada setiap rebuild. */
+    #pb-zon-kawalan.hidden { display: none; }
+
+    /* Butang snap — cakera putih dalam cincin */
+    #pb-butang-mula {
+      justify-self: center;
+      width: 74px; height: 74px; padding: 5px;
+      border-radius: 999px; cursor: pointer;
+      background: rgba(255,255,255,.2);
+      border: 3px solid rgba(255,255,255,.92);
+      display: grid; place-items: center;
+      transition: opacity .2s ease;
+    }
+    #pb-butang-mula .teras {
+      display: block; width: 100%; height: 100%;
+      border-radius: 999px; background: #fff;
+      transition: transform .12s ease, background .2s ease;
+    }
+    #pb-butang-mula:active .teras { transform: scale(.86); }
+    #pb-butang-mula:disabled { cursor: not-allowed; opacity: .5; }
+    #pb-butang-mula:disabled .teras { background: #cfc4c4; }
+
+    /* Butang bulat kecil (tukar kamera, ambil semula) — ikut konvensyen .lb-btn */
+    .pb-bulat-kecil {
+      width: 44px; height: 44px; border-radius: 999px;
+      display: grid; place-items: center;
+      font-size: 1.1rem; line-height: 1; color: #fff; cursor: pointer;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.35);
+      backdrop-filter: blur(4px);
+      transition: background .2s ease, opacity .2s ease;
+    }
+    .pb-bulat-kecil:hover:not(:disabled) { background: rgba(255,255,255,.3); }
+    .pb-bulat-kecil:disabled { opacity: .4; cursor: not-allowed; }
+    .pb-bulat-kecil.hidden { display: none; } /* atasi `display: grid` di atas */
+    #pb-butang-tukar-kamera { justify-self: start; }
+    /* Latar gelap: garis fokus putih, bukan var(--tema) yang pastel */
+    #pb-zon-kawalan :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+    /* ↺ terapung di bucu kanan atas pratonton — jalur 1:3 sempit & di tengah,
+       jadi tepi kanan sentiasa kosong dan butang tidak menutupi gambar. */
+    #pb-butang-ulang.pb-ulang {
+      position: absolute; top: 8px; right: 8px; z-index: 2;
+      background: rgba(40,26,32,.55); border-color: rgba(255,255,255,.3);
+    }
+    #pb-butang-ulang.pb-ulang:hover:not(:disabled) { background: rgba(40,26,32,.75); }
+    /* Pembungkus kekal dalam DOM walaupun pratonton tersembunyi; runtuhkannya
+       supaya `space-y-5` borang tidak meninggalkan jurang kosong. Pelayar tanpa
+       :has() cuma dapat jurang kecil — tiada apa yang rosak. */
+    #pb-bungkus-pratonton:has(> #pb-zon-pratonton.hidden) { display: none; }
     #pb-zon-pratonton img {
       display: block; margin: 0 auto; max-height: 46vh; width: auto;
       border-radius: 6px; box-shadow: 0 12px 30px -10px rgba(80,50,40,.45);
+    }
+    /* Pemilih bingkai — jubin mempratonton motif sebenar */
+    .bingkai-jubin {
+      width: 100%; padding: 0; cursor: pointer; overflow: hidden;
+      border: 1px solid var(--warna-sempadan);
+      border-radius: .5rem; background: var(--warna-kad, #fffdf9);
+      transition: box-shadow .15s ease, transform .1s ease;
+      line-height: 0;
+    }
+    .bingkai-jubin canvas { width: 100%; height: auto; display: block; }
+    .bingkai-jubin:hover { transform: translateY(-1px); }
+    .bingkai-jubin.terpilih {
+      box-shadow: 0 0 0 2px var(--tema); border-color: transparent;
+    }
+    .bingkai-nama {
+      font-size: .62rem; line-height: 1.2; text-align: center; margin-top: .25rem;
+      color: var(--warna-teks-samar);
+    }
+    .bingkai-item.terpilih .bingkai-nama {
+      color: var(--tema); font-weight: 600;
     }
     /* Honeypot: tersembunyi dari manusia, nampak pada bot */
     .perangkap {
@@ -654,33 +744,47 @@
         <!-- Baki kuota (dipapar hanya untuk pakej berhad) -->
         <div id="pb-baki-kuota" class="hidden rounded-xl px-4 py-2.5 text-sm text-center"></div>
 
-        <!-- Kamera langsung -->
+        <!-- Kamera langsung. Kawalan & penanda BERTINDIH di dalamnya (gaya
+             apl kamera telefon) — diletak selepas #pb-kilat supaya ia di atas. -->
         <div id="pb-zon-kamera">
           <video id="pb-video" playsinline autoplay muted></video>
           <div id="pb-kiraan"></div>
           <div id="pb-kilat"></div>
+
+          <!-- Penanda kemajuan 3 syot -->
+          <div id="pb-penanda-syot" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+
+          <!-- Kawalan kamera. Id dikekalkan: js/photobooth.js menogol
+               .hidden pada #pb-zon-kawalan dan .disabled pada butang. -->
+          <div id="pb-zon-kawalan">
+            <button type="button" id="pb-butang-tukar-kamera" class="pb-bulat-kecil"
+                    aria-label="Tukar kamera hadapan/belakang">🔄</button>
+            <button type="button" id="pb-butang-mula"
+                    aria-label="Mula photobooth — 3 syot automatik">
+              <span class="teras" aria-hidden="true"></span>
+            </button>
+            <span class="pb-ruang" aria-hidden="true"></span>
+          </div>
         </div>
 
-        <!-- Penanda kemajuan 3 syot -->
-        <div id="pb-penanda-syot" class="mt-3" aria-hidden="true">
-          <span></span><span></span><span></span>
+        <!-- Pratonton jalur siap. Butang ↺ terapung di atasnya sebagai
+             ADIK-BERADIK (bukan anak) — paparJalur() mengosongkan innerHTML
+             pratonton, jadi apa-apa di dalamnya akan terpadam. -->
+        <div id="pb-bungkus-pratonton" class="relative">
+          <div id="pb-zon-pratonton" class="hidden"></div>
+          <button type="button" id="pb-butang-ulang" class="pb-bulat-kecil pb-ulang hidden"
+                  aria-label="Ambil semula">↺</button>
         </div>
 
-        <!-- Pratonton jalur siap -->
-        <div id="pb-zon-pratonton" class="hidden"></div>
-
-        <!-- Kawalan kamera -->
-        <div id="pb-zon-kawalan" class="flex gap-2">
-          <button type="button" id="pb-butang-mula" class="btn-utama flex-1 rounded-xl py-3 font-medium">
-            🎬 Mula Photobooth
-          </button>
-          <button type="button" id="pb-butang-tukar-kamera" class="btn-kedua" aria-label="Tukar kamera hadapan/belakang">
-            🔄
-          </button>
+        <!-- Pemilih bingkai. ADIK-BERADIK kepada #pb-zon-pratonton, bukan
+             anak: paparJalur() mengosongkan innerHTML pratonton setiap kali
+             jalur dilukis semula, jadi pemilih di dalamnya akan terpadam. -->
+        <div id="pb-bingkai-zon" class="hidden">
+          <p class="text-center text-sm font-medium mb-2">Pilih bingkai</p>
+          <div id="pb-bingkai-pilihan" class="grid grid-cols-4 gap-2"></div>
         </div>
-        <button type="button" id="pb-butang-ulang" class="btn-kedua hidden w-full">
-          ↺ Ambil Semula
-        </button>
 
         <!-- Nama (wajib) -->
         <div>
