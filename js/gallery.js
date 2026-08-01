@@ -29,6 +29,7 @@ import {
   sambunganDari,
 } from "./muat-turun.js";
 import { pasangBorangUpload } from "./upload.js";
+import { pasangPhotobooth } from "./photobooth.js";
 import { bolehGuna } from "./gating.js";
 
 const SAIZ_HALAMAN = 12;
@@ -48,6 +49,10 @@ const modalUpload = document.getElementById("modal-upload");
 const butangBukaUpload = document.getElementById("butang-buka-upload");
 const butangKosongUpload = document.getElementById("butang-kosong-upload");
 const pautanWall = document.getElementById("pautan-wall");
+
+// Modal photobooth (Premium+)
+const modalPhotobooth = document.getElementById("modal-photobooth");
+const butangBukaPhotobooth = document.getElementById("butang-buka-photobooth");
 
 // Lightbox
 const lightbox = document.getElementById("lightbox");
@@ -345,31 +350,41 @@ function tapisCarian() {
 if (inputCari) inputCari.addEventListener("input", tapisCarian);
 
 // ------------------------------------------------------------
-//  MODAL MUAT NAIK
+//  MODAL (muat naik & photobooth)
 // ------------------------------------------------------------
-function bukaModal() {
-  if (!modalUpload) return;
-  modalUpload.classList.remove("hidden");
+//  Diparameterkan kerana photobooth PERLU cangkuk `semasaTutup`
+//  untuk hentikan kamera — tanpanya lampu kamera kekal menyala
+//  selepas tetamu tutup modal.
+// ------------------------------------------------------------
+function bukaModal(el) {
+  if (!el) return;
+  el.classList.remove("hidden");
   document.body.style.overflow = "hidden";
 }
-function tutupModal() {
-  if (!modalUpload) return;
-  modalUpload.classList.add("hidden");
+function tutupModal(el) {
+  if (!el) return;
+  el.classList.add("hidden");
   document.body.style.overflow = "";
 }
-if (modalUpload) {
+function pasangModal(el, semasaTutup) {
+  if (!el) return;
+  const tutup = () => {
+    tutupModal(el);
+    semasaTutup?.();
+  };
   // Klik latar (bukan kotak) -> tutup
-  modalUpload.addEventListener("click", (e) => {
-    if (e.target === modalUpload) tutupModal();
+  el.addEventListener("click", (e) => {
+    if (e.target === el) tutup();
   });
   // Butang tutup (×) + "Lihat Galeri" selepas berjaya
-  modalUpload.querySelectorAll("[data-tutup-modal]").forEach((el) =>
-    el.addEventListener("click", tutupModal)
+  el.querySelectorAll("[data-tutup-modal]").forEach((b) =>
+    b.addEventListener("click", tutup)
   );
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !modalUpload.classList.contains("hidden")) tutupModal();
+    if (e.key === "Escape" && !el.classList.contains("hidden")) tutup();
   });
 }
+pasangModal(modalUpload);
 
 // Callback bila upload berjaya: masukkan gambar baharu di ATAS galeri.
 function masukkanFotoBaru(foto) {
@@ -430,8 +445,23 @@ function paparRalatMula(mesej) {
   if (hasilUpload.boleh) {
     butangBukaUpload?.classList.remove("hidden");
     butangKosongUpload?.classList.remove("hidden");
-    butangBukaUpload?.addEventListener("click", bukaModal);
-    butangKosongUpload?.addEventListener("click", bukaModal);
+    butangBukaUpload?.addEventListener("click", () => bukaModal(modalUpload));
+    butangKosongUpload?.addEventListener("click", () => bukaModal(modalUpload));
+  }
+
+  // Photobooth — dedah hanya untuk pakej yang menyokongnya (Premium+)
+  // DAN pelayar yang ada kamera langsung. Basic tidak nampak apa-apa:
+  // tetamu tak boleh naik taraf, jadi mesej naik taraf di sini hanya
+  // bunyi bising. Tempatnya di panel pelanggan (tetapan.html).
+  const hasilPB = pasangPhotobooth({
+    eventId,
+    majlis,
+    onBerjaya: masukkanFotoBaru,
+  });
+  if (hasilPB.boleh) {
+    pasangModal(modalPhotobooth, hasilPB.tutup);
+    butangBukaPhotobooth?.classList.remove("hidden");
+    butangBukaPhotobooth?.addEventListener("click", () => bukaModal(modalPhotobooth));
   }
 
   // Pautan Live Wall — dedah hanya untuk pakej yang menyokongnya (Premium+).

@@ -357,8 +357,45 @@ Semua dikuatkuasakan di **Firestore Security Rules**, bukan frontend sahaja:
 - [ ] Fail bukan imej / >15 MB semasa ambil semula → ditolak, gambar sedia ada **kekal**.
 - [ ] **Telefon:** "Ambil gambar" buka kamera; "Galeri" buka galeri (bukan kamera).
 
+**Photobooth 3-syot (`gallery.html?e=<eventId>`)**
+- [ ] Butang muat naik kini berbunyi **📷 Gambar**; **🎞️ Photobooth** muncul di bawahnya.
+- [ ] Majlis **Basic** → butang Photobooth **langsung tidak muncul** (📷 Gambar kekal).
+- [ ] Majlis **Premium/Eksklusif** aktif → butang Photobooth muncul.
+- [ ] Kuota penuh / majlis tamat tempoh → kedua-dua butang tersorok.
+- [ ] Buka modal → kamera **belum** hidup (lampu padam) sehingga **🎬 Mula Photobooth** ditekan.
+- [ ] Kira undur `3 → 2 → 1 → SENYUM!` × 3 dengan kilat putih; penanda titik bertukar
+      warna tema selepas setiap syot.
+- [ ] Selepas syot ke-3 → **lampu kamera padam serta-merta**, jalur dipaparkan.
+- [ ] Jalur 480×1480: 3 syot persegi bertindan, bingkai krim, nama pasangan **font Caveat**
+      (bukan Comic Sans/Times) + tarikh Bahasa Melayu di kaki.
+- [ ] `weddingDate` kosong → hanya nama dicetak, kaki tidak berat sebelah.
+- [ ] `coupleName` sangat panjang (cuba 80 aksara) → font mengecut, kemudian dipendekkan
+      dengan `…`; teks **tidak** terkeluar tepi jalur.
+- [ ] Hantar tanpa nama → "Sila isi nama anda dahulu."
+- [ ] Hantar → jalur muncul di **atas** galeri tanpa refresh; `events.photoCount` naik **+1**;
+      **satu** dokumen `photos` sahaja dicipta.
+- [ ] `image_url` jalur ≈ **60–80 KB** (semak di Firestore Console) — di bawah had rules 1 MB,
+      dan **lebih kecil** daripada gambar biasa dalam majlis yang sama.
+- [ ] Hantar jalur, kemudian cuba **gambar biasa** dalam 45 saat → cooldown **dikongsi** menyekat.
+- [ ] **🔄** tukar ke kamera belakang → preview **tidak** dicermin; jalur tersimpan juga tidak.
+- [ ] Tutup modal (×, Escape, klik latar) semasa kira undur → kira undur berhenti,
+      **lampu kamera padam**, tiada ralat konsol.
+- [ ] Muat semula halaman semasa kamera hidup → lampu padam (`pagehide`).
+- [ ] **Tolak** kebenaran kamera → mesej cadang guna 📷 Gambar (bukan jalan buntu).
+- [ ] Desktop tanpa kamera → "Tiada kamera dijumpai…"; kamera diguna app lain → "Kamera
+      sedang digunakan…".
+- [ ] Layari melalui `http://<ip-LAN>` (bukan HTTPS/localhost) → butang Photobooth **tidak
+      muncul** (konteks tidak selamat). Ini betul, bukan kegagalan.
+- [ ] **iOS Safari**: video kekal dalam modal, **tidak** skrin penuh (bukti `playsinline`).
+- [ ] Super-admin **Mampat semula** → jalur **dilangkau** (di bawah `HAD_LANGKAU_MAMPAT`);
+      jalankan kali kedua, masih dilangkau; kapsyen **masih tajam**.
+- [ ] `pakej.html` & `tetapan.html` memapar "Photobooth 3-syot" secara automatik
+      (propagasi `LABEL_CIRI`, tiada kod khusus).
+
 **Galeri & Live Wall**
 - [ ] Galeri majlis A **tidak** memaparkan gambar majlis B (pengasingan tenant).
+- [ ] Jalur photobooth dipapar dalam Live Wall sebagai polaroid nisbah 1:3 — **dijangka**,
+      bukan pepijat (lihat nota `CLAUDE.md`).
 - [ ] Live Wall pakej Basic → "Naik taraf ke Premium".
 - [ ] Galeri awam (tanpa log masuk) masih berfungsi selepas rules dikemas kini.
 - [ ] **Pintasan console** — log masuk sebagai pelanggan B, cuba query `photos` bagi

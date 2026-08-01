@@ -36,6 +36,18 @@ The central design constraint: there is no Firebase Storage. Images are compress
 
 Measured on real photos when these targets were introduced: 200–525 KB stored → 49–74 KB, i.e. **~77% smaller**; 1 GB holds ~17,000 photos instead of ~3,900. Raising `LEBAR_MAKS`/`SASARAN_BAIT` raises quota burn proportionally — and there is no second copy: the **Premium ZIP download ships these same 720 px images**.
 
+### Photobooth strips reuse the same pipeline at a different target
+The 3-shot photobooth ([js/photobooth.js](js/photobooth.js)) composites three square canvas shots into one **480 × 1480** strip with the couple's name + date drawn in the footer, then feeds it through the *same* `compressImej` → base64 → Firestore path as a normal upload. It passes its own `{lebarMaks: LEBAR_JALUR, sasaranBait: SASARAN_JALUR}` (480 px / 45 KB, declared in [js/imej.js](js/imej.js)) so the strip stores at **~60–80 KiB — smaller than a normal photo** despite holding three shots. Never widen these without redoing the quota arithmetic.
+
+Two non-obvious constraints hold this together:
+
+- **`compressImej`'s width ladder collapses at `lebarMaks <= 480`.** `lebarCubaan = [lebarMaks, 640, 560, 480].filter(...)` leaves a *single* width, so quality can bottom out at q0.48 with the strip never shrinking. `binaJalur()` therefore runs a **second pass at 400 px** when the first result exceeds `SASARAN_JALUR * 1.35`. Remove that guard and noisy/dark strips balloon.
+- **The strip must stay under `HAD_LANGKAU_MAMPAT` (95 KiB, [js/super-admin.js](js/super-admin.js)).** Below it, the super-admin "mampat semula" tool skips the strip; above it, the tool re-compresses the strip at the *normal photo* target (60 KB at 3× the pixels) and **permanently destroys the caption**. This is why the target is 45 KB and not something more generous.
+
+Canvas text does **not** wait for webfonts — `ctx.fillText()` silently falls back to `cursive` (Comic Sans on Windows). `muatFontTangan()` warms Caveat via `document.fonts.load()` before any shot is taken. Couple names run to `maxlength="80"`, so `teksMuat()` shrinks the font and then **truncates with `…`**; shrinking alone still overflows the strip edge.
+
+Live Wall renders strips through the same `createPolaroid()` as every other photo, so a 1:3 strip appears among square polaroids. That is accepted, not a bug — filtering it would need a new field on `photos`, which means editing `firestore.rules`' `hasOnly([...])` allowlist and publishing manually in the Console.
+
 ### One collection: `photos/{id}` holds everything
 Each upload ([js/upload.js](js/upload.js)) writes **one** document, batched with a `photoCount` increment on the event:
 
@@ -60,6 +72,8 @@ Gallery, wall, and export all query `where('approved','==',true) + orderBy('crea
 
 ### Module wiring
 [js/firebase.js](js/firebase.js) initializes the app and **re-exports** every Firebase SDK function the app uses, so page scripts import Firestore helpers from `./firebase.js` (not the CDN directly). It exports `db`, `app` (for `getAuth` in admin), and `configSiap()`. To bump the SDK version, change `10.14.1` in **both** import URLs there (and the separate auth import in admin.js).
+
+**The single write path to `photos` is [js/hantar-foto.js](js/hantar-foto.js)** — a DOM-free library shared by `upload.js` and `photobooth.js`. Two things in it must never be duplicated or diverge: the `KUNCI_COOLDOWN` localStorage key (separate keys = guests alternate Gambar/Photobooth with no cooldown at all) and the atomic `writeBatch`, because [firestore.rules](firestore.rules) requires `photoCount` to increment by exactly +1 **in the same commit** — a separate write path is rejected by the server, not merely untidy. `hantarFoto()` takes an already-compressed Blob so each caller owns its own compression target.
 
 Each HTML page loads exactly one page-logic module (`upload.js`, `gallery.js`, `wall.js`, `tetapan.js`, `admin.js`), all of which reuse [js/polaroid.js](js/polaroid.js) (`createPolaroid()` + `pasangGayaPolaroid()` which injects the polaroid CSS once). Polaroid rotation is a deterministic hash of name+url so cards don't jitter on re-render.
 

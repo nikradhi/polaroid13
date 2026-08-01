@@ -15,29 +15,28 @@
 //  - Ambil semula (retake) / tukar / buang gambar tanpa hilang teks
 //  - Pada kejayaan: panggil onBerjaya(fotoBaru) supaya galeri boleh
 //    memasukkan gambar baharu serta-merta (tanpa refresh).
+//
+//  Fail ini hanya urus UI/borang. Kelayakan majlis, cooldown dan
+//  laluan tulis Firestore duduk di js/hantar-foto.js — DIKONGSI
+//  dengan js/photobooth.js. Jangan salin logik itu balik ke sini.
 // ============================================================
 
-import {
-  db,
-  configSiap,
-  collection,
-  doc,
-  serverTimestamp,
-  writeBatch,
-  increment,
-} from "./firebase.js";
 import { createPolaroid, pasangGayaPolaroid } from "./polaroid.js";
-import { compressImej, blobKeBase64 } from "./imej.js";
-import { majlisAktif, mesejMajlisTakBoleh } from "./majlis.js";
-import { bolehUploadLagi, bakiGambar, tanpaHad } from "./gating.js";
+import { compressImej } from "./imej.js";
+import { bakiGambar, tanpaHad } from "./gating.js";
+// Laluan tulis + had dikongsi dengan js/photobooth.js — JANGAN salin
+// semula di sini (kunci cooldown & batch atomik mesti sama).
+import {
+  SAIZ_FAIL_MAKS,
+  HAD_UCAPAN,
+  semakKelayakanMajlis,
+  bakiCooldown,
+  semakBolehHantar,
+  hantarFoto,
+  mesejRalatHantar,
+} from "./hantar-foto.js";
 
 pasangGayaPolaroid();
-
-// --- Had & tetapan ---
-const SAIZ_FAIL_MAKS = 15 * 1024 * 1024; // 15 MB sebelum compress
-const HAD_UCAPAN = 120; // aksara
-const COOLDOWN_MS = 45 * 1000; // jeda minimum antara upload (anti-spam)
-const KUNCI_COOLDOWN = "polaroid_upload_terakhir"; // kunci localStorage
 
 // ------------------------------------------------------------
 //  PASANG BORANG MUAT NAIK
@@ -57,19 +56,8 @@ const KUNCI_COOLDOWN = "polaroid_upload_terakhir"; // kunci localStorage
 export function pasangBorangUpload({ eventId, majlis, onBerjaya } = {}) {
   // --- Kelayakan dahulu: jika majlis tak boleh terima gambar, jangan
   //     pasang borang langsung. Pemanggil (galeri) sembunyi butang. ---
-  if (!eventId || !majlis) {
-    return { boleh: false, sebab: "Majlis tidak dijumpai." };
-  }
-  if (!majlisAktif(majlis)) {
-    return { boleh: false, sebab: mesejMajlisTakBoleh(majlis) };
-  }
-  if (!bolehUploadLagi(majlis)) {
-    return {
-      boleh: false,
-      sebab:
-        "Ruang gambar untuk majlis ini sudah penuh. Terima kasih kerana berkongsi detik indah bersama! 💛",
-    };
-  }
+  const kelayakan = semakKelayakanMajlis({ eventId, majlis });
+  if (!kelayakan.boleh) return kelayakan;
 
   // --- Rujukan elemen DOM (dalam modal #modal-upload pada gallery.html) ---
   const form = document.getElementById("form-upload");
@@ -290,27 +278,17 @@ export function pasangBorangUpload({ eventId, majlis, onBerjaya } = {}) {
       return;
     }
     // Anti-spam: cooldown antara upload (halangan client, boleh dipintas)
-    const terakhir = Number(localStorage.getItem(KUNCI_COOLDOWN) || 0);
-    const baki = COOLDOWN_MS - (Date.now() - terakhir);
-    if (terakhir && baki > 0) {
+    const bakiSaat = bakiCooldown();
+    if (bakiSaat > 0) {
       tunjukStatus(
-        `Terima kasih! Sila tunggu ${Math.ceil(baki / 1000)} saat sebelum hantar gambar seterusnya.`,
+        `Terima kasih! Sila tunggu ${bakiSaat} saat sebelum hantar gambar seterusnya.`,
         "info"
       );
       return;
     }
-    if (!navigator.onLine) {
-      tunjukStatus(
-        "Tiada sambungan internet. Sila semak talian anda dan cuba lagi.",
-        "gagal"
-      );
-      return;
-    }
-    if (!configSiap()) {
-      tunjukStatus(
-        "Sistem belum dikonfigurasi. Sila hubungi penganjur majlis.",
-        "gagal"
-      );
+    const bolehHantar = semakBolehHantar();
+    if (!bolehHantar.boleh) {
+      tunjukStatus(bolehHantar.sebab, "gagal");
       return;
     }
 
@@ -325,42 +303,15 @@ export function pasangBorangUpload({ eventId, majlis, onBerjaya } = {}) {
     tunjukStatus("Memproses gambar…", "info");
 
     try {
-      // 1) Compress adaptif -> satu gambar base64
+      // 1) Compress adaptif (sasaran lalai imej.js: 720px / 60KB)
       const blob = await compressImej(failDipilih);
-      const imageUrl = await blobKeBase64(blob);
 
-      // 2) Autolulus: semua gambar terus tampil (tiada pra-moderasi).
-      const approved = true;
-
-      // 3) Simpan gambar + naikkan kaunter majlis dalam SATU batch atomik.
+      // 2) Simpan gambar + naikkan kaunter majlis dalam SATU batch atomik.
       tunjukStatus("Menyimpan gambar…", "info");
-      const refFoto = doc(collection(db, "photos"));
-      const batch = writeBatch(db);
-      batch.set(refFoto, {
-        name: nama,
-        message: ucapan || null,
-        image_url: imageUrl,
-        approved,
-        likes: 0,
-        created_at: serverTimestamp(),
-        eventId,
-      });
-      batch.update(doc(db, "events", eventId), { photoCount: increment(1) });
-      await batch.commit();
-
-      // Rekod masa untuk cooldown
-      localStorage.setItem(KUNCI_COOLDOWN, String(Date.now()));
+      const foto = await hantarFoto({ eventId, nama, ucapan, blob });
 
       // Masukkan gambar baharu ke galeri serta-merta (tanpa refresh).
-      if (typeof onBerjaya === "function") {
-        onBerjaya({
-          id: refFoto.id,
-          name: nama,
-          message: ucapan || "",
-          image_url: imageUrl,
-          likes: 0,
-        });
-      }
+      if (typeof onBerjaya === "function") onBerjaya(foto);
 
       // Berjaya!
       form.classList.add("hidden");
@@ -369,18 +320,7 @@ export function pasangBorangUpload({ eventId, majlis, onBerjaya } = {}) {
       zonTerimaKasih.classList.remove("hidden");
     } catch (err) {
       console.error("Ralat upload:", err);
-      if (err?.code === "permission-denied") {
-        tunjukStatus(
-          "Maaf, majlis ini sudah tidak menerima gambar baharu " +
-            "(kuota penuh atau tempoh telah tamat).",
-          "gagal"
-        );
-      } else {
-        tunjukStatus(
-          "Maaf, gambar gagal dihantar. Sila cuba lagi sebentar.",
-          "gagal"
-        );
-      }
+      tunjukStatus(mesejRalatHantar(err), "gagal");
       sedangHantar = false;
       setKawalanImejDidayakan(true);
       butangHantar.disabled = false;

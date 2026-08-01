@@ -30,6 +30,19 @@ export const SASARAN_BAIT = 60 * 1000;
 export const FORMAT_UTAMA = "image/webp";
 export const FORMAT_GANTI = "image/jpeg";
 
+// --- Jalur photobooth (3 syot bertindan) ---
+// 480x1480 = 0.71 MP. Sasaran 45KB -> base64 ~59 KiB tersimpan, iaitu LEBIH
+// KECIL daripada gambar biasa (~78 KiB) walaupun jalur 3x lebih tinggi —
+// ~19.7 KiB sesyot. Kekal di bawah HAD_LANGKAU_MAMPAT (95 KiB) dalam
+// super-admin.js, jadi alat "mampat semula" melangkaunya dan kapsyen
+// tidak pernah dimampat semula sampai rosak.
+//
+// AWAS: tangga lebar compressImej menyusut kepada SATU nilai bila
+// lebarMaks <= 480 (lihat lebarCubaan di bawah), jadi pemanggil perlu
+// penjaga pusingan-kedua sendiri — lihat js/photobooth.js.
+export const LEBAR_JALUR = 480;
+export const SASARAN_JALUR = 45 * 1000;
+
 /**
  * Kira dimensi baharu dengan mengekalkan nisbah aspek.
  * Hanya kecilkan jika lebih lebar daripada had; tidak membesarkan.
