@@ -239,12 +239,37 @@ Buka `http://localhost:8000/super-admin.html` (atau port yang ditunjukkan).
 
 ## 🌐 Deploy Percuma
 
-**Netlify (drag-and-drop):** https://app.netlify.com/drop → seret **seluruh folder**.
+**Hos semasa: GitHub Pages.** Domain dalam [`CNAME`](CNAME) — `polaroid.murahboss.my`.
+Deploy = `git push` ke `main`; tiada langkah build.
 
-**Vercel:** push ke GitHub → Import di https://vercel.com/new → preset **Other**
-(tiada build) → Deploy.
+> ### ⚠️ Selepas push, JS baharu ambil masa sehingga 10 minit
+>
+> GitHub Pages hantar `Cache-Control: max-age=600` pada **setiap** fail dan nilai itu
+> **tidak boleh diubah** — fail `_headers` (Netlify) dan bahagian `headers` dalam
+> `vercel.json` **diabaikan** sepenuhnya di sana. Jadi pelayar yang pernah membuka
+> laman ini akan terus menjalankan `js/*.js` **lama** sehingga 10 minit selepas deploy.
+>
+> Ini punca biasa "kenapa perubahan saya tak jadi?" — kod di server sudah betul,
+> pelayar sahaja yang masih pegang salinan lama.
+>
+> - **Uji serta-merta:** `Ctrl+Shift+R` (hard refresh) atau tetingkap Peribadi/Incognito.
+> - **Sahkan apa yang server betul-betul hidangkan** (curl tidak guna cache pelayar):
+>   ```bash
+>   curl -sI https://polaroid.murahboss.my/js/upload.js   # semak Last-Modified
+>   curl -s  https://polaroid.murahboss.my/js/upload.js | grep <simbol>
+>   ```
+>
+> Sengaja **tiada** cache-busting `?v=` pada import: setiap modul mesti guna versi yang
+> sama pada **semua** tempat ia diimport, dan satu import yang terlepas menyebabkan
+> modul itu dimuat **dua kali** (contoh: `pasangGayaPolaroid()` menyuntik CSS dua kali).
 
-Kedua-duanya menyokong fail rewrite yang disertakan untuk URL cantik `/e/slug`.
+**Hos lain (pilihan).** Fail rewrite untuk URL cantik `/e/slug` disertakan untuk
+kedua-duanya:
+
+- **Netlify (drag-and-drop):** https://app.netlify.com/drop → seret **seluruh folder**
+  (guna [`_redirects`](_redirects)).
+- **Vercel:** push ke GitHub → Import di https://vercel.com/new → preset **Other**
+  (tiada build) → Deploy (guna [`vercel.json`](vercel.json)).
 
 ---
 
