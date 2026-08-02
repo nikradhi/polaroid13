@@ -266,47 +266,48 @@
       border-radius: 999px; padding: 10px 18px; text-align: center;
     }
     .kotak-cari:focus { outline: none; border-color: var(--tema); }
-    /* Dalam bar melekat ia mengisi lebar bar, bukan dihadkan 22rem. */
+    /* Dalam baris kawalan ia mengisi lebar penuh, bukan dihadkan 22rem. */
     .kotak-cari--bar { max-width: none; }
 
-    /* ---------- Bar kawalan melekat ---------- */
-    /* SEMUA kawalan galeri tinggal di sini supaya ruang atas galeri kosong.
-       z-index 40 SENGAJA di bawah lightbox (50) dan modal (60) — kalau tidak
-       bar terapung di atas lapisan gelap dan masih boleh diketik ketika
-       modal terbuka. */
-    .bar-bawah {
-      position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    /* ---------- Baris kawalan melekat ---------- */
+    /* Anak terus <body>, BUKAN dalam <main> — itu yang membolehkan jalur latar
+       merentang penuh lebar skrin tanpa helah `calc(50% - 50vw)`, yang akan
+       mencetuskan skrol mendatar kerana 100vw termasuk lebar bar skrol.
+       sticky berfungsi kerana tiada nenek-moyang ber-`overflow`.
+       z-index 30: di atas galeri, tetapi DI BAWAH lightbox (50) dan modal (60)
+       supaya ia tidak terapung atas lapisan gelap. */
+    .bar-kawalan {
+      position: sticky; top: 0; z-index: 30;
       display: flex; flex-direction: column; gap: .5rem;
-      padding: .6rem .75rem;
-      /* Ruang selamat iPhone (home indicator). Tanpa ini butang terkambus
-         di bawah bar navigasi iOS dan susah diketik. */
-      padding-bottom: calc(.6rem + env(safe-area-inset-bottom, 0px));
+      padding: .6rem 1rem;
+      margin-bottom: 1.5rem;
       background: color-mix(in srgb, var(--warna-kad) 92%, transparent);
       backdrop-filter: blur(10px);
-      border-top: 1px solid var(--warna-sempadan);
-      box-shadow: 0 -6px 20px -12px rgba(80,50,40,.4);
+      border-bottom: 1px solid var(--warna-sempadan);
+      box-shadow: 0 6px 20px -12px rgba(80,50,40,.4);
     }
-    /* Runtuh bila tiada satu pun kawalan (majlis tamat/penuh + galeri kosong).
-       Pelayar tanpa :has() cuma dapat bar kosong — tiada apa yang rosak. */
-    .bar-bawah:not(:has(.bar-bawah__baris > :not(.hidden))) { display: none; }
+    /* Runtuh bila tiada satu pun kawalan (majlis tamat/penuh + galeri kosong) —
+       tanpa ini jalur kosong melekat di atas skrin tanpa sebab. Pelayar tanpa
+       :has() cuma dapat jalur nipis — tiada apa yang rosak. */
+    .bar-kawalan:not(:has(.bar-kawalan__baris > :not(.hidden))) { display: none; }
 
-    .bar-bawah__baris,
-    .bar-bawah__cari { width: 100%; max-width: 34rem; margin: 0 auto; }
-    .bar-bawah__baris {
+    .bar-kawalan__baris,
+    .bar-kawalan__cari { width: 100%; max-width: 34rem; margin: 0 auto; }
+    .bar-kawalan__baris {
       display: flex; align-items: center; justify-content: center; gap: .5rem;
     }
 
     /* Butang ikon carian */
-    .bar-bawah__ikon {
+    .bar-kawalan__ikon {
       flex: none; cursor: pointer;
       border: 1px solid var(--warna-sempadan); background: rgba(255,255,255,.88);
       border-radius: 999px; width: 44px; height: 44px; font-size: 1.05rem;
       transition: border-color .2s, background .2s;
     }
-    .bar-bawah__ikon:hover { border-color: var(--tema); background: #fff; }
+    .bar-kawalan__ikon:hover { border-color: var(--tema); background: #fff; }
 
     /* Butang tambah — satu-satunya kawalan pejal, jadi ia jelas yang utama */
-    .bar-bawah__tambah {
+    .bar-kawalan__tambah {
       flex: none; display: inline-flex; align-items: center; gap: .35rem;
       border: none; cursor: pointer; border-radius: 999px;
       padding: 11px 16px; min-height: 44px;
@@ -321,27 +322,15 @@
         color-mix(in srgb, #e0526b 82%, #fff) 0%, #e0526b 100%);
       box-shadow: 0 6px 16px -8px color-mix(in srgb, #e0526b 70%, transparent);
     }
-    .bar-bawah__ikon:focus-visible { outline: 2px solid var(--tema); outline-offset: 2px; }
+    .bar-kawalan__ikon:focus-visible { outline: 2px solid var(--tema); outline-offset: 2px; }
     /* Cincin ikut warna butangnya sendiri, bukan tema. */
-    .bar-bawah__tambah:focus-visible { outline: 2px solid #e0526b; outline-offset: 2px; }
-
-    /* Ruang mendatar terhad dalam bar: di telefon tunjuk ikon + kiraan
-       sahaja. aria-label pada butang yang mengekalkan nama sebenar. */
-    @media (max-width: 639px) {
-      .tab-galeri__teks, .bar-bawah__teks { display: none; }
-    }
-
-    /* Bar melekat menutupi hujung halaman — beri ruang supaya baris gambar
-       terakhir dan butang "Muat Lebih Banyak" tidak tersorok di bawahnya.
-       Sengaja tanpa syarat: dalam kes jarang bar tersembunyi, ini cuma ruang
-       kosong di penghujung halaman. */
-    main { padding-bottom: 7rem; }
+    .bar-kawalan__tambah:focus-visible { outline: 2px solid #e0526b; outline-offset: 2px; }
 
     /* ---------- Tab jenis gambar (Gambar | Photobooth) ---------- */
     /* Pil bersegmen: dua butang dalam satu bekas berbingkai. */
     .tab-galeri {
       display: flex; gap: .25rem;
-      /* Ahli bar melekat: mengecut ikut kandungan supaya 🔍 dan ⊕ sentiasa
+      /* Ahli baris kawalan: mengecut ikut kandungan supaya 🔍 dan ⊕ sentiasa
          muat pada baris yang sama. */
       flex: 0 1 auto; min-width: 0;
       padding: 4px;
@@ -383,6 +372,23 @@
     }
     @media (max-width: 380px) {
       .tab-galeri__btn { font-size: .82rem; padding-left: 6px; padding-right: 6px; }
+    }
+
+    /* ---------- Telefon: bar kawalan jadi DUA baris ---------- */
+    /* Label kekal kelihatan sama seperti desktop, jadi bar dibenarkan
+       BERBALUT: .tab-galeri mengambil baris penuh dan menolak 🔍 + pil ke
+       baris kedua. Satu baris memerlukan ~445px sedangkan telefon 375px hanya
+       ada 351px, dan .tab-galeri__btn ada white-space: nowrap — teks akan
+       terkeluar, bukan mengecut.
+
+       KEDUDUKAN BLOK INI PENTING. Ia mesti berada selepas
+       `.tab-galeri { flex: 0 1 auto }` di atas: @media tidak menambah
+       kekhususan, jadi antara peraturan berkekhususan sama yang TERAKHIR
+       menang. Diletak lebih awal, isytihar di bawah ini akan diabaikan
+       secara senyap dan bar tidak berbalut langsung. */
+    @media (max-width: 639px) {
+      .bar-kawalan__baris { flex-wrap: wrap; }
+      .tab-galeri { flex: 1 0 100%; }   /* tab ambil baris penuh → paksa balut */
     }
 
     /* ---------- MODAL MUAT NAIK ---------- */
@@ -589,7 +595,11 @@
 </head>
 
 <body class="antialiased" data-corak>
-  <main class="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
+  <!-- Kad tajuk sengaja DI LUAR <main>: bar kawalan di bawahnya mesti jadi
+       anak terus <body> supaya jalur latarnya boleh merentang penuh lebar
+       skrin. Padding menegak <main> asal dipecah antara blok ini (atas) dan
+       <main> (bawah), jadi jarak halaman kekal sama. -->
+  <div class="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-8 sm:pt-12">
 
     <!-- Tajuk -->
     <header class="kad-header text-center mb-6">
@@ -673,6 +683,50 @@
         Galeri Polaroid
       </h1>
     </header>
+  </div>
+
+  <!-- ============ BARIS KAWALAN MELEKAT ============
+       SEMUA kawalan galeri hidup di sini: tab jenis (TENGOK) + 🔍 + butang
+       tambah (BUAT). Kotak carian datang SELEPAS baris kawalan supaya ia
+       mengembang ke BAWAH menuju galeri — kalau diletak dahulu, membuka
+       carian menolak seluruh baris kawalan ke bawah dan ia terasa melompat. -->
+  <div id="bar-kawalan" class="bar-kawalan">
+    <div class="bar-kawalan__baris">
+      <!-- Tab jenis gambar. Dua tab BERASINGAN: gambar muat naik biasa dan
+           jalur photobooth 1:3 tidak pernah dipaparkan bercampur. Jenis
+           disimpulkan daripada nisbah aspek (lihat adalahJalur di js/imej.js),
+           kerana photos/{id} tiada medan jenis. -->
+      <div id="zon-tab" class="tab-galeri hidden" role="tablist" aria-label="Jenis gambar">
+        <button type="button" class="tab-galeri__btn aktif" data-tab="gambar"
+                role="tab" aria-selected="true" aria-label="Gambar">
+          📷 <span class="tab-galeri__teks">Gambar</span> <span class="tab-galeri__kira"></span>
+        </button>
+        <button type="button" class="tab-galeri__btn" data-tab="jalur"
+                role="tab" aria-selected="false" aria-label="Photobooth">
+          🎞️ <span class="tab-galeri__teks">Photobooth</span> <span class="tab-galeri__kira"></span>
+        </button>
+      </div>
+
+      <button id="butang-cari-togol" type="button" class="bar-kawalan__ikon hidden"
+              aria-expanded="false" aria-controls="zon-cari" aria-label="Cari">🔍</button>
+
+      <button id="butang-tambah" type="button" class="bar-kawalan__tambah hidden">
+        <span aria-hidden="true">＋</span>
+        <!-- Teks permulaan mesti SEPADAN dengan label tab Gambar dalam
+             kemasButangTambah(); jika tidak tetamu nampak ia bertukar
+             sekejap semasa halaman dimuat. -->
+        <span class="bar-kawalan__teks">Take a selfie</span>
+      </button>
+    </div>
+
+    <div id="zon-cari" class="bar-kawalan__cari hidden">
+      <input id="input-cari" type="search" class="kotak-cari kotak-cari--bar"
+             placeholder="Cari nama atau ucapan…"
+             aria-label="Cari nama tetamu atau ucapan" />
+    </div>
+  </div>
+
+  <main class="mx-auto w-full max-w-6xl px-4 sm:px-6 pb-8 sm:pb-12">
 
     <!-- Keadaan memuat -->
     <div id="zon-memuat" class="text-center py-16">
@@ -711,49 +765,6 @@
       </button>
     </div>
   </main>
-
-  <!-- ============ BAR KAWALAN MELEKAT ============
-       SEMUA kawalan galeri hidup di sini supaya ruang atas galeri kekal
-       kosong — kad terus ke gambar. Adik-beradik <main>, bukan di dalamnya:
-       elemen position:fixed di tengah kandungan bertatal mengelirukan untuk
-       diselenggara. Baris carian tersembunyi sehingga 🔍 diketik. -->
-  <div id="bar-bawah" class="bar-bawah">
-    <div id="zon-cari" class="bar-bawah__cari hidden">
-      <input id="input-cari" type="search" class="kotak-cari kotak-cari--bar"
-             placeholder="Cari nama atau ucapan…"
-             aria-label="Cari nama tetamu atau ucapan" />
-    </div>
-
-    <div class="bar-bawah__baris">
-      <!-- Tab jenis gambar. Dua tab BERASINGAN: gambar muat naik biasa dan
-           jalur photobooth 1:3 tidak pernah dipaparkan bercampur. Jenis
-           disimpulkan daripada nisbah aspek (lihat adalahJalur di js/imej.js),
-           kerana photos/{id} tiada medan jenis.
-           aria-label WAJIB pada setiap butang: teksnya disembunyikan di
-           telefon, jadi tanpanya pembaca skrin cuma dengar emoji. -->
-      <div id="zon-tab" class="tab-galeri hidden" role="tablist" aria-label="Jenis gambar">
-        <button type="button" class="tab-galeri__btn aktif" data-tab="gambar"
-                role="tab" aria-selected="true" aria-label="Gambar">
-          📷 <span class="tab-galeri__teks">Gambar</span> <span class="tab-galeri__kira"></span>
-        </button>
-        <button type="button" class="tab-galeri__btn" data-tab="jalur"
-                role="tab" aria-selected="false" aria-label="Photobooth">
-          🎞️ <span class="tab-galeri__teks">Photobooth</span> <span class="tab-galeri__kira"></span>
-        </button>
-      </div>
-
-      <button id="butang-cari-togol" type="button" class="bar-bawah__ikon hidden"
-              aria-expanded="false" aria-controls="zon-cari" aria-label="Cari">🔍</button>
-
-      <button id="butang-tambah" type="button" class="bar-bawah__tambah hidden">
-        <span aria-hidden="true">＋</span>
-        <!-- Teks permulaan mesti SEPADAN dengan label tab Gambar dalam
-             kemasButangTambah(); jika tidak tetamu nampak ia bertukar
-             sekejap semasa halaman dimuat. -->
-        <span class="bar-bawah__teks">Take a selfie</span>
-      </button>
-    </div>
-  </div>
 
   <!-- ============ MODAL MUAT NAIK GAMBAR ============ -->
   <div id="modal-upload" class="hidden" role="dialog" aria-modal="true" aria-label="Muat naik gambar">

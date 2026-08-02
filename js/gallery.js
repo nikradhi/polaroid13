@@ -555,7 +555,7 @@ function kemasButangTambah() {
   // Tulis ke <span>, BUKAN textContent butang — butang ada dua anak (＋ dan
   // label) dan textContent akan memusnahkan ikonnya. aria-label pula wajib:
   // teks label disembunyikan di telefon.
-  const teks = butangTambah.querySelector(".bar-bawah__teks");
+  const teks = butangTambah.querySelector(".bar-kawalan__teks");
   if (teks) teks.textContent = label;
   butangTambah.setAttribute("aria-label", label);
   butangTambah.classList.toggle("hidden", !(jalur ? bolehTambahJalur : bolehTambahGambar));
