@@ -57,22 +57,6 @@
     .btn-utama:hover:not(:disabled) { transform: translateY(-1px); }
     .btn-utama:disabled { opacity: .6; cursor: not-allowed; }
 
-    /* Pemisah hiasan header: garis halus — ♥ — garis halus.
-       Guna var(--tema) supaya ikut warna setiap tema majlis. */
-    .hiasan-pemisah {
-      display: flex; align-items: center; justify-content: center;
-      gap: .75rem; margin: 1rem auto 0; max-width: 15rem;
-      color: var(--tema);
-    }
-    .hiasan-pemisah::before,
-    .hiasan-pemisah::after {
-      content: ""; height: 1px; flex: 1;
-      background: linear-gradient(90deg, transparent,
-                  color-mix(in srgb, var(--tema) 45%, transparent));
-    }
-    .hiasan-pemisah::after { transform: scaleX(-1); }
-    .hiasan-pemisah .hati { font-size: 1.1rem; line-height: 1; }
-
     /* Kad header berbingkai — panel rounded dengan basuhan gradient lembut
        (ikut var(--tema)) + bunga hiasan di dua penjuru atas. Semua warna
        datang daripada var(--tema)/var(--warna-*) supaya ikut setiap tema. */
@@ -81,7 +65,7 @@
       overflow: hidden;
       max-width: 34rem;
       margin: 0 auto;
-      padding: 2.75rem 1.5rem 2.5rem;
+      padding: 2rem 1.5rem 1.75rem;
       border-radius: 1.75rem;
       border: 1px solid color-mix(in srgb, var(--tema) 25%, transparent);
       background: linear-gradient(180deg,
@@ -95,7 +79,7 @@
     .bunga-penjuru {
       position: absolute;
       top: 0;
-      width: 5.5rem;
+      width: 4.5rem;
       pointer-events: none;
       opacity: .9;
       line-height: 0;
@@ -112,8 +96,8 @@
     .bunga-kiri  { left: 0; }
     .bunga-kanan { right: 0; transform: scaleX(-1); }
     @media (max-width: 640px) {
-      .kad-header { padding: 2.25rem 1.1rem 2rem; border-radius: 1.4rem; }
-      .bunga-penjuru { width: 3.5rem; opacity: .8; }
+      .kad-header { padding: 1.6rem 1.1rem 1.4rem; border-radius: 1.4rem; }
+      .bunga-penjuru { width: 3rem; opacity: .8; }
     }
 
     /* ---- Kad galeri rata (gaya feed Pinterest/Motion) ----
@@ -282,30 +266,84 @@
       border-radius: 999px; padding: 10px 18px; text-align: center;
     }
     .kotak-cari:focus { outline: none; border-color: var(--tema); }
+    /* Dalam bar melekat ia mengisi lebar bar, bukan dihadkan 22rem. */
+    .kotak-cari--bar { max-width: none; }
 
-    /* ---------- Baris kawalan (tab + pil Tambah) ---------- */
-    /* Baris kawalan tunggal: TENGOK (tab) + BUAT (pil Tambah) berkongsi satu
-       baris. Balut di skrin sempit — bar tab sendiri sudah ~22rem, jadi pil
-       turun ke baris kedua di telefon. Runtuhkan bila kedua-dua anak
-       tersembunyi (majlis tamat/penuh + galeri kosong) supaya tiada jurang
-       hantu; pelayar tanpa :has() cuma dapat jurang lebih — tiada apa yang
-       rosak. */
-    .zon-kawalan {
-      display: flex; flex-wrap: wrap;
-      align-items: center; justify-content: center;
-      gap: .5rem; margin: 0 auto 1rem;
+    /* ---------- Bar kawalan melekat ---------- */
+    /* SEMUA kawalan galeri tinggal di sini supaya ruang atas galeri kosong.
+       z-index 40 SENGAJA di bawah lightbox (50) dan modal (60) — kalau tidak
+       bar terapung di atas lapisan gelap dan masih boleh diketik ketika
+       modal terbuka. */
+    .bar-bawah {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+      display: flex; flex-direction: column; gap: .5rem;
+      padding: .6rem .75rem;
+      /* Ruang selamat iPhone (home indicator). Tanpa ini butang terkambus
+         di bawah bar navigasi iOS dan susah diketik. */
+      padding-bottom: calc(.6rem + env(safe-area-inset-bottom, 0px));
+      background: color-mix(in srgb, var(--warna-kad) 92%, transparent);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--warna-sempadan);
+      box-shadow: 0 -6px 20px -12px rgba(80,50,40,.4);
     }
-    .zon-kawalan:not(:has(> :not(.hidden))) { display: none; }
+    /* Runtuh bila tiada satu pun kawalan (majlis tamat/penuh + galeri kosong).
+       Pelayar tanpa :has() cuma dapat bar kosong — tiada apa yang rosak. */
+    .bar-bawah:not(:has(.bar-bawah__baris > :not(.hidden))) { display: none; }
+
+    .bar-bawah__baris,
+    .bar-bawah__cari { width: 100%; max-width: 34rem; margin: 0 auto; }
+    .bar-bawah__baris {
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+    }
+
+    /* Butang ikon carian */
+    .bar-bawah__ikon {
+      flex: none; cursor: pointer;
+      border: 1px solid var(--warna-sempadan); background: rgba(255,255,255,.88);
+      border-radius: 999px; width: 44px; height: 44px; font-size: 1.05rem;
+      transition: border-color .2s, background .2s;
+    }
+    .bar-bawah__ikon:hover { border-color: var(--tema); background: #fff; }
+
+    /* Butang tambah — satu-satunya kawalan pejal, jadi ia jelas yang utama */
+    .bar-bawah__tambah {
+      flex: none; display: inline-flex; align-items: center; gap: .35rem;
+      border: none; cursor: pointer; border-radius: 999px;
+      padding: 11px 16px; min-height: 44px;
+      font-family: var(--font-teks); font-size: .9rem; font-weight: 600;
+      color: #fff;
+      /* Merah mawar TETAP — sengaja TIDAK ikut var(--tema), jadi butang ini
+         kekal merah walau apa pun warna tema yang pelanggan pilih. Nilainya
+         sama dengan hati "❤ disukai" (.reaksi.disukai .hati) supaya ia kekal
+         sebahagian palet halaman ini, bukan warna asing. Bukan #c0392b —
+         itu warna .btn-buang (padam). */
+      background: linear-gradient(135deg,
+        color-mix(in srgb, #e0526b 82%, #fff) 0%, #e0526b 100%);
+      box-shadow: 0 6px 16px -8px color-mix(in srgb, #e0526b 70%, transparent);
+    }
+    .bar-bawah__ikon:focus-visible { outline: 2px solid var(--tema); outline-offset: 2px; }
+    /* Cincin ikut warna butangnya sendiri, bukan tema. */
+    .bar-bawah__tambah:focus-visible { outline: 2px solid #e0526b; outline-offset: 2px; }
+
+    /* Ruang mendatar terhad dalam bar: di telefon tunjuk ikon + kiraan
+       sahaja. aria-label pada butang yang mengekalkan nama sebenar. */
+    @media (max-width: 639px) {
+      .tab-galeri__teks, .bar-bawah__teks { display: none; }
+    }
+
+    /* Bar melekat menutupi hujung halaman — beri ruang supaya baris gambar
+       terakhir dan butang "Muat Lebih Banyak" tidak tersorok di bawahnya.
+       Sengaja tanpa syarat: dalam kes jarang bar tersembunyi, ini cuma ruang
+       kosong di penghujung halaman. */
+    main { padding-bottom: 7rem; }
 
     /* ---------- Tab jenis gambar (Gambar | Photobooth) ---------- */
-    /* Pil bersegmen: dua butang lebar sama dalam satu bekas berbingkai.
-       Hanya dua label, jadi ia muat satu baris sehingga ~320px tanpa
-       perlu tatal mendatar. */
+    /* Pil bersegmen: dua butang dalam satu bekas berbingkai. */
     .tab-galeri {
       display: flex; gap: .25rem;
-      /* Ahli baris .zon-kawalan: berkongsi baris dengan pil Tambah, dan
-         balut dahulu bila sempit. Jarak bawah milik .zon-kawalan. */
-      flex: 1 1 18rem; max-width: 22rem;   /* sejajar dengan .kotak-cari */
+      /* Ahli bar melekat: mengecut ikut kandungan supaya 🔍 dan ⊕ sentiasa
+         muat pada baris yang sama. */
+      flex: 0 1 auto; min-width: 0;
       padding: 4px;
       border: 1px solid var(--warna-sempadan);
       background: rgba(255,255,255,.88);
@@ -554,7 +592,7 @@
   <main class="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
 
     <!-- Tajuk -->
-    <header class="kad-header text-center mb-8">
+    <header class="kad-header text-center mb-6">
       <!-- Bunga hiasan penjuru (SVG inline, sifar fail; kanan dicermin via CSS) -->
       <span class="bunga-penjuru bunga-kiri" aria-hidden="true">
         <svg viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg">
@@ -631,48 +669,10 @@
       </span>
 
       <p id="nama-majlis" class="font-tangan text-2xl sm:text-3xl text-[color:var(--tema)] mb-1">Kenangan Manis</p>
-      <h1 class="font-serif-elegan text-4xl sm:text-5xl font-semibold tracking-wide">
+      <h1 class="font-serif-elegan text-3xl sm:text-4xl font-semibold tracking-wide">
         Galeri Polaroid
       </h1>
-      <p class="mt-3 text-sm text-[color:var(--warna-teks-lembut)]">Detik indah yang dikongsi oleh tetamu kami</p>
-
-      <!-- Pemisah hiasan -->
-      <div class="hiasan-pemisah"><span class="hati">♥</span></div>
     </header>
-
-    <!-- Baris kawalan tunggal: TENGOK (tab jenis) + BUAT (pil Tambah).
-         Sengaja SATU baris — dulu dua baris berasingan menggunakan label
-         "Gambar"/"Photobooth" yang sama untuk dua maksud berbeza, dan itu
-         yang mengelirukan tetamu. Pil Tambah menyasar jenis tab yang aktif
-         (lihat kemasButangTambah di js/gallery.js). -->
-    <div class="zon-kawalan">
-      <!-- Tab jenis gambar. Dua tab BERASINGAN: gambar muat naik biasa dan
-           jalur photobooth 1:3 tidak pernah dipaparkan bercampur. Jenis
-           disimpulkan daripada nisbah aspek (lihat adalahJalur di js/imej.js),
-           kerana photos/{id} tiada medan jenis. -->
-      <div id="zon-tab" class="tab-galeri hidden" role="tablist" aria-label="Jenis gambar">
-        <button type="button" class="tab-galeri__btn aktif" data-tab="gambar" role="tab" aria-selected="true">
-          📷 Gambar <span class="tab-galeri__kira"></span>
-        </button>
-        <button type="button" class="tab-galeri__btn" data-tab="jalur" role="tab" aria-selected="false">
-          🎞️ Photobooth <span class="tab-galeri__kira"></span>
-        </button>
-      </div>
-
-      <button id="butang-tambah" type="button"
-              class="btn-utama hidden rounded-full px-5 py-2.5 text-sm font-semibold">
-        ⊕ Tambah Gambar
-      </button>
-    </div>
-
-    <!-- Kotak carian -->
-    <div class="mb-8">
-      <input id="input-cari" type="search" class="kotak-cari"
-        placeholder="🔍 Cari nama atau ucapan…" aria-label="Cari nama tetamu atau ucapan" />
-      <p id="zon-tiada-carian" class="hidden mt-3 text-center text-sm text-[color:var(--warna-teks-samar)]">
-        Tiada nama atau ucapan sepadan dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".
-      </p>
-    </div>
 
     <!-- Keadaan memuat -->
     <div id="zon-memuat" class="text-center py-16">
@@ -695,6 +695,12 @@
       </button>
     </div>
 
+    <!-- Mesej "tiada hasil" — kekal dalam ALIRAN halaman (bukan dalam bar
+         melekat), sebab ia mesej tentang galeri, bukan kawalan. -->
+    <p id="zon-tiada-carian" class="hidden mb-6 text-center text-sm text-[color:var(--warna-teks-samar)]">
+      Tiada nama atau ucapan sepadan dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".
+    </p>
+
     <!-- Galeri masonry -->
     <section id="zon-galeri" class="masonry" aria-label="Galeri gambar polaroid tetamu"></section>
 
@@ -705,6 +711,49 @@
       </button>
     </div>
   </main>
+
+  <!-- ============ BAR KAWALAN MELEKAT ============
+       SEMUA kawalan galeri hidup di sini supaya ruang atas galeri kekal
+       kosong — kad terus ke gambar. Adik-beradik <main>, bukan di dalamnya:
+       elemen position:fixed di tengah kandungan bertatal mengelirukan untuk
+       diselenggara. Baris carian tersembunyi sehingga 🔍 diketik. -->
+  <div id="bar-bawah" class="bar-bawah">
+    <div id="zon-cari" class="bar-bawah__cari hidden">
+      <input id="input-cari" type="search" class="kotak-cari kotak-cari--bar"
+             placeholder="Cari nama atau ucapan…"
+             aria-label="Cari nama tetamu atau ucapan" />
+    </div>
+
+    <div class="bar-bawah__baris">
+      <!-- Tab jenis gambar. Dua tab BERASINGAN: gambar muat naik biasa dan
+           jalur photobooth 1:3 tidak pernah dipaparkan bercampur. Jenis
+           disimpulkan daripada nisbah aspek (lihat adalahJalur di js/imej.js),
+           kerana photos/{id} tiada medan jenis.
+           aria-label WAJIB pada setiap butang: teksnya disembunyikan di
+           telefon, jadi tanpanya pembaca skrin cuma dengar emoji. -->
+      <div id="zon-tab" class="tab-galeri hidden" role="tablist" aria-label="Jenis gambar">
+        <button type="button" class="tab-galeri__btn aktif" data-tab="gambar"
+                role="tab" aria-selected="true" aria-label="Gambar">
+          📷 <span class="tab-galeri__teks">Gambar</span> <span class="tab-galeri__kira"></span>
+        </button>
+        <button type="button" class="tab-galeri__btn" data-tab="jalur"
+                role="tab" aria-selected="false" aria-label="Photobooth">
+          🎞️ <span class="tab-galeri__teks">Photobooth</span> <span class="tab-galeri__kira"></span>
+        </button>
+      </div>
+
+      <button id="butang-cari-togol" type="button" class="bar-bawah__ikon hidden"
+              aria-expanded="false" aria-controls="zon-cari" aria-label="Cari">🔍</button>
+
+      <button id="butang-tambah" type="button" class="bar-bawah__tambah hidden">
+        <span aria-hidden="true">＋</span>
+        <!-- Teks permulaan mesti SEPADAN dengan label tab Gambar dalam
+             kemasButangTambah(); jika tidak tetamu nampak ia bertukar
+             sekejap semasa halaman dimuat. -->
+        <span class="bar-bawah__teks">Take a selfie</span>
+      </button>
+    </div>
+  </div>
 
   <!-- ============ MODAL MUAT NAIK GAMBAR ============ -->
   <div id="modal-upload" class="hidden" role="dialog" aria-modal="true" aria-label="Muat naik gambar">
@@ -818,7 +867,7 @@
       <button id="pb-tutup" data-tutup-modal aria-label="Tutup">×</button>
 
       <header class="text-center mb-5 pr-6">
-        <h2 class="font-serif-elegan text-3xl font-semibold tracking-wide">Photobooth 3-Syot</h2>
+        <h2 class="font-serif-elegan text-3xl font-semibold tracking-wide">Photobooth 3-Slot</h2>
         <p class="mt-1.5 text-sm text-[color:var(--warna-teks-lembut)] leading-relaxed">
           Tiga gambar berturut-turut jadi satu jalur kenangan — nama &amp; tarikh majlis
           tercetak di bawah. Jalur anda akan dipapar dalam galeri majlis.
@@ -859,7 +908,7 @@
               </svg>
             </button>
             <button type="button" id="pb-butang-mula"
-                    aria-label="Mula photobooth — 3 syot automatik">
+                    aria-label="Mula photobooth — 3 slot automatik">
               <span class="teras" aria-hidden="true"></span>
             </button>
             <span class="pb-ruang" aria-hidden="true"></span>

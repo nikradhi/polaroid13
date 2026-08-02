@@ -154,6 +154,14 @@
     .btn-kembali { border: 1px solid #d9a5ac; color: #b76e79; border-radius: .75rem; padding: .75rem 1.1rem; font-weight: 500; background: #fff; transition: background .2s ease; }
     .btn-kembali:hover { background: rgba(255,255,255,.7); }
 
+    /* QR dijana pada 220px tetap oleh qrcodejs (canvas + img). Pada telefon
+       320px ruang kandungan hanya ~248px, jadi 220 + pengisi p-4 melimpah.
+       Biarkan ia mengecut; ia bitmap, jadi turun sedikit skala kekal boleh
+       diimbas. Kedua-dua canvas & img perlu dirujuk — pustaka itu melukis
+       ke canvas lalu menyalinnya ke img. */
+    #qrcode { max-width: 100%; }
+    #qrcode canvas, #qrcode img { max-width: 100%; height: auto; display: block; }
+
     /* Kad cetak: tersembunyi di skrin, hanya muncul semasa cetak */
     .cetak-sahaja { display: none; }
 
@@ -390,7 +398,10 @@
                       class="rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">📋 Salin ayat</button>
             </div>
 
-            <div class="no-print mt-4 flex items-start justify-center gap-2">
+            <!-- flex-wrap WAJIB: dua butang ini ~325px bersama, sedangkan
+                 telefon 320px hanya memberi ~250px ruang kandungan. Tanpa
+                 ia, butang kedua (shrink-0) melimpah keluar tepi. -->
+            <div class="no-print mt-4 flex flex-wrap items-start justify-center gap-2">
               <div class="flex flex-col items-center gap-1">
                 <button id="butang-cetak" class="btn-utama rounded-xl px-5 py-2.5 text-sm font-medium">🖨️ Cetak Kad QR</button>
                 <span class="text-[11px] text-[#a09088]">(untuk printing)</span>

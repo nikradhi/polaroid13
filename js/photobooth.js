@@ -63,8 +63,8 @@ const KIRA_SYOT = 3;
 
 // Butang snap ialah bulatan tanpa label (gaya apl kamera), jadi arahan
 // dipapar dalam lapisan #pb-kiraan antara syot.
-const PETUNJUK_MULA = "Tekan bulatan untuk syot 1";
-const petunjukSyot = (n) => `Sedia? Tekan untuk syot ${n}`;
+const PETUNJUK_MULA = "Tekan bulatan untuk slot 1";
+const petunjukSyot = (n) => `Sedia? Tekan untuk slot ${n}`;
 
 const WARNA_KERTAS = "#fffdf9"; // sepadan --warna-kad lalai
 const WARNA_TEKS = "#4a3f3a";

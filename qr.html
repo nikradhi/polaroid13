@@ -35,6 +35,12 @@
       box-shadow: 0 20px 50px -20px rgba(90,74,66,.4);
     }
 
+    /* QR 220px tetap dalam kad ber-px-8: pada telefon 320px hanya ~216px
+       ruang tersedia, jadi ia melimpah. Biarkan ia mengecut mengikut bekas
+       (canvas DAN img — qrcodejs melukis ke canvas lalu menyalin ke img). */
+    #qrcode { max-width: 100%; }
+    #qrcode canvas, #qrcode img { max-width: 100%; height: auto; display: block; }
+
     /* Kawalan yang disembunyikan semasa cetak */
     @media print {
       .no-print { display: none !important; }
@@ -83,7 +89,9 @@
     <!-- KAD CETAK -->
     <div class="kad-cetak rounded-3xl px-8 py-10 text-center">
       <p class="font-tangan text-3xl text-[#b76e79]">Majlis Perkahwinan</p>
-      <h1 id="tajuk-nama" class="font-serif-elegan text-4xl font-semibold my-2">
+      <!-- Nama pasangan boleh sampai 80 aksara: turunkan satu tingkat di
+           telefon supaya ia tidak terbelah kepada empat baris. -->
+      <h1 id="tajuk-nama" class="font-serif-elegan text-3xl sm:text-4xl font-semibold my-2">
         Aisyah &amp; Danial
       </h1>
       <div class="mx-auto my-6 h-px w-24 bg-[#e0cfc2]"></div>

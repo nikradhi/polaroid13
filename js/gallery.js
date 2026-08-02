@@ -53,6 +53,9 @@ const butangMuatLebih = document.getElementById("butang-muat-lebih");
 const kotakRalat = document.getElementById("kotak-ralat");
 const inputCari = document.getElementById("input-cari");
 const zonTab = document.getElementById("zon-tab");
+// Carian disorok di belakang ikon dalam bar melekat supaya bar kekal ramping.
+const zonCari = document.getElementById("zon-cari");
+const butangCariTogol = document.getElementById("butang-cari-togol");
 const zonTiadaHasil = document.getElementById("zon-tiada-carian");
 
 // Pil "Tambah" — SATU butang untuk kedua-dua jenis; ia menyasar jenis tab
@@ -474,6 +477,8 @@ function tapisGaleri() {
     const tabJalurBerguna = cirianJalur || kira.jalur > 0;
     zonTab.classList.toggle("hidden", !(fotoDimuat.length > 0 && tabJalurBerguna));
   }
+  // Ikon carian hanya bila ada sesuatu untuk dicari.
+  butangCariTogol?.classList.toggle("hidden", fotoDimuat.length === 0);
 
   if (zonTiadaHasil) {
     // Majlis yang langsung tiada gambar sudah dilindungi oleh #zon-kosong
@@ -546,9 +551,30 @@ async function pilihTab(tab) {
 function kemasButangTambah() {
   if (!butangTambah) return;
   const jalur = tabAktif === "jalur";
-  butangTambah.textContent = jalur ? "⊕ Buat Jalur" : "⊕ Tambah Gambar";
+  const label = jalur ? "Photobooth" : "Take a selfie";
+  // Tulis ke <span>, BUKAN textContent butang — butang ada dua anak (＋ dan
+  // label) dan textContent akan memusnahkan ikonnya. aria-label pula wajib:
+  // teks label disembunyikan di telefon.
+  const teks = butangTambah.querySelector(".bar-bawah__teks");
+  if (teks) teks.textContent = label;
+  butangTambah.setAttribute("aria-label", label);
   butangTambah.classList.toggle("hidden", !(jalur ? bolehTambahJalur : bolehTambahGambar));
 }
+
+// Togol kotak carian. MENUTUPNYA mesti turut mengosongkan pertanyaan — jika
+// tidak galeri kekal tertapis sedangkan kotak carian sudah hilang dari
+// pandangan, dan tetamu tiada cara untuk tahu kenapa gambar "hilang".
+butangCariTogol?.addEventListener("click", () => {
+  if (!zonCari) return;
+  const buka = !zonCari.classList.toggle("hidden");
+  butangCariTogol.setAttribute("aria-expanded", String(buka));
+  if (buka) {
+    inputCari?.focus();
+  } else if (inputCari?.value) {
+    inputCari.value = "";
+    tapisGaleri();
+  }
+});
 
 butangTambah?.addEventListener("click", () => {
   bukaModal(tabAktif === "jalur" ? modalPhotobooth : modalUpload);
