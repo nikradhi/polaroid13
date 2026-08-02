@@ -37,7 +37,7 @@ import {
   serverTimestamp,
   writeBatch,
 } from "./firebase.js";
-import { compressImej, blobKeBase64, FORMAT_UTAMA } from "./imej.js";
+import { compressImej, blobKeBase64, FORMAT_UTAMA, adalahJalur } from "./imej.js";
 import { dalamTempohTangguh, HARI_TANGGUH } from "./majlis.js";
 import { muatTurunZipMajlis, mesejRalatMuatTurun } from "./muat-turun.js";
 // Konfigurasi pakej — SATU SUMBER KEBENARAN (lihat js/packages.js).
@@ -114,6 +114,8 @@ const gInfo = document.getElementById("g-info");
 const gZip = document.getElementById("g-zip");
 const gPadamSemua = document.getElementById("g-padam-semua");
 const gStatus = document.getElementById("g-status");
+const gTab = document.getElementById("g-tab");
+const gTiada = document.getElementById("g-tiada");
 const gGrid = document.getElementById("g-grid");
 
 // --- Rujukan DOM: borang cipta ---
@@ -1474,6 +1476,7 @@ if (butangPurge) {
 //  padamGambarMajlis + muatTurunZipMajlis — tiada bacaan tambahan.
 
 let eventIdGambar = null; // majlis yang sedang dipapar dalam seksyen ini
+let tabGambarAktif = "semua"; // "semua" | "gambar" | "jalur"
 
 function eventById(id) {
   return dataEvents.find((ev) => ev.id === id) || null;
@@ -1553,6 +1556,7 @@ async function pilihPelanggan(id) {
   eventIdGambar = id;
   gPanel.classList.remove("hidden");
   gStatus.classList.add("hidden");
+  setTabGambar("semua"); // jangan biar tab "melekat" antara pelanggan
   gInfo.innerHTML = `
     <p class="font-medium">${esc(ev.coupleName || "(tanpa nama)")}</p>
     <p class="text-xs text-[#a09088]">${esc(emelEvent(ev) || "—")} · ${esc(telefonEvent(ev) || "tiada telefon")}</p>`;
@@ -1561,6 +1565,7 @@ async function pilihPelanggan(id) {
 
 async function muatGambarPelanggan(id) {
   gGrid.innerHTML = `<p class="col-span-full text-xs text-[#a09088]">Memuat gambar…</p>`;
+  gTiada?.classList.add("hidden");
   try {
     // Tanpa tapis approved — super-admin nampak SEMUA (sama seperti admin.js).
     const snap = await getDocs(
@@ -1576,6 +1581,9 @@ async function muatGambarPelanggan(id) {
     }
     gGrid.innerHTML = "";
     snap.forEach((d) => gGrid.appendChild(binaKadGambar(d.id, d.data())));
+    // Lintasan awal: setiap kad masih bertanda tekaan "gambar"; probe jenis
+    // akan memanggil semula tapisan ini apabila jalur dikenal pasti.
+    tapisGambarSa();
   } catch (err) {
     console.error("Ralat memuat gambar:", err);
     const hint = String(err?.message || err).toLowerCase().includes("index")
@@ -1588,9 +1596,12 @@ async function muatGambarPelanggan(id) {
 function binaKadGambar(fotoId, p) {
   const url = p.image_url || p.thumb_url || "";
   const kad = document.createElement("div");
+  // self-start: item grid meregang secara lalai, jadi SATU jalur tinggi akan
+  // meregangkan seluruh baris gambar segi empat di sebelahnya tanpa ini.
   kad.className =
-    "relative rounded-xl overflow-hidden border border-[#e5d5ca] bg-white/60";
+    "relative self-start rounded-xl overflow-hidden border border-[#e5d5ca] bg-white/60";
   kad.dataset.foto = fotoId;
+  kad.dataset.jenis = "gambar"; // tekaan optimistik sehingga probe selesai
 
   const img = document.createElement("img");
   img.src = url;
@@ -1598,6 +1609,7 @@ function binaKadGambar(fotoId, p) {
   img.loading = "lazy";
   img.className = "w-full aspect-square object-cover";
   kad.appendChild(img);
+  ukurJenisKad(kad, img, url);
 
   if (p.approved === false) {
     const badge = document.createElement("span");
@@ -1625,6 +1637,131 @@ function binaKadGambar(fotoId, p) {
   return kad;
 }
 
+// ------------------------------------------------------------
+//  PENGELASAN JENIS (gambar biasa vs jalur photobooth)
+// ------------------------------------------------------------
+//  photos/{id} TIDAK menyimpan medan jenis — firestore.rules mengunci senarai
+//  medan dengan hasOnly([...]) dan projek ini tiada Firebase CLI, jadi
+//  menambahnya perlu terbitan manual di Console DAN jalur lama tetap tidak
+//  bertanda. Nisbah aspek sudah cukup dan berfungsi retroaktif; lihat
+//  adalahJalur() di js/imej.js.
+//
+//  WAJIB guna objek Image() BERASINGAN, bukan `img` dalam DOM: kad ada
+//  loading="lazy", jadi peristiwa `load`-nya TIDAK menyala untuk kad di luar
+//  skrin — jalur jauh di bawah takkan pernah dikelaskan dan akan lesap
+//  daripada tab Photobooth. Probe tidak tertakluk pada `loading`, dan kerana
+//  src ialah data URI yang sudah ada dalam ingatan, tiada permintaan rangkaian
+//  tambahan.
+function ukurJenisKad(kad, img, url) {
+  if (!url) return; // kekal "gambar"
+
+  let probe = new Image();
+  const siap = (jenis) => {
+    kad.dataset.jenis = jenis;
+    if (jenis === "jalur") {
+      // Papar jalur penuh supaya ketiga-tiga syot + kaki kelihatan. Jangan
+      // tetapkan nisbah tetap: jalur ialah 480x1480 (bingkai "Klasik") ATAU
+      // 480x1390 (bingkai berhias) — lihat geometriJalur() di js/bingkai.js.
+      img.className = "w-full h-auto object-contain";
+    }
+    // Lepaskan bitmap ternyahkod — grid ini tiada penomboran, satu majlis
+    // penuh boleh ratusan foto sekali gus.
+    if (probe) {
+      probe.onload = probe.onerror = null;
+      probe.src = "";
+      probe = null;
+    }
+    jadualTapisGambarSa();
+  };
+
+  probe.onload = () =>
+    siap(adalahJalur(probe.naturalWidth, probe.naturalHeight) ? "jalur" : "gambar");
+  // Gagal selamat: gambar rosak kekal dalam tab lalai, bukan lesap ke tab
+  // yang super-admin tidak akan cari.
+  probe.onerror = () => siap("gambar");
+  probe.src = url;
+}
+
+// Probe seluruh majlis selesai hampir serentak; kumpulkan supaya hanya SATU
+// lintasan penapisan berlaku, bukan satu bagi setiap foto.
+let tapisSaDijadual = false;
+function jadualTapisGambarSa() {
+  if (tapisSaDijadual) return;
+  tapisSaDijadual = true;
+  requestAnimationFrame(() => {
+    tapisSaDijadual = false;
+    tapisGambarSa();
+  });
+}
+
+// ------------------------------------------------------------
+//  TAB JENIS GAMBAR — penapis PAPARAN sahaja
+// ------------------------------------------------------------
+//  Butang ZIP & "Padam SEMUA gambar" sengaja TIDAK mengikut tab aktif: ia
+//  sentiasa bertindak atas semua gambar majlis, supaya tiada padam separa
+//  yang mengelirukan.
+function tapisGambarSa() {
+  if (!gGrid) return;
+  const kira = { gambar: 0, jalur: 0 };
+  let jumpa = 0;
+
+  Array.from(gGrid.children).forEach((kad) => {
+    const jenis = kad.dataset?.jenis;
+    if (!jenis) return; // nod mesej ("Memuat gambar…", ralat) — bukan kad
+    kira[jenis]++;
+    const padan = tabGambarAktif === "semua" || jenis === tabGambarAktif;
+    kad.style.display = padan ? "" : "none";
+    if (padan) jumpa++;
+  });
+
+  kemasKiraTabGambar(kira);
+
+  // Majlis yang langsung tiada gambar sudah dilindungi oleh mesej dalam
+  // #g-grid; tanpa syarat kedua ini super-admin nampak DUA mesej "tiada".
+  if (gTiada) {
+    const adaKad = kira.gambar + kira.jalur > 0;
+    const tunjuk = jumpa === 0 && adaKad;
+    gTiada.classList.toggle("hidden", !tunjuk);
+    if (tunjuk) {
+      gTiada.textContent =
+        tabGambarAktif === "jalur"
+          ? "Tiada jalur photobooth untuk pelanggan ini."
+          : "Tiada gambar biasa untuk pelanggan ini.";
+    }
+  }
+}
+
+function kemasKiraTabGambar(kira) {
+  if (!gTab) return;
+  const jumlah = { ...kira, semua: kira.gambar + kira.jalur };
+  gTab.querySelectorAll(".tab-sa__btn").forEach((btn) => {
+    const el = btn.querySelector(".tab-sa__kira");
+    if (el) el.textContent = jumlah[btn.dataset.tab] || "";
+  });
+}
+
+function setTabGambar(tab) {
+  tabGambarAktif = tab;
+  if (!gTab) return;
+  gTab.querySelectorAll(".tab-sa__btn").forEach((btn) => {
+    const aktif = btn.dataset.tab === tab;
+    btn.classList.toggle("aktif", aktif);
+    btn.setAttribute("aria-selected", String(aktif));
+  });
+}
+
+// Tiada padanan tambahHalamanAuto() seperti galeri awam: muatGambarPelanggan()
+// memuat SEMUA foto majlis dalam satu getDocs, jadi kiraan sentiasa muktamad.
+if (gTab) {
+  gTab.querySelectorAll(".tab-sa__btn").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      if (btn.dataset.tab === tabGambarAktif) return;
+      setTabGambar(btn.dataset.tab);
+      tapisGambarSa();
+    })
+  );
+}
+
 // Delegasi: padam satu gambar
 if (gGrid) {
   gGrid.addEventListener("click", async (e) => {
@@ -1643,7 +1780,9 @@ if (gGrid) {
       storanTepatBait = null; // angka storan lama tidak lagi sah
       if (!gGrid.children.length) {
         gGrid.innerHTML = `<p class="col-span-full text-xs text-[#a09088]">Tiada gambar untuk pelanggan ini.</p>`;
+        gTiada?.classList.add("hidden");
       }
+      tapisGambarSa(); // segarkan kiraan tab
     } catch (err) {
       console.error("Ralat padam gambar:", err);
       alert("Gagal memadam gambar. Semak konsol pelayar & sambungan.");
@@ -1699,6 +1838,8 @@ if (gPadamSemua) {
       gLapor("Memadam semua gambar…");
       const bil = await padamGambarMajlis(eventIdGambar);
       gGrid.innerHTML = `<p class="col-span-full text-xs text-[#a09088]">Tiada gambar untuk pelanggan ini.</p>`;
+      gTiada?.classList.add("hidden");
+      tapisGambarSa(); // kosongkan kiraan tab
       gLapor(`✓ ${bil} gambar dipadam.`);
       storanTepatBait = null; // angka storan lama tidak lagi sah
     } catch (err) {

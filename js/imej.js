@@ -43,6 +43,34 @@ export const FORMAT_GANTI = "image/jpeg";
 export const LEBAR_JALUR = 480;
 export const SASARAN_JALUR = 45 * 1000;
 
+// --- Kenal pasti jalur photobooth daripada dimensi sahaja ---
+// photos/{id} TIDAK menyimpan medan jenis: firestore.rules mengunci senarai
+// medan dengan hasOnly([...]), jadi menambahnya perlu terbitan manual di
+// Console. Nasib baik dimensi sudah cukup untuk membezakannya:
+//
+//   kiraDimensi() di bawah hanya mengehadkan LEBAR (LEBAR_MAKS 720), tidak
+//   pernah tinggi. Jadi gambar biasa paling ekstrem — potret telefon 9:16 —
+//   tersimpan sebagai 720x1280, nisbah 1.78.
+//
+//   Jalur pula sentiasa dilukis oleh geometriJalur() (js/bingkai.js):
+//     bingkai "Klasik"  480x1480 -> 3.08
+//     bingkai berhias   480x1390 -> 2.90
+//   Pusingan kedua mampatJalur() (400px) mengekalkan nisbah yang sama.
+//
+// Jurang 1.78 -> 2.90 itulah ruang untuk ambang ini. AWAS: jika LEBAR_MAKS
+// atau geometriJalur() berubah, kira semula jadual di atas.
+export const NISBAH_JALUR_MIN = 2.6;
+
+/**
+ * Adakah dimensi ini milik jalur photobooth (bukan gambar biasa)?
+ * @param {number} lebar
+ * @param {number} tinggi
+ * @returns {boolean}
+ */
+export function adalahJalur(lebar, tinggi) {
+  return lebar > 0 && tinggi / lebar >= NISBAH_JALUR_MIN;
+}
+
 /**
  * Kira dimensi baharu dengan mengekalkan nisbah aspek.
  * Hanya kecilkan jika lebih lebar daripada had; tidak membesarkan.

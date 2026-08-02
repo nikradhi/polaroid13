@@ -187,6 +187,39 @@
     }
     .nav-ikon { font-size: 1.05rem; line-height: 1; }
 
+    /* ====== Tab jenis gambar (seksyen Urus Gambar) ======
+       Semuanya atas token --sa-*, jadi ia bertukar gelap/cerah sendiri —
+       tiada entri baharu perlu dalam lapisan keserasian Tailwind di bawah. */
+    .tab-sa { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    /* Mengatasi `display: flex` di atas jika .hidden ditogol pada bar tab.
+       Jangan bergantung pada susunan CSS — Tailwind Play CDN menulis semula
+       lembaran gayanya pada setiap rebuild (sama seperti .tab-galeri.hidden
+       dalam gallery.html). */
+    .tab-sa.hidden { display: none; }
+    .tab-sa__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      min-height: 44px;              /* sasaran sentuh telefon */
+      border-radius: .75rem;
+      padding: .4rem .8rem;
+      font-size: .8rem;
+      color: var(--sa-nav-teks);
+      border: 1px solid var(--sa-sempadan);
+      background: var(--sa-permukaan-2);
+      transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+    .tab-sa__btn:hover { background: var(--sa-hover); color: var(--sa-aksen); }
+    .tab-sa__btn.aktif,
+    .tab-sa__btn.aktif:hover {
+      background: var(--sa-btn);
+      color: #fff;
+      font-weight: 600;
+      border-color: transparent;
+      box-shadow: var(--sa-nav-bayang);
+    }
+    .tab-sa__kira { font-size: .7rem; opacity: .8; }
+
     /* Laci sisi: sticky di desktop, off-canvas di telefon */
     #nav-sisi { transition: transform .25s ease; }
     @media (max-width: 639.98px) {
@@ -562,6 +595,24 @@
           </div>
 
           <div id="g-status" class="hidden mb-3 rounded-xl bg-[#fdf6ef] border border-[#e5d5ca] p-3 text-xs text-[#6a5a52] whitespace-pre-line" role="status" aria-live="polite"></div>
+
+          <!-- Tab jenis: penapis PAPARAN sahaja — butang ZIP/padam di atas
+               sentiasa bertindak atas SEMUA gambar majlis, bukan tab aktif. -->
+          <div id="g-tab" class="tab-sa" role="tablist" aria-label="Jenis gambar">
+            <button type="button" class="tab-sa__btn aktif" data-tab="semua" role="tab" aria-selected="true">
+              🗂️ Semua <span class="tab-sa__kira"></span>
+            </button>
+            <button type="button" class="tab-sa__btn" data-tab="gambar" role="tab" aria-selected="false">
+              📷 Gambar <span class="tab-sa__kira"></span>
+            </button>
+            <button type="button" class="tab-sa__btn" data-tab="jalur" role="tab" aria-selected="false">
+              🎞️ Photobooth <span class="tab-sa__kira"></span>
+            </button>
+          </div>
+
+          <!-- Adik-beradik #g-grid, BUKAN anak: pengendali padam-satu menguji
+               gGrid.children.length untuk mesej "tiada gambar". -->
+          <p id="g-tiada" class="hidden mb-3 text-xs text-[#a09088]"></p>
 
           <div id="g-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
         </div>

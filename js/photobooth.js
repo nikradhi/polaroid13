@@ -55,16 +55,16 @@ const MS_SESAAT = 1000;
 const MS_SENYUM = 450;
 const MS_KILAT = 220;
 
-// Syot pertama diberi kira detik penuh (tetamu perlu masa bersedia);
-// syot berikutnya lebih pendek kerana mereka sudah berpose dan kamera
-// sudah hidup. Tiada jeda langsung ANTARA syot — penanda 3 titik sudah
-// memberi maklum balas kemajuan.
-const KIRA_SYOT_PERTAMA = 3;
-const KIRA_SYOT_SETERUSNYA = 2;
+// Setiap syot dicetuskan oleh tekanan tetamu sendiri, jadi SEMUA syot
+// dapat kira detik penuh — mereka baru sahaja tekan dan perlu masa
+// berpose. Tiada jeda automatik antara syot: sesi berhenti dan menunggu
+// tekanan seterusnya, jadi tetamu tidak boleh rasa tergesa-gesa.
+const KIRA_SYOT = 3;
 
 // Butang snap ialah bulatan tanpa label (gaya apl kamera), jadi arahan
-// dipapar dalam lapisan #pb-kiraan sehingga sesi bermula.
-const PETUNJUK_MULA = "Tekan bulatan untuk 3 syot";
+// dipapar dalam lapisan #pb-kiraan antara syot.
+const PETUNJUK_MULA = "Tekan bulatan untuk syot 1";
+const petunjukSyot = (n) => `Sedia? Tekan untuk syot ${n}`;
 
 const WARNA_KERTAS = "#fffdf9"; // sepadan --warna-kad lalai
 const WARNA_TEKS = "#4a3f3a";
@@ -152,6 +152,10 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
   // saat kira detik supaya ralat muncul serta-merta. Diganti setiap sesi.
   let isyaratRalatKamera = new Promise(() => {});
   let tandakanRalatKamera = () => {};
+  // Kamera dibuka sekali pada syot PERTAMA dan kekal hidup sehingga syot
+  // ke-3, jadi kedua-dua ini merentas beberapa tekanan butang.
+  let janjiKamera = null;
+  let kameraSiap = false;
 
   const namaPasangan = (majlis?.coupleName || "Majlis Kami").trim();
   const tarikhTeks = formatTarikhMajlis(majlis?.weddingDate || "");
@@ -276,6 +280,11 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     if (sedangSyot || sedangHantar) return;
     const arahLama = arahKamera;
     arahKamera = arahKamera === "user" ? "environment" : "user";
+    // Strim sedang dibuka semula: matikan butang snap buat sementara.
+    // Tanpa ini, tekanan di tengah-tengah pertukaran akan merakam bingkai
+    // kosong daripada <video> yang belum ada gambar.
+    const bolehSnapSebelum = !butangMula.disabled;
+    butangMula.disabled = true;
     try {
       await mulaKamera();
       sorokStatus();
@@ -288,6 +297,8 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
         /* sudah tiada apa nak dipulihkan */
       }
       tunjukStatus("Tiada kamera lain dijumpai pada peranti ini.", "gagal");
+    } finally {
+      butangMula.disabled = !bolehSnapSebelum;
     }
   }
 
@@ -319,7 +330,7 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
   }
 
   // Kilat ialah maklum balas "sudah dirakam" SELEPAS ambilSyot(), bukan
-  // jeda sebelum rakaman — lihat gelung dalam mulaSesiSyot().
+  // jeda sebelum rakaman — lihat syotSeterusnya().
   async function kilatkan() {
     kilat.classList.add("nyala");
     await jeda(60);
@@ -554,98 +565,118 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
   }
 
   // ----------------------------------------------------------
-  //  SESI SYOT — 3 kali kira detik
+  //  SESI SYOT — SATU syot setiap tekanan tetamu
   // ----------------------------------------------------------
-  async function mulaSesiSyot() {
-    if (sedangSyot) return;
-    sorokStatus();
-    dibatalkan = false;
-    ralatKamera = null;
-    syot = [];
-    kanvasJalur = null;
-    setPenanda(0);
+  //  Bukan turutan automatik: butang snap merakam SATU syot, kemudian
+  //  sesi berhenti dan menunggu tekanan seterusnya. Tetamu mengawal
+  //  sepenuhnya bila syot 2 & 3 diambil, jadi mereka sempat tukar gaya
+  //  tanpa rasa dikejar. Jalur dibina automatik selepas syot ke-3.
+  // ----------------------------------------------------------
+  async function syotSeterusnya() {
+    if (sedangSyot || syot.length >= BIL_SYOT) return;
+    const syotPertama = syot.length === 0;
 
-    // Kamera dimulakan HANYA di sini (gerak isyarat pengguna) — gesaan
-    // kebenaran iOS memerlukannya, dan lampu kamera tak menyala tanpa niat.
-    // Ia TIDAK di-await di sini: getUserMedia kekal dipanggil dalam tugas
-    // pengendali klik ini (itu syarat gesaan iOS), tetapi kira detik syot
-    // pertama berjalan SERENTAK kamera membuka supaya tetamu tidak
-    // menunggu dua kali berturut-turut.
-    butangMula.disabled = true;
-    let kameraSiap = false;
-    isyaratRalatKamera = new Promise((r) => (tandakanRalatKamera = r));
-    const janjiKamera = mulaKamera().then(
-      () => {
-        kameraSiap = true;
-      },
-      (err) => {
-        ralatKamera = err;
-        tandakanRalatKamera();
-      },
-    );
+    if (syotPertama) {
+      sorokStatus();
+      dibatalkan = false;
+      ralatKamera = null;
+      kanvasJalur = null;
+      setPenanda(0);
+      zonPratonton.classList.add("hidden");
+      butangUlang.classList.add("hidden");
+
+      // Kamera dimulakan HANYA di sini (gerak isyarat pengguna) — gesaan
+      // kebenaran iOS memerlukannya, dan lampu kamera tak menyala tanpa niat.
+      // Ia TIDAK di-await di sini: getUserMedia kekal dipanggil dalam tugas
+      // pengendali klik ini (itu syarat gesaan iOS), tetapi kira detik syot
+      // pertama berjalan SERENTAK kamera membuka supaya tetamu tidak
+      // menunggu dua kali berturut-turut.
+      kameraSiap = false;
+      isyaratRalatKamera = new Promise((r) => (tandakanRalatKamera = r));
+      janjiKamera = mulaKamera().then(
+        () => {
+          kameraSiap = true;
+        },
+        (err) => {
+          ralatKamera = err;
+          tandakanRalatKamera();
+        },
+      );
+    }
 
     sedangSyot = true;
+    butangMula.disabled = true;
     butangTukarKamera.disabled = true;
-    zonPratonton.classList.add("hidden");
-    butangUlang.classList.add("hidden");
 
     try {
-      for (let i = 0; i < BIL_SYOT; i++) {
-        const kiraan = i === 0 ? KIRA_SYOT_PERTAMA : KIRA_SYOT_SETERUSNYA;
-        if (!(await kiraDetik(kiraan))) break;
+      if (!(await kiraDetik(KIRA_SYOT))) return;
 
-        if (i === 0 && !kameraSiap) {
-          // Kamera lebih lambat daripada kira detik — biasanya kerana
-          // gesaan kebenaran masih terbuka. Tunggu ia siap, kemudian ULANG
-          // kira detik penuh; jangan foto tetamu yang belum sempat bersedia.
-          setKiraan("Membuka kamera…", true);
-          await janjiKamera;
-          if (dibatalkan || ralatKamera) break;
-          if (!(await kiraDetik(KIRA_SYOT_PERTAMA))) break;
-        }
-
-        setKiraan("SENYUM! 😄", true);
-        await jeda(MS_SENYUM);
-        if (dibatalkan) return;
-
-        // Rakam SERENTAK kilat menyala, bukan selepasnya — kalau tidak
-        // tetamu nampak kilat, relaks, baru bingkai dirakam.
-        syot.push(ambilSyot());
-        setPenanda(syot.length);
-        await kilatkan();
-        if (dibatalkan) return;
+      if (syotPertama && !kameraSiap) {
+        // Kamera lebih lambat daripada kira detik — biasanya kerana
+        // gesaan kebenaran masih terbuka. Tunggu ia siap, kemudian ULANG
+        // kira detik penuh; jangan foto tetamu yang belum sempat bersedia.
+        setKiraan("Membuka kamera…", true);
+        await janjiKamera;
+        if (dibatalkan || ralatKamera) return;
+        if (!(await kiraDetik(KIRA_SYOT))) return;
       }
 
-      if (ralatKamera) {
-        setKiraan("");
-        tunjukStatus(mesejRalatKamera(ralatKamera), "gagal");
-        return;
+      setKiraan("SENYUM! 😄", true);
+      await jeda(MS_SENYUM);
+      if (dibatalkan) return;
+
+      // Rakam SERENTAK kilat menyala, bukan selepasnya — kalau tidak
+      // tetamu nampak kilat, relaks, baru bingkai dirakam.
+      syot.push(ambilSyot());
+      setPenanda(syot.length);
+      await kilatkan();
+      if (dibatalkan) return;
+
+      if (syot.length < BIL_SYOT) {
+        setKiraan(petunjukSyot(syot.length + 1), true);
+        return; // berhenti di sini — tunggu tetamu tekan lagi
       }
-      if (dibatalkan) return;
 
-      // Kamera tidak diperlukan lagi — padamkan lampu SERTA-MERTA
-      // supaya tetamu nampak ia mati semasa mereka menaip nama.
-      hentikanKamera();
-      setKiraan("");
-
-      kanvasJalur = lukisJalur(bingkaiDipilih);
-      if (dibatalkan) return;
-      await paparJalur(kanvasJalur);
-
-      zonKamera.classList.add("hidden");
-      zonPratonton.classList.remove("hidden");
-      bingkaiZon?.classList.remove("hidden");
-      zonKawalan.classList.add("hidden");
-      butangUlang.classList.remove("hidden");
-      butangHantar.disabled = false;
-      tunjukStatus("Jalur anda siap! Pilih bingkai, isi nama, dan hantar.", "berjaya");
-      inputNama.focus();
+      await siapkanJalur();
     } finally {
       sedangSyot = false;
-      butangMula.disabled = false;
       butangTukarKamera.disabled = false;
+      // Butang kekal mati selepas syot ke-3: bar kawalan disembunyikan
+      // oleh siapkanJalur() dan sesi diteruskan melalui ↺ Ambil Semula.
+      butangMula.disabled = syot.length >= BIL_SYOT;
+
+      if (ralatKamera) {
+        // Kamera gagal — buang syot separuh jalan supaya tekanan
+        // seterusnya bermula semula bersih (termasuk gesaan kebenaran).
+        syot = [];
+        setPenanda(0);
+        butangMula.disabled = false;
+        setKiraan(PETUNJUK_MULA, true);
+        tunjukStatus(mesejRalatKamera(ralatKamera), "gagal");
+      }
       if (dibatalkan) hentikanKamera();
     }
+  }
+
+  // Syot ke-3 selesai — susun jalur & tukar ke paparan pratonton.
+  async function siapkanJalur() {
+    // Kamera tidak diperlukan lagi — padamkan lampu SERTA-MERTA
+    // supaya tetamu nampak ia mati semasa mereka menaip nama.
+    hentikanKamera();
+    setKiraan("");
+
+    kanvasJalur = lukisJalur(bingkaiDipilih);
+    if (dibatalkan) return;
+    await paparJalur(kanvasJalur);
+
+    zonKamera.classList.add("hidden");
+    zonPratonton.classList.remove("hidden");
+    bingkaiZon?.classList.remove("hidden");
+    zonKawalan.classList.add("hidden");
+    butangUlang.classList.remove("hidden");
+    butangHantar.disabled = false;
+    tunjukStatus("Jalur anda siap! Pilih bingkai, isi nama, dan hantar.", "berjaya");
+    inputNama.focus();
   }
 
   // Reset penuh ke keadaan "belum mula"
@@ -658,6 +689,8 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     }
     syot = [];
     kanvasJalur = null;
+    kameraSiap = false;
+    janjiKamera = null;
     bingkaiDipilih = "klasik";
     tandaBingkaiTerpilih();
     zonPratonton.innerHTML = "";
@@ -667,6 +700,9 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
     zonKawalan.classList.remove("hidden");
     butangUlang.classList.add("hidden");
     butangHantar.disabled = true;
+    // Dimatikan oleh syotSeterusnya() selepas syot ke-3 — hidupkan semula.
+    butangMula.disabled = false;
+    butangTukarKamera.disabled = false;
     setKiraan(PETUNJUK_MULA, true);
     setPenanda(0);
     sorokStatus();
@@ -678,7 +714,7 @@ export function pasangPhotobooth({ eventId, majlis, onBerjaya } = {}) {
   binaJubinBingkai();
   setKiraan(PETUNJUK_MULA, true);
 
-  butangMula.addEventListener("click", mulaSesiSyot);
+  butangMula.addEventListener("click", syotSeterusnya);
   butangTukarKamera.addEventListener("click", tukarKamera);
   butangUlang.addEventListener("click", ulangSesi);
 

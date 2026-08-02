@@ -31,8 +31,17 @@ import {
 import { pasangBorangUpload } from "./upload.js";
 import { pasangPhotobooth } from "./photobooth.js";
 import { bolehGuna } from "./gating.js";
+import { adalahJalur } from "./imej.js";
 
 const SAIZ_HALAMAN = 12;
+
+// Bila tab aktif tiada hasil, muat halaman tambahan secara automatik.
+// Pagination berkongsi SATU kursor untuk kedua-dua jenis, jadi tab
+// Photobooth boleh kelihatan kosong semata-mata kerana 12 foto terbaru
+// kebetulan gambar biasa. Dihadkan kepada 3 halaman (48 foto): setiap
+// foto ~78 KiB base64, jadi memuat seluruh majlis secara senyap ialah
+// egress sebenar, bukan sekadar kelambatan.
+const HALAMAN_AUTO_MAKS = 3;
 
 // --- Majlis semasa (multi-tenancy) ---
 const eventId = dapatEventId();
@@ -43,16 +52,19 @@ const zonMemuat = document.getElementById("zon-memuat");
 const butangMuatLebih = document.getElementById("butang-muat-lebih");
 const kotakRalat = document.getElementById("kotak-ralat");
 const inputCari = document.getElementById("input-cari");
+const zonTab = document.getElementById("zon-tab");
+const zonTiadaHasil = document.getElementById("zon-tiada-carian");
+
+// Pil "Tambah" — SATU butang untuk kedua-dua jenis; ia menyasar jenis tab
+// yang sedang aktif (lihat kemasButangTambah).
+const butangTambah = document.getElementById("butang-tambah");
 
 // Modal muat naik
 const modalUpload = document.getElementById("modal-upload");
-const butangBukaUpload = document.getElementById("butang-buka-upload");
 const butangKosongUpload = document.getElementById("butang-kosong-upload");
-const pautanWall = document.getElementById("pautan-wall");
 
 // Modal photobooth (Premium+)
 const modalPhotobooth = document.getElementById("modal-photobooth");
-const butangBukaPhotobooth = document.getElementById("butang-buka-photobooth");
 
 // Lightbox
 const lightbox = document.getElementById("lightbox");
@@ -65,8 +77,22 @@ let masihAda = true;
 let sedangMemuat = false;
 
 // Simpanan foto dimuat (untuk lightbox & reaksi)
-const fotoDimuat = []; // {id, name, message, img, likes, el, kiraEl, butangHati}
+const fotoDimuat = []; // {id, name, message, img, likes, jenis, el, kiraEl, butangHati}
 let lbIndeks = -1;
+
+// Tab jenis aktif: "gambar" (muat naik biasa) atau "jalur" (photobooth).
+// Tiada nilai "semua" — dua tab sengaja BERASINGAN, tidak pernah bercampur.
+let tabAktif = "gambar";
+
+// Apa yang tetamu ini BOLEH buat — menentukan label & keterlihatan pil
+// Tambah. Kedua-dua jenis berkongsi semakKelayakanMajlis(), jadi kombinasi
+// yang mungkin cuma: dua-dua, gambar sahaja, atau tiada langsung.
+let bolehTambahGambar = false;
+let bolehTambahJalur = false;
+// Pakej menyokong photobooth? BUKAN sama dengan bolehTambahJalur — yang itu
+// turut menuntut kamera. Tetamu desktop tanpa kamera masih patut boleh
+// MELIHAT tab jalur.
+let cirianJalur = false;
 
 // ------------------------------------------------------------
 //  UTILITI: senarai "disukai" dalam localStorage (dedupe)
@@ -120,7 +146,9 @@ async function muatGambar() {
     }
 
     if (fotoDimuat.length === 0) zonKosong.classList.remove("hidden");
-    tapisCarian(); // pastikan penapis semasa dikekalkan
+    // Keterlihatan bar tab dinilai dalam tapisGaleri() — ia perlukan kiraan
+    // jenis, yang hanya muktamad selepas probe nisbah aspek.
+    tapisGaleri(); // pastikan tab + carian semasa dikekalkan
   } catch (err) {
     console.error("Ralat muat galeri:", err);
     zonMemuat.classList.add("hidden");
@@ -143,9 +171,18 @@ function tambahFoto(id, row, diAtas = false) {
     id,
     name: row.name || "Tetamu",
     message: row.message || "",
+    // Pra-kira sekali: carian menyala pada SETIAP ketikan dan tapisGaleri()
+    // melelar semua foto dimuat (boleh 48+), jadi jangan huruf-kecilkan
+    // berulang kali di dalam gelung itu.
+    cari: `${row.name || "Tetamu"} ${row.message || ""}`.toLowerCase(),
     // Gambar base64 penuh; fallback ke thumb_url untuk dokumen lama (jika ada)
     img: row.image_url || row.thumb_url,
     likes: typeof row.likes === "number" ? row.likes : 0,
+    // Tekaan OPTIMISTIK, bukan keadaan "belum tahu": tab lalai ialah
+    // "gambar", jadi nilai neutral akan menyebabkan seluruh galeri berkelip
+    // kosong dahulu sebelum probe selesai. Hampir semua foto memang gambar
+    // biasa; hanya jalur yang beralih keluar (lihat ukurJenis).
+    jenis: "gambar",
   };
   const indeks = fotoDimuat.length;
 
@@ -223,6 +260,71 @@ function tambahFoto(id, row, diAtas = false) {
   foto.butangHati = butangHati;
   foto.butangMuat = butangMuat;
   fotoDimuat.push(foto);
+  ukurJenis(foto);
+}
+
+// ------------------------------------------------------------
+//  KENAL PASTI JENIS FOTO (gambar biasa vs jalur photobooth)
+// ------------------------------------------------------------
+//  photos/{id} tiada medan jenis — firestore.rules mengunci senarai medan
+//  dengan hasOnly([...]), jadi menambahnya perlu terbitan manual di Console
+//  dan jalur LAMA tetap tidak bertanda. Nisbah aspek pula sudah cukup dan
+//  berfungsi retroaktif; lihat adalahJalur() di js/imej.js.
+//
+//  WAJIB guna objek Image() BERASINGAN, bukan imgEl dalam DOM: imgEl ada
+//  loading="lazy", jadi peristiwa `load`-nya TIDAK menyala untuk kad di luar
+//  skrin — jalur yang jauh di bawah takkan pernah dikelaskan dan akan hilang
+//  daripada tab Photobooth. Probe tidak tertakluk pada `loading`, dan kerana
+//  src ialah data URI yang sudah ada dalam ingatan, tiada permintaan
+//  rangkaian tambahan.
+// ------------------------------------------------------------
+function ukurJenis(foto) {
+  if (!foto.img) return; // kekal "gambar"
+
+  let probe = new Image();
+  probeTertunggak++;
+  const siap = (jenis) => {
+    foto.jenis = jenis;
+    // Lepaskan bitmap ternyahkod (~3.7 MB bagi 720x1280) — tanpa ini,
+    // menatal galeri besar mengumpul satu salinan tambahan setiap foto.
+    if (probe) {
+      probe.onload = probe.onerror = null;
+      probe.src = "";
+      probe = null;
+    }
+    if (--probeTertunggak === 0) menungguProbe.splice(0).forEach((r) => r());
+    jadualTapis();
+  };
+
+  probe.onload = () =>
+    siap(adalahJalur(probe.naturalWidth, probe.naturalHeight) ? "jalur" : "gambar");
+  // Gagal selamat: gambar rosak kekal dalam tab lalai, bukan lesap ke tab
+  // yang tetamu tidak akan cari.
+  probe.onerror = () => siap("gambar");
+  probe.src = foto.img;
+}
+
+// Pengelasan tak segerak, jadi tambahHalamanAuto() perlu tahu bila semua
+// probe halaman semasa sudah selesai — tanpanya ia melihat foto yang masih
+// bertanda tekaan optimistik "gambar" dan memuat halaman yang tidak perlu.
+let probeTertunggak = 0;
+const menungguProbe = [];
+function tungguProbe() {
+  return probeTertunggak === 0
+    ? Promise.resolve()
+    : new Promise((r) => menungguProbe.push(r));
+}
+
+// Probe untuk satu halaman (12 foto) selesai hampir serentak; kumpulkan
+// supaya hanya SATU lintasan penapisan berlaku, bukan 12.
+let tapisDijadual = false;
+function jadualTapis() {
+  if (tapisDijadual) return;
+  tapisDijadual = true;
+  requestAnimationFrame(() => {
+    tapisDijadual = false;
+    tapisGaleri();
+  });
 }
 
 // ------------------------------------------------------------
@@ -310,12 +412,22 @@ function tutupLightbox() {
   lbIndeks = -1;
 }
 
+// Navigasi mengikut apa yang KELIHATAN, bukan seluruh fotoDimuat. Dengan tab
+// berasingan, melangkah ikut indeks mentah akan membuka gambar biasa semasa
+// tetamu menyemak imbas jalur photobooth — bercampur semula melalui pintu
+// belakang. Turut menghormati penapis carian.
 function navigasiLightbox(delta) {
   if (lbIndeks < 0) return;
-  let j = lbIndeks + delta;
-  if (j < 0) j = fotoDimuat.length - 1;
-  if (j >= fotoDimuat.length) j = 0;
-  bukaLightbox(j);
+  const n = fotoDimuat.length;
+  if (!n) return;
+  let j = lbIndeks;
+  for (let langkah = 0; langkah < n; langkah++) {
+    j = (j + delta + n) % n;
+    if (fotoDimuat[j].el.style.display !== "none") {
+      bukaLightbox(j);
+      return;
+    }
+  }
 }
 
 // Kawalan lightbox
@@ -333,21 +445,133 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ------------------------------------------------------------
-//  CARIAN (tapis foto dimuat ikut nama)
+//  PENAPIS GALERI (tab jenis + carian nama)
 // ------------------------------------------------------------
-function tapisCarian() {
-  if (!inputCari) return;
-  const q = inputCari.value.trim().toLowerCase();
+//  Kedua-duanya menapis foto yang SUDAH DIMUAT, bukan pertanyaan baharu —
+//  corak asal carian dikekalkan. Setiap kad sentiasa tertakluk pada tab:
+//  tiada laluan "tunjuk semua", kerana dua tab sengaja tidak bercampur.
+// ------------------------------------------------------------
+function tapisGaleri() {
+  const q = inputCari ? inputCari.value.trim().toLowerCase() : "";
   let jumpa = 0;
+  const kira = { gambar: 0, jalur: 0 };
+
   fotoDimuat.forEach((foto) => {
-    const padan = !q || foto.name.toLowerCase().includes(q);
+    kira[foto.jenis]++;
+    const padan = foto.jenis === tabAktif && (!q || foto.cari.includes(q));
     foto.el.style.display = padan ? "" : "none";
     if (padan) jumpa++;
   });
-  const zonTiada = document.getElementById("zon-tiada-carian");
-  if (zonTiada) zonTiada.classList.toggle("hidden", jumpa > 0 || !q);
+
+  kemasKiraTab(kira);
+
+  // Bar tab hanya berguna bila jalur benar-benar mungkin wujud: pakej
+  // menyokongnya, ATAU majlis ini memang sudah ada jalur (cth pakej
+  // diturunkan selepas majlis). Jika tidak, satu tab sahaja = bukan tab.
+  // Dinilai di sini kerana kiraan `jenis` hanya muktamad selepas probe
+  // nisbah aspek selesai, dan tapisGaleri() memang dijalankan semula ketika itu.
+  if (zonTab) {
+    const tabJalurBerguna = cirianJalur || kira.jalur > 0;
+    zonTab.classList.toggle("hidden", !(fotoDimuat.length > 0 && tabJalurBerguna));
+  }
+
+  if (zonTiadaHasil) {
+    // Majlis yang langsung tiada gambar sudah dilindungi oleh #zon-kosong
+    // ("Belum Ada Gambar Lagi"); tanpa syarat kedua ini, tetamu nampak DUA
+    // mesej "tiada" bertindih.
+    const tunjuk = jumpa === 0 && fotoDimuat.length > 0;
+    zonTiadaHasil.classList.toggle("hidden", !tunjuk);
+    if (tunjuk) zonTiadaHasil.textContent = mesejTiadaHasil(q);
+  }
 }
-if (inputCari) inputCari.addEventListener("input", tapisCarian);
+
+// Mesej kosong bergantung pada SEBAB ia kosong. Dua paksi:
+//
+//   q      — carian tidak sepadan, vs tab memang kosong
+//   masihAda — ada lagi halaman untuk dimuat, vs semuanya sudah dimuat
+//
+// Paksi kedua penting: bila masihAda false, butang "Muat Lebih Banyak"
+// SUDAH tersembunyi, jadi menyuruh tetamu menekannya menghantar mereka
+// mencari butang yang tidak wujud.
+function mesejTiadaHasil(q) {
+  if (q) {
+    return masihAda
+      ? 'Tiada nama atau ucapan sepadan dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".'
+      : "Tiada nama atau ucapan sepadan dengan carian anda.";
+  }
+  if (tabAktif === "jalur") {
+    return masihAda
+      ? 'Belum ada jalur photobooth dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".'
+      : "Majlis ini belum ada jalur photobooth.";
+  }
+  return masihAda
+    ? 'Belum ada gambar biasa dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".'
+    : "Majlis ini belum ada gambar biasa.";
+}
+
+function kemasKiraTab(kira) {
+  if (!zonTab) return;
+  zonTab.querySelectorAll(".tab-galeri__btn").forEach((btn) => {
+    const el = btn.querySelector(".tab-galeri__kira");
+    if (el) el.textContent = kira[btn.dataset.tab] || "";
+  });
+}
+
+if (inputCari) inputCari.addEventListener("input", tapisGaleri);
+
+// ------------------------------------------------------------
+//  TAB JENIS
+// ------------------------------------------------------------
+async function pilihTab(tab) {
+  if (tab === tabAktif || !zonTab) return;
+  tabAktif = tab;
+  zonTab.querySelectorAll(".tab-galeri__btn").forEach((btn) => {
+    const aktif = btn.dataset.tab === tab;
+    btn.classList.toggle("aktif", aktif);
+    btn.setAttribute("aria-selected", String(aktif));
+  });
+  tapisGaleri();
+  kemasButangTambah();
+  await tambahHalamanAuto();
+}
+
+// ------------------------------------------------------------
+//  PIL "TAMBAH"
+// ------------------------------------------------------------
+//  Satu pil menggantikan dua butang: ia menyasar jenis tab yang SEDANG
+//  dilihat — tab Gambar → modal muat naik, tab Jalur → modal photobooth.
+//  Itu yang membolehkan kita buang baris butang kedua tanpa menambah menu
+//  perantara. Label turut berubah supaya tetamu tahu apa yang akan berlaku.
+// ------------------------------------------------------------
+function kemasButangTambah() {
+  if (!butangTambah) return;
+  const jalur = tabAktif === "jalur";
+  butangTambah.textContent = jalur ? "⊕ Buat Jalur" : "⊕ Tambah Gambar";
+  butangTambah.classList.toggle("hidden", !(jalur ? bolehTambahJalur : bolehTambahGambar));
+}
+
+butangTambah?.addEventListener("click", () => {
+  bukaModal(tabAktif === "jalur" ? modalPhotobooth : modalUpload);
+});
+
+// Tab kosong selalunya bermakna "belum dimuat", bukan "tiada" — muat
+// beberapa halaman lagi sendiri sebelum menyerah kepada tetamu.
+async function tambahHalamanAuto() {
+  for (let i = 0; i < HALAMAN_AUTO_MAKS; i++) {
+    await tungguProbe(); // jenis mesti muktamad sebelum diperiksa
+    if (!masihAda) return;
+    if (fotoDimuat.some((f) => f.jenis === tabAktif)) return;
+    const tabMula = tabAktif;
+    await muatGambar();
+    if (tabAktif !== tabMula) return; // tetamu bertukar tab semasa memuat
+  }
+}
+
+if (zonTab) {
+  zonTab.querySelectorAll(".tab-galeri__btn").forEach((btn) =>
+    btn.addEventListener("click", () => pilihTab(btn.dataset.tab))
+  );
+}
 
 // ------------------------------------------------------------
 //  MODAL (muat naik & photobooth)
@@ -399,7 +623,11 @@ function masukkanFotoBaru(foto) {
     },
     true // diAtas
   );
-  tapisCarian(); // hormati penapis carian semasa
+  // Hormati tab + carian semasa (tapisGaleri juga yang menilai semula
+  // keterlihatan bar tab). Jalur baharu yang dihantar sementara tetamu
+  // berada di tab "Gambar" tidak akan kelihatan sehingga mereka bertukar tab —
+  // itu memang akibat tab yang berasingan, bukan pepijat.
+  tapisGaleri();
 }
 
 // ------------------------------------------------------------
@@ -442,10 +670,9 @@ function paparRalatMula(mesej) {
     majlis,
     onBerjaya: masukkanFotoBaru,
   });
-  if (hasilUpload.boleh) {
-    butangBukaUpload?.classList.remove("hidden");
+  bolehTambahGambar = hasilUpload.boleh;
+  if (bolehTambahGambar) {
     butangKosongUpload?.classList.remove("hidden");
-    butangBukaUpload?.addEventListener("click", () => bukaModal(modalUpload));
     butangKosongUpload?.addEventListener("click", () => bukaModal(modalUpload));
   }
 
@@ -458,17 +685,13 @@ function paparRalatMula(mesej) {
     majlis,
     onBerjaya: masukkanFotoBaru,
   });
-  if (hasilPB.boleh) {
-    pasangModal(modalPhotobooth, hasilPB.tutup);
-    butangBukaPhotobooth?.classList.remove("hidden");
-    butangBukaPhotobooth?.addEventListener("click", () => bukaModal(modalPhotobooth));
-  }
+  bolehTambahJalur = hasilPB.boleh;
+  if (bolehTambahJalur) pasangModal(modalPhotobooth, hasilPB.tutup);
 
-  // Pautan Live Wall — dedah hanya untuk pakej yang menyokongnya (Premium+).
-  if (pautanWall && majlis && bolehGuna(majlis, "liveWall")) {
-    pautanWall.href = `wall.html?e=${encodeURIComponent(eventId)}`;
-    pautanWall.classList.remove("hidden");
-  }
+  // Keterlihatan TAB jalur ikut pakej sahaja, bukan hasilPB — tetamu desktop
+  // tanpa kamera masih patut boleh MELIHAT jalur yang orang lain hantar.
+  cirianJalur = !!majlis && bolehGuna(majlis, "photobooth");
+  kemasButangTambah();
 
   butangMuatLebih.addEventListener("click", muatGambar);
   muatGambar();

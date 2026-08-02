@@ -273,11 +273,79 @@
 
     /* Kotak carian */
     .kotak-cari {
+      /* display:block WAJIB untuk `margin: 0 auto` — <input> ialah
+         inline-block secara lalai, jadi ia terdampar di kiri walaupun
+         margin auto diset. Kini sejajar dengan .tab-galeri di atasnya. */
+      display: block;
       width: 100%; max-width: 22rem; margin: 0 auto;
       border: 1px solid var(--warna-sempadan); background: rgba(255,255,255,.88);
       border-radius: 999px; padding: 10px 18px; text-align: center;
     }
     .kotak-cari:focus { outline: none; border-color: var(--tema); }
+
+    /* ---------- Baris kawalan (tab + pil Tambah) ---------- */
+    /* Baris kawalan tunggal: TENGOK (tab) + BUAT (pil Tambah) berkongsi satu
+       baris. Balut di skrin sempit — bar tab sendiri sudah ~22rem, jadi pil
+       turun ke baris kedua di telefon. Runtuhkan bila kedua-dua anak
+       tersembunyi (majlis tamat/penuh + galeri kosong) supaya tiada jurang
+       hantu; pelayar tanpa :has() cuma dapat jurang lebih — tiada apa yang
+       rosak. */
+    .zon-kawalan {
+      display: flex; flex-wrap: wrap;
+      align-items: center; justify-content: center;
+      gap: .5rem; margin: 0 auto 1rem;
+    }
+    .zon-kawalan:not(:has(> :not(.hidden))) { display: none; }
+
+    /* ---------- Tab jenis gambar (Gambar | Photobooth) ---------- */
+    /* Pil bersegmen: dua butang lebar sama dalam satu bekas berbingkai.
+       Hanya dua label, jadi ia muat satu baris sehingga ~320px tanpa
+       perlu tatal mendatar. */
+    .tab-galeri {
+      display: flex; gap: .25rem;
+      /* Ahli baris .zon-kawalan: berkongsi baris dengan pil Tambah, dan
+         balut dahulu bila sempit. Jarak bawah milik .zon-kawalan. */
+      flex: 1 1 18rem; max-width: 22rem;   /* sejajar dengan .kotak-cari */
+      padding: 4px;
+      border: 1px solid var(--warna-sempadan);
+      background: rgba(255,255,255,.88);
+      border-radius: 999px;
+    }
+    /* WAJIB: mengatasi `display: flex` di atas bila JS menogol .hidden.
+       Jangan bergantung pada susunan CSS — Tailwind Play CDN menulis semula
+       lembaran gayanya pada setiap rebuild. */
+    .tab-galeri.hidden { display: none; }
+
+    .tab-galeri__btn {
+      flex: 1 1 0; min-width: 0;
+      border: none; background: transparent; cursor: pointer;
+      border-radius: 999px; padding: 8px 10px;
+      font-family: var(--font-teks); font-size: .9rem; font-weight: 600;
+      line-height: 1.2; white-space: nowrap;
+      color: var(--warna-teks-lembut);
+      transition: background .2s ease, color .2s ease;
+    }
+    .tab-galeri__btn:hover:not(.aktif) {
+      background: color-mix(in srgb, var(--tema) 8%, transparent);
+      color: var(--tema);
+    }
+    .tab-galeri__btn.aktif {
+      background: var(--tema); color: #fff; cursor: default;
+      box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--tema) 70%, transparent);
+    }
+    .tab-galeri__btn:focus-visible { outline: 2px solid var(--tema); outline-offset: 2px; }
+
+    /* Kiraan foto dimuat bagi setiap tab — nada lembut supaya label kekal utama */
+    .tab-galeri__kira { font-weight: 400; opacity: .7; font-size: .82em; }
+    .tab-galeri__kira:empty { display: none; }
+
+    /* Peranti sentuh (telefon): sasaran ketik ~44px, sama seperti .reaksi */
+    @media (hover: none) and (pointer: coarse) {
+      .tab-galeri__btn { padding: 12px 10px; }
+    }
+    @media (max-width: 380px) {
+      .tab-galeri__btn { font-size: .82rem; padding-left: 6px; padding-right: 6px; }
+    }
 
     /* ---------- MODAL MUAT NAIK ---------- */
     :root {
@@ -299,6 +367,12 @@
       border: 1px solid var(--warna-sempadan);
       border-radius: 20px; padding: 1.5rem 1.25rem 1.75rem;
       box-shadow: 0 24px 60px rgba(0,0,0,.35);
+    }
+    /* Tablet & desktop: kotak sedikit lebih luas. Pratonton kamera photobooth
+       adalah persegi 100% lebar, jadi ini turut membesarkan paparan kamera —
+       kualiti tidak terjejas kerana syot sentiasa ditangkap pada 448px tetap. */
+    @media (min-width: 768px) {
+      .modal-kotak { max-width: 32rem; padding: 1.75rem 1.75rem 2rem; }
     }
     #modal-tutup, #pb-tutup {
       position: absolute; top: 12px; right: 12px;
@@ -480,7 +554,7 @@
   <main class="mx-auto w-full max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
 
     <!-- Tajuk -->
-    <header class="kad-header text-center mb-10">
+    <header class="kad-header text-center mb-8">
       <!-- Bunga hiasan penjuru (SVG inline, sifar fail; kanan dicermin via CSS) -->
       <span class="bunga-penjuru bunga-kiri" aria-hidden="true">
         <svg viewBox="0 0 120 130" xmlns="http://www.w3.org/2000/svg">
@@ -564,27 +638,39 @@
 
       <!-- Pemisah hiasan -->
       <div class="hiasan-pemisah"><span class="hati">♥</span></div>
-
-      <!-- Butang muat naik + Photobooth (Premium+) + pautan Live Wall (Premium+) -->
-      <div class="mt-6 flex flex-col items-center gap-3">
-        <button id="butang-buka-upload" class="btn-utama hidden rounded-2xl px-9 py-4 text-lg font-medium">
-          📷 Gambar
-        </button>
-        <button id="butang-buka-photobooth" class="btn-kedua hidden rounded-2xl px-8 py-3.5 text-base">
-          🎞️ Photobooth
-        </button>
-        <a id="pautan-wall" href="#" class="hidden font-tangan text-xl text-[color:var(--tema)] hover:underline">
-          🖥️ Live Wall
-        </a>
-      </div>
     </header>
+
+    <!-- Baris kawalan tunggal: TENGOK (tab jenis) + BUAT (pil Tambah).
+         Sengaja SATU baris — dulu dua baris berasingan menggunakan label
+         "Gambar"/"Photobooth" yang sama untuk dua maksud berbeza, dan itu
+         yang mengelirukan tetamu. Pil Tambah menyasar jenis tab yang aktif
+         (lihat kemasButangTambah di js/gallery.js). -->
+    <div class="zon-kawalan">
+      <!-- Tab jenis gambar. Dua tab BERASINGAN: gambar muat naik biasa dan
+           jalur photobooth 1:3 tidak pernah dipaparkan bercampur. Jenis
+           disimpulkan daripada nisbah aspek (lihat adalahJalur di js/imej.js),
+           kerana photos/{id} tiada medan jenis. -->
+      <div id="zon-tab" class="tab-galeri hidden" role="tablist" aria-label="Jenis gambar">
+        <button type="button" class="tab-galeri__btn aktif" data-tab="gambar" role="tab" aria-selected="true">
+          📷 Gambar <span class="tab-galeri__kira"></span>
+        </button>
+        <button type="button" class="tab-galeri__btn" data-tab="jalur" role="tab" aria-selected="false">
+          🎞️ Photobooth <span class="tab-galeri__kira"></span>
+        </button>
+      </div>
+
+      <button id="butang-tambah" type="button"
+              class="btn-utama hidden rounded-full px-5 py-2.5 text-sm font-semibold">
+        ⊕ Tambah Gambar
+      </button>
+    </div>
 
     <!-- Kotak carian -->
     <div class="mb-8">
       <input id="input-cari" type="search" class="kotak-cari"
-        placeholder="🔍 Cari ikut nama tetamu…" aria-label="Cari ikut nama" />
+        placeholder="🔍 Cari nama atau ucapan…" aria-label="Cari nama tetamu atau ucapan" />
       <p id="zon-tiada-carian" class="hidden mt-3 text-center text-sm text-[color:var(--warna-teks-samar)]">
-        Tiada nama sepadan dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".
+        Tiada nama atau ucapan sepadan dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".
       </p>
     </div>
 
@@ -759,8 +845,19 @@
           <!-- Kawalan kamera. Id dikekalkan: js/photobooth.js menogol
                .hidden pada #pb-zon-kawalan dan .disabled pada butang. -->
           <div id="pb-zon-kawalan">
+            <!-- Ikon SVG sebaris, bukan emoji: 🔄 dipaparkan sebagai glif biru
+                 pada Windows dan bercanggah dengan bar gelap. currentColor
+                 mewarisi warna putih .pb-bulat-kecil. -->
             <button type="button" id="pb-butang-tukar-kamera" class="pb-bulat-kecil"
-                    aria-label="Tukar kamera hadapan/belakang">🔄</button>
+                    aria-label="Tukar kamera hadapan/belakang">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4.9 8.5A7 7 0 0 1 18.5 9.5" />
+                <path d="M18.9 5.6v4h-4" />
+                <path d="M19.1 15.5A7 7 0 0 1 5.5 14.5" />
+                <path d="M5.1 18.4v-4h4" />
+              </svg>
+            </button>
             <button type="button" id="pb-butang-mula"
                     aria-label="Mula photobooth — 3 syot automatik">
               <span class="teras" aria-hidden="true"></span>

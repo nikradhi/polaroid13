@@ -107,6 +107,7 @@ const mtPautan = document.getElementById("mt-pautan");
 // --- DOM: pautan & QR ---
 const linkGaleri = document.getElementById("link-galeri");
 const linkModerasi = document.getElementById("link-moderasi");
+const linkWall = document.getElementById("link-wall");
 const zonQr = document.getElementById("zon-qr");
 const qrcodeEl = document.getElementById("qrcode");
 const qrUrl = document.getElementById("qr-url");
@@ -314,6 +315,12 @@ function isiBorang() {
   // Pautan pantas
   linkGaleri.href = `gallery.html?e=${encodeURIComponent(eventId)}`;
   linkModerasi.href = `admin.html?e=${encodeURIComponent(eventId)}`;
+  // Live Wall — Premium+ sahaja. Ini satu-satunya jalan masuk ke wall.html
+  // sejak ia dikeluarkan dari galeri tetamu.
+  if (linkWall) {
+    linkWall.href = `wall.html?e=${encodeURIComponent(eventId)}`;
+    linkWall.classList.toggle("hidden", !bolehGuna(eventData, "liveWall"));
+  }
 
   // Gate muat turun ZIP
   kemasKiniGateMuatTurun();

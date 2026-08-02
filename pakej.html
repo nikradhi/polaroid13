@@ -113,7 +113,9 @@
 
 <body class="antialiased">
 
-  <main class="mx-auto w-full max-w-2xl px-4 sm:px-6 py-8 sm:py-12">
+  <!-- lg:max-w-4xl memberi ruang kepada tiga kad pakej (sm:grid-cols-3);
+       pada 42rem setiap kad hanya ~13rem dan harga mula terbungkus. -->
+  <main class="mx-auto w-full max-w-2xl lg:max-w-4xl px-4 sm:px-6 py-8 sm:py-12">
 
     <!-- Tajuk -->
     <header class="text-center mb-6">
@@ -155,7 +157,10 @@
     </section>
 
     <!-- ============ LANGKAH 2: Maklumat Majlis ============ -->
-    <section id="langkah-2" class="langkah hidden">
+    <!-- Langkah 2-4 ialah borang: dikekang pada 42rem walaupun bekas utama
+         lebih luas, supaya medan input tidak meregang merentas skrin desktop.
+         Hanya Langkah 1 (tiga kad pakej) menggunakan lebar penuh. -->
+    <section id="langkah-2" class="langkah hidden max-w-2xl mx-auto">
       <h2 class="font-serif-elegan text-2xl font-semibold mb-1 text-center">Langkah 2 — Maklumat Majlis</h2>
       <p class="text-xs text-[#a09088] mb-4 text-center">Butiran ini akan dipapar pada halaman majlis anda.</p>
       <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 space-y-4">
@@ -179,7 +184,7 @@
     </section>
 
     <!-- ============ LANGKAH 3: Maklumat Anda ============ -->
-    <section id="langkah-3" class="langkah hidden">
+    <section id="langkah-3" class="langkah hidden max-w-2xl mx-auto">
       <h2 class="font-serif-elegan text-2xl font-semibold mb-1 text-center">Langkah 3 — Maklumat Anda</h2>
       <p class="text-xs text-[#a09088] mb-4 text-center">Supaya admin boleh hubungi anda untuk setup selepas bayaran.</p>
       <div class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 space-y-4">
@@ -199,7 +204,7 @@
     </section>
 
     <!-- ============ LANGKAH 4: Ringkasan ============ -->
-    <section id="langkah-4" class="langkah hidden">
+    <section id="langkah-4" class="langkah hidden max-w-2xl mx-auto">
       <h2 class="font-serif-elegan text-2xl font-semibold mb-1 text-center">Langkah 4 — Ringkasan</h2>
       <p class="text-xs text-[#a09088] mb-4 text-center">Semak butiran, kemudian teruskan ke WhatsApp untuk tempah.</p>
       <div id="ringkasan" class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 space-y-2 text-sm"></div>

@@ -103,7 +103,7 @@
     .bar-luar { background: #efe0d6; border-radius: 999px; height: 10px; overflow: hidden; }
     .bar-dalam { background: linear-gradient(90deg, #d9a5ac, #b76e79); height: 100%; width: 0%; transition: width .2s ease; }
 
-    /* Butang kad pautan pantas (galeri & moderasi) */
+    /* Butang kad pautan pantas (galeri, moderasi & Live Wall) */
     .kad-pintas {
       display: flex;
       flex-direction: column;
@@ -117,6 +117,11 @@
       transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
       box-shadow: 0 4px 14px -8px rgba(183,110,121,.35);
     }
+    /* WAJIB: mengatasi `display: flex` di atas bila JS menogol .hidden pada
+       kad Live Wall. Kekhususan sama dengan .hidden Tailwind, jadi jangan
+       bergantung pada susunan CSS — Play CDN menulis semula lembaran gayanya
+       pada setiap rebuild. */
+    .kad-pintas.hidden { display: none; }
     .kad-pintas:hover {
       transform: translateY(-2px);
       border-color: #d9a5ac;
@@ -214,7 +219,10 @@
   </section>
 
   <!-- ============ PANEL PELANGGAN ============ -->
-  <section id="zon-panel" class="hidden mx-auto w-full max-w-lg px-4 sm:px-6 py-8">
+  <!-- Lebar berperingkat: telefon penuh · tablet 42rem · desktop 48rem.
+       Tidak lebih luas daripada itu dengan sengaja — baris borang melebihi
+       ~48rem menyukarkan pembacaan, dan wizard ini borang, bukan papan pemuka. -->
+  <section id="zon-panel" class="hidden mx-auto w-full max-w-lg md:max-w-2xl lg:max-w-3xl px-4 sm:px-6 py-8">
 
     <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
       <div>
@@ -256,7 +264,7 @@
       </div>
 
       <!-- Borang customize — wizard 5 langkah (satu langkah/skrin; lihat js/tetapan.js) -->
-      <form id="form-tetapan" class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5">
+      <form id="form-tetapan" class="rounded-2xl bg-white/70 border border-[#e5d5ca] p-5 sm:p-7">
 
         <!-- Penunjuk nombor langkah (atas) -->
         <ol id="stepper-atas" class="stepper-atas">
@@ -298,13 +306,17 @@
         <!-- ===== Langkah 3: Butiran majlis ===== -->
         <section class="langkah" data-langkah="3">
           <h3 class="font-serif-elegan text-xl font-semibold mb-3">Butiran majlis</h3>
-          <!-- Nama pasangan -->
-          <label class="block text-sm font-medium mb-1.5">Nama pasangan</label>
-          <input id="c-nama" type="text" maxlength="80" class="input-elok" placeholder="cth: Ali &amp; Siti" />
-
-          <!-- Tarikh majlis -->
-          <label class="block text-sm font-medium mb-1.5 mt-4">Tarikh majlis</label>
-          <input id="c-tarikh" type="date" class="input-elok" />
+          <!-- Nama + tarikh: bersebelahan dari tablet ke atas, bertindan di telefon -->
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label for="c-nama" class="block text-sm font-medium mb-1.5">Nama pasangan</label>
+              <input id="c-nama" type="text" maxlength="80" class="input-elok" placeholder="cth: Ali &amp; Siti" />
+            </div>
+            <div>
+              <label for="c-tarikh" class="block text-sm font-medium mb-1.5">Tarikh majlis</label>
+              <input id="c-tarikh" type="date" class="input-elok" />
+            </div>
+          </div>
 
           <!-- Mesej aluan -->
           <label class="block text-sm font-medium mb-1.5 mt-4">Mesej aluan <span class="text-[#a09088] font-normal">(pilihan)</span></label>
@@ -334,12 +346,12 @@
 
           <!-- Corak latar -->
           <label class="block text-sm font-medium mb-1.5 mt-4">Corak latar</label>
-          <div id="latar-pilihan" class="grid grid-cols-3 gap-2.5"></div>
+          <div id="latar-pilihan" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2.5"></div>
           <p class="mt-1.5 text-xs text-[#a09088]">Corak diwarnakan ikut tema warna anda.</p>
 
           <!-- Gaya font -->
           <label class="block text-sm font-medium mb-1.5 mt-4">Gaya font</label>
-          <div id="fon-pilihan" class="grid grid-cols-2 gap-2.5"></div>
+          <div id="fon-pilihan" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
           <p class="mt-1.5 text-xs text-[#a09088]">Font tajuk & teks halaman majlis anda.</p>
           <!-- Nota kunci: pilihan font hanya Premium ke atas (Basic guna pra-set) -->
           <p id="fon-kunci" class="hidden mt-2 rounded-lg bg-[#fdf1e7] text-[#8a5a3a] text-xs px-3 py-2">
@@ -483,6 +495,15 @@
           <span class="ikon">🛡️</span>
           <span class="tajuk">Panel Moderasi</span>
           <span class="subteks">Lulus / tolak gambar</span>
+        </a>
+        <!-- Live Wall — Premium+ sahaja; ditunjuk oleh js/tetapan.js. Ia ciri
+             SKRIN BESAR untuk tuan majlis, jadi tempatnya di sini dan bukan
+             dalam galeri tetamu. col-span-2 kerana ia kad ketiga dalam grid
+             2-lajur. -->
+        <a id="link-wall" href="#" target="_blank" rel="noopener" class="kad-pintas hidden col-span-2">
+          <span class="ikon">🖥️</span>
+          <span class="tajuk">Live Wall</span>
+          <span class="subteks">Papar gambar terkini di skrin besar majlis</span>
         </a>
       </div>
 
