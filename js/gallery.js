@@ -684,6 +684,15 @@ function paparRalatMula(mesej) {
       terapTema(majlis);
       const namaMajlis = document.getElementById("nama-majlis");
       if (namaMajlis && majlis.coupleName) namaMajlis.textContent = majlis.coupleName;
+
+      // Mesej aluan (pilihan) — teks pelanggan, tiada tapisan di server,
+      // jadi textContent sahaja. Kekal tersembunyi kalau kosong.
+      const mesejAluan = document.getElementById("mesej-aluan");
+      const teksAluan = (majlis.welcomeMessage || "").trim();
+      if (mesejAluan && teksAluan) {
+        mesejAluan.textContent = teksAluan;
+        mesejAluan.classList.remove("hidden");
+      }
     }
   } catch {
     /* majlis tidak aktif — galeri masih boleh papar gambar diluluskan */

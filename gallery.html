@@ -100,6 +100,16 @@
       .bunga-penjuru { width: 3rem; opacity: .8; }
     }
 
+    /* Mesej aluan: hormat baris baru yang ditaip pelanggan dalam textarea,
+       tapi jangan biar satu perkataan panjang pecahkan lebar kad. */
+    .mesej-aluan {
+      white-space: pre-line;
+      overflow-wrap: break-word;
+      max-width: 26rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     /* ---- Kad galeri rata (gaya feed Pinterest/Motion) ----
        Gambar sudut bulat di atas, tajuk tebal + petikan italic, baris
        ❤ (kiri) + SIMPAN (kanan) di bawah. Semua warna ikut var(--tema)/
@@ -270,9 +280,9 @@
     .kotak-cari--bar { max-width: none; }
 
     /* ---------- Baris kawalan melekat ---------- */
-    /* Anak terus <body>, BUKAN dalam <main> — itu yang membolehkan jalur latar
-       merentang penuh lebar skrin tanpa helah `calc(50% - 50vw)`, yang akan
-       mencetuskan skrol mendatar kerana 100vw termasuk lebar bar skrol.
+    /* Anak terus <body>, BUKAN dalam <main> — supaya ia merentang penuh lebar
+       skrin tanpa helah `calc(50% - 50vw)`, yang akan mencetuskan skrol
+       mendatar kerana 100vw termasuk lebar bar skrol.
        sticky berfungsi kerana tiada nenek-moyang ber-`overflow`.
        z-index 30: di atas galeri, tetapi DI BAWAH lightbox (50) dan modal (60)
        supaya ia tidak terapung atas lapisan gelap. */
@@ -281,10 +291,14 @@
       display: flex; flex-direction: column; gap: .5rem;
       padding: .6rem 1rem;
       margin-bottom: 1.5rem;
-      background: color-mix(in srgb, var(--warna-kad) 92%, transparent);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--warna-sempadan);
-      box-shadow: 0 6px 20px -12px rgba(80,50,40,.4);
+      /* Sengaja TIADA latar/blur/sempadan/bayang: jalur ini lutsinar sepenuhnya
+         supaya corak bunga menembusi hujung ke hujung. Elemen ini penuh lebar
+         skrin, jadi apa-apa latar di sini mengecat juga kawasan kosong kiri &
+         kanan butang — itulah jalur krim yang dibuang. Setiap kawalan di
+         dalamnya (.tab-galeri, .bar-kawalan__ikon, .bar-kawalan__tambah,
+         .kotak-cari) membawa latarnya sendiri, jadi ia kekal boleh dibaca.
+         Jika kontras perlu ditambah, letak box-shadow pada kawalan itu —
+         JANGAN pulangkan latar ke sini. */
     }
     /* Runtuh bila tiada satu pun kawalan (majlis tamat/penuh + galeri kosong) —
        tanpa ini jalur kosong melekat di atas skrin tanpa sebab. Pelayar tanpa
@@ -334,7 +348,9 @@
          muat pada baris yang sama. */
       flex: 0 1 auto; min-width: 0;
       padding: 4px;
-      border: 1px solid var(--warna-sempadan);
+      /* Bingkai dikekalkan 1px tetapi lutsinar (bukan `border: none`) supaya
+         lebar/tinggi pil tidak mengecut 2px dan baris kawalan tidak beranjak. */
+      border: 1px solid transparent;
       background: rgba(255,255,255,.88);
       border-radius: 999px;
     }
@@ -344,7 +360,13 @@
     .tab-galeri.hidden { display: none; }
 
     .tab-galeri__btn {
-      flex: 1 1 0; min-width: 0;
+      /* basis `auto`, BUKAN 0. Dengan basis 0 kedua-dua tab dipaksa sama
+         lebar, jadi tab terpanjang ("🎞️ Photobooth 3" = 120px lwn "📷 Gambar
+         6" = 117px) terkerat betul-betul pada angka kiraannya — white-space:
+         nowrap di bawah bermakna teks terlimpah, bukan mengecut. Dengan
+         basis auto setiap tab bermula pada lebar kandungannya; ruang lebih
+         (cth baris penuh di telefon) tetap dibahagi sama rata. */
+      flex: 1 1 auto; min-width: 0;
       border: none; background: transparent; cursor: pointer;
       border-radius: 999px; padding: 8px 10px;
       font-family: var(--font-teks); font-size: .9rem; font-weight: 600;
@@ -682,6 +704,13 @@
       <h1 class="font-serif-elegan text-3xl sm:text-4xl font-semibold tracking-wide">
         Galeri Polaroid
       </h1>
+
+      <!-- Mesej aluan pelanggan (events.welcomeMessage). Kekal `hidden`
+           sehingga js/gallery.js mengisinya — majlis tanpa mesej tak
+           patut tinggalkan ruang kosong dalam kad. -->
+      <p id="mesej-aluan"
+         class="mesej-aluan hidden mt-3 text-sm sm:text-base text-[color:var(--warna-teks-lembut)] leading-relaxed">
+      </p>
     </header>
   </div>
 
