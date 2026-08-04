@@ -615,6 +615,27 @@
           <p id="g-tiada" class="hidden mb-3 text-xs text-[#a09088]"></p>
 
           <div id="g-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+
+          <!-- ====== Ucapan (buku tetamu) ======
+               Blok BERASINGAN di bawah grid gambar, bukan tab ke-4 dalam
+               #g-tab: #g-tab ialah penapis PAPARAN atas #g-grid
+               (tapisGambarSa menogol kad.style.display ikut
+               kad.dataset.jenis). Ucapan datang dari koleksi lain dan
+               tiada dalam #g-grid, jadi menjadikannya tab akan merosakkan
+               kiraan tab dan invarian "ZIP/padam abaikan tab aktif". -->
+          <div class="mt-6 pt-5 border-t border-[#e5d5ca]">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h3 class="text-sm font-semibold text-[#5a4a42]">
+                📖 Ucapan Tetamu <span id="u-kira" class="text-xs font-normal text-[#a09088]"></span>
+              </h3>
+              <button id="u-padam-semua" type="button"
+                class="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition">
+                🗑️ Padam SEMUA ucapan
+              </button>
+            </div>
+
+            <div id="u-grid" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+          </div>
         </div>
       </div>
     </div><!-- /sek-gambar -->

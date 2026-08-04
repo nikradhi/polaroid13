@@ -118,6 +118,11 @@ const gTab = document.getElementById("g-tab");
 const gTiada = document.getElementById("g-tiada");
 const gGrid = document.getElementById("g-grid");
 
+// --- Rujukan DOM: ucapan (buku tetamu) dalam seksyen yang sama ---
+const uGrid = document.getElementById("u-grid");
+const uKira = document.getElementById("u-kira");
+const uPadamSemua = document.getElementById("u-padam-semua");
+
 // --- Rujukan DOM: borang cipta ---
 const formCipta = document.getElementById("form-cipta");
 const cEmel = document.getElementById("c-emel");
@@ -1561,6 +1566,7 @@ async function pilihPelanggan(id) {
     <p class="font-medium">${esc(ev.coupleName || "(tanpa nama)")}</p>
     <p class="text-xs text-[#a09088]">${esc(emelEvent(ev) || "—")} · ${esc(telefonEvent(ev) || "tiada telefon")}</p>`;
   await muatGambarPelanggan(id);
+  await muatUcapanPelanggan(id);
 }
 
 async function muatGambarPelanggan(id) {
@@ -1635,6 +1641,170 @@ function binaKadGambar(fotoId, p) {
   kad.appendChild(btn);
 
   return kad;
+}
+
+// ------------------------------------------------------------
+//  UCAPAN (buku tetamu) — senarai & padam
+// ------------------------------------------------------------
+//  Koleksi `guestbook`, berasingan sepenuhnya daripada `photos`.
+//  Sengaja TIADA gating pakej di sini: majlis yang diturunkan dari
+//  Premium ke Basic masih boleh ada ucapan lama, dan super-admin
+//  mesti tetap boleh membuangnya.
+// ------------------------------------------------------------
+const KOSONG_UCAPAN =
+  `<p class="col-span-full text-xs text-[#a09088]">Tiada ucapan untuk pelanggan ini.</p>`;
+
+function kemasKiraUcapan() {
+  if (!uKira) return;
+  // Kira kad sebenar; nod <p> mesej kosong/ralat tidak dikira.
+  const bil = uGrid ? uGrid.querySelectorAll("[data-ucapan]").length : 0;
+  uKira.textContent = bil ? `(${bil})` : "";
+}
+
+async function muatUcapanPelanggan(id) {
+  if (!uGrid) return;
+  uGrid.innerHTML = `<p class="col-span-full text-xs text-[#a09088]">Memuat ucapan…</p>`;
+  kemasKiraUcapan();
+  try {
+    // Tanpa tapis approved — super-admin nampak yang tersembunyi juga.
+    const snap = await getDocs(
+      query(
+        collection(db, "guestbook"),
+        where("eventId", "==", id),
+        orderBy("created_at", "desc")
+      )
+    );
+    if (snap.empty) {
+      uGrid.innerHTML = KOSONG_UCAPAN;
+      kemasKiraUcapan();
+      return;
+    }
+    uGrid.innerHTML = "";
+    snap.forEach((d) => uGrid.appendChild(binaKadUcapan(d.id, d.data())));
+    kemasKiraUcapan();
+  } catch (err) {
+    console.error("Ralat memuat ucapan:", err);
+    const hint = String(err?.message || err).toLowerCase().includes("index")
+      ? " (indeks Firestore mungkin diperlukan — semak konsol untuk pautan)"
+      : "";
+    uGrid.innerHTML = `<p class="col-span-full text-xs text-red-600">✗ Gagal memuat ucapan.${hint}</p>`;
+    kemasKiraUcapan();
+  }
+}
+
+//  Dibina dengan createElement + textContent, BUKAN innerHTML: nama DAN
+//  mesej ialah teks tetamu yang tidak ditapis di server.
+function binaKadUcapan(ucapanId, u) {
+  const kad = document.createElement("div");
+  kad.className =
+    "relative self-start rounded-xl border border-[#e5d5ca] bg-white/60 p-3 pr-9";
+  kad.dataset.ucapan = ucapanId;
+
+  if (u.approved === false) {
+    const badge = document.createElement("span");
+    // bg-amber-100/text-amber-700 (ADA pemetaan mod gelap), BUKAN
+    // bg-amber-500/90 + text-white seperti kad gambar — pasangan itu
+    // sengaja tidak dipetakan kerana ia duduk atas gambar tetamu, bukan
+    // atas permukaan bertema, jadi di sini ia akan kekal terang.
+    badge.className =
+      "inline-block mb-1.5 rounded bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5";
+    badge.textContent = "Tersembunyi";
+    kad.appendChild(badge);
+  }
+
+  const mesej = document.createElement("p");
+  mesej.className = "text-sm text-[#6a5a52] break-words whitespace-pre-line";
+  mesej.textContent = u.message || "";
+  kad.appendChild(mesej);
+
+  const kaki = document.createElement("p");
+  kaki.className = "mt-2 text-[11px] text-[#a09088] truncate";
+  const tarikh = formatTarikh(u.created_at);
+  kaki.textContent = (u.name || "Tetamu") + (tarikh ? ` · ${tarikh}` : "");
+  kad.appendChild(kaki);
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.dataset.act = "padam-ucapan";
+  btn.dataset.ucapan = ucapanId;
+  btn.title = "Padam ucapan ini";
+  btn.className =
+    "absolute top-1 right-1 rounded-full bg-white/90 border border-red-300 text-red-600 w-6 h-6 text-xs leading-none hover:bg-red-50 transition";
+  btn.textContent = "✕";
+  kad.appendChild(btn);
+
+  return kad;
+}
+
+//  Padam SEMUA ucapan satu majlis. Cerminan padamGambarMajlis(), TANPA
+//  tulisan photoCount: guestbook tiada kaunter (lihat nota dalam
+//  firestore.rules) dan ia tidak memakan kuota gambar.
+async function padamUcapanMajlis(eventId) {
+  let jumlahDipadam = 0;
+  for (;;) {
+    const snap = await getDocs(
+      query(collection(db, "guestbook"), where("eventId", "==", eventId))
+    );
+    if (snap.empty) break;
+    // Firestore hadkan 500 operasi setiap writeBatch.
+    const kumpulan = snap.docs.slice(0, 400);
+    const batch = writeBatch(db);
+    kumpulan.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    jumlahDipadam += kumpulan.length;
+    if (kumpulan.length === snap.size) break;
+  }
+  return jumlahDipadam;
+}
+
+// Delegasi: padam satu ucapan. Pembedahan DOM optimistik seperti
+// padam-satu gambar — tiada query semula selepas padam.
+if (uGrid) {
+  uGrid.addEventListener("click", async (e) => {
+    const btn = e.target.closest('[data-act="padam-ucapan"]');
+    if (!btn || !eventIdGambar) return;
+    const ucapanId = btn.dataset.ucapan;
+    if (!confirm("Padam ucapan ini? Tidak boleh dipulihkan.")) return;
+    btn.disabled = true;
+    try {
+      await deleteDoc(doc(db, "guestbook", ucapanId));
+      // JANGAN susutkan photoCount & JANGAN batalkan storanTepatBait —
+      // kedua-duanya menjejak GAMBAR sahaja.
+      uGrid.querySelector(`[data-ucapan="${CSS.escape(ucapanId)}"]`)?.remove();
+      if (!uGrid.children.length) uGrid.innerHTML = KOSONG_UCAPAN;
+      kemasKiraUcapan();
+    } catch (err) {
+      console.error("Ralat padam ucapan:", err);
+      alert("Gagal memadam ucapan. Semak konsol pelayar & sambungan.");
+      btn.disabled = false;
+    }
+  });
+}
+
+// Padam SEMUA ucapan pelanggan
+if (uPadamSemua) {
+  uPadamSemua.addEventListener("click", async () => {
+    if (!eventIdGambar) return;
+    const ev = eventById(eventIdGambar);
+    const nama = ev?.coupleName || eventIdGambar;
+    if (!confirm(`Padam SEMUA ucapan pelanggan "${nama}"?\n\nGambar TIDAK disentuh. Tidak boleh dipulihkan.`)) return;
+    uPadamSemua.disabled = true;
+    const teksAsal = uPadamSemua.textContent;
+    uPadamSemua.textContent = "Memadam…";
+    try {
+      gLapor("Memadam semua ucapan…");
+      const bil = await padamUcapanMajlis(eventIdGambar);
+      uGrid.innerHTML = KOSONG_UCAPAN;
+      kemasKiraUcapan();
+      gLapor(`✓ ${bil} ucapan dipadam.`);
+    } catch (err) {
+      console.error("Ralat padam semua ucapan:", err);
+      gLapor("✗ Gagal memadam ucapan. Semak konsol pelayar & sambungan.");
+    } finally {
+      uPadamSemua.disabled = false;
+      uPadamSemua.textContent = teksAsal;
+    }
+  });
 }
 
 // ------------------------------------------------------------
