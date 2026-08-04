@@ -11,6 +11,8 @@
 //    eventsPrivate/{eventId} -> maklumat peribadi pelanggan (emel). Admin sahaja.
 //    slugs/{slug}            -> doc id = slug (URL unik) -> { eventId }
 //    photos/{id}             -> gambar + eventId (skop tenant) + likes
+//    guestbook/{id}          -> ucapan teks tanpa gambar + eventId.
+//                               Ciri Premium/Eksklusif sahaja.
 //
 //  TIADA koleksi "subscribers" berasingan: langganan pelanggan diwakili
 //  oleh events.ownerUid (akaun Firebase Auth) + status + expiresAt + package.
@@ -53,6 +55,20 @@ service cloud.firestore {
     // Data event SELEPAS tulisan dalam commit yang sama (untuk sahkan kaunter)
     function evAfter(eid) {
       return getAfter(/databases/$(database)/documents/events/$(eid)).data;
+    }
+
+    // Adakah majlis ini layak guna guestbook (ucapan tanpa gambar)?
+    // Guestbook ialah ciri BERBAYAR (Premium & Eksklusif). Gating di
+    // frontend sahaja boleh dipintas dengan mengedit JS, jadi ia
+    // dikuatkuasa di sini juga.
+    //
+    // Keutamaan sama seperti bolehGuna() dalam js/gating.js: snapshot
+    // `ciri` pada dokumen event dahulu (ditulis semasa provisioning),
+    // baru jatuh balik kepada nama pakej untuk majlis lama yang belum
+    // ada snapshot itu.
+    function ciriGuestbook(eid) {
+      return ev(eid).get('ciri', {}).get('guestbook',
+               ev(eid).get('package', 'basic') in ['premium', 'eksklusif']);
     }
 
     // ---------- admins/{uid} ----------
@@ -193,6 +209,55 @@ service cloud.firestore {
 
       // Padam: admin ATAU pemilik event foto ini.
       allow delete: if
+        isAdmin()
+        || (
+          request.auth != null
+          && ev(resource.data.eventId).ownerUid == request.auth.uid
+        );
+    }
+
+    // ---------- guestbook/{id} ----------
+    //  Ucapan tetamu TANPA gambar (buku tetamu digital). Sengaja koleksi
+    //  berasingan daripada `photos`, bukan dokumen photos tanpa imej:
+    //  rules photos menuntut image_url tidak kosong DAN kaunter photoCount
+    //  naik +1 dalam commit yang sama.
+    //
+    //  TIADA kaunter di sini. Dokumen ini teks sahaja (~200 bait) berbanding
+    //  gambar base64 (~78 KiB), jadi ia tidak memakan kuota `photoLimit`.
+    //  Rem sebenar ialah status majlis + tarikh luput + gating pakej.
+    match /guestbook/{docId} {
+
+      // Baca: ucapan diluluskan = awam (galeri majlis memang awam);
+      // ucapan tersembunyi hanya untuk admin & pemilik majlis.
+      // Syarat approved didahulukan supaya query galeri awam tidak
+      // mencetuskan get() pada dokumen event.
+      allow read: if resource.data.approved == true
+        || isAdmin()
+        || (request.auth != null
+            && ev(resource.data.eventId).ownerUid == request.auth.uid);
+
+      // Cipta: sesiapa (tetamu tanpa log masuk) pada majlis aktif yang
+      // belum luput DAN pakejnya membuka ciri guestbook.
+      allow create: if
+        request.resource.data.keys().hasOnly(
+          ['name', 'message', 'approved', 'created_at', 'eventId']
+        )
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 300
+        && request.resource.data.approved is bool
+        && request.resource.data.eventId is string
+        // --- Gating tenant + pakej ---
+        && ev(request.resource.data.eventId).status == 'active'
+        && request.time < ev(request.resource.data.eventId).expiresAt
+        && ciriGuestbook(request.resource.data.eventId);
+
+      // Kemas kini & padam: moderasi sahaja (sembunyi/papar/buang).
+      // Tiada laluan tetamu — berbeza dengan photos yang benarkan `likes`.
+      allow update, delete: if
         isAdmin()
         || (
           request.auth != null

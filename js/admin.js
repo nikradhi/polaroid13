@@ -32,6 +32,7 @@ import {
 } from "./firebase.js";
 import { pasangGayaPolaroid } from "./polaroid.js";
 import { dapatEventId } from "./majlis.js";
+import { bolehGuna } from "./gating.js";
 
 pasangGayaPolaroid();
 
@@ -59,8 +60,22 @@ const statLulus = document.getElementById("stat-lulus");
 const statSembunyi = document.getElementById("stat-sembunyi");
 const butangLuluskanSemua = document.getElementById("butang-luluskan-semua");
 
+// --- Ucapan / buku tetamu (Premium+) ---
+const zonUcapanAdmin = document.getElementById("zon-ucapan-admin");
+const senaraiUcapan = document.getElementById("senarai-ucapan");
+const zonUcapanKosong = document.getElementById("zon-ucapan-kosong");
+const statUcapan = document.getElementById("stat-ucapan");
+
 let unsub = null; // untuk hentikan langganan bila log keluar
+let unsubUcapan = null; // langganan kedua: koleksi guestbook
 let idTersembunyi = []; // id gambar approved:false semasa (untuk luluskan pukal)
+
+// Hentikan KEDUA-DUA langganan. Terlepas satu bermakna ia terus membaca
+// (dan dicaj) selepas pengguna log keluar.
+function hentikanLangganan() {
+  if (unsub) { unsub(); unsub = null; }
+  if (unsubUcapan) { unsubUcapan(); unsubUcapan = null; }
+}
 
 // ------------------------------------------------------------
 //  UTILITI: escape teks -> selamat untuk innerHTML (elak XSS)
@@ -131,7 +146,7 @@ formLogin.addEventListener("submit", async (e) => {
 //  LOG KELUAR
 // ------------------------------------------------------------
 butangKeluar.addEventListener("click", async () => {
-  if (unsub) { unsub(); unsub = null; }
+  hentikanLangganan();
   await signOut(auth);
 });
 
@@ -165,11 +180,20 @@ onAuthStateChanged(auth, async (user) => {
       pautanGaleri.href = `gallery.html?e=${encodeURIComponent(eventId)}`;
     }
     mulaLangganan();
+    // Bahagian ucapan hanya untuk majlis yang pakejnya membukanya.
+    if (bolehGuna(majlis, "guestbook")) {
+      zonUcapanAdmin?.classList.remove("hidden");
+      mulaLanggananUcapan();
+    } else {
+      zonUcapanAdmin?.classList.add("hidden");
+    }
   } else {
-    if (unsub) { unsub(); unsub = null; }
+    hentikanLangganan();
     zonPanel.classList.add("hidden");
     zonLogin.classList.remove("hidden");
     senarai.innerHTML = "";
+    if (senaraiUcapan) senaraiUcapan.innerHTML = "";
+    zonUcapanAdmin?.classList.add("hidden");
     eventId = dapatEventId();
     majlis = null;
   }
@@ -242,6 +266,100 @@ function mulaLangganan() {
         `<p class="col-span-full text-center text-red-600">Gagal memuat gambar. Semak rules & sambungan.</p>`;
     }
   );
+}
+
+// ------------------------------------------------------------
+//  LANGGANAN UCAPAN (buku tetamu) — real-time
+// ------------------------------------------------------------
+//  Koleksi BERASINGAN daripada photos. Sama seperti gambar: tiada
+//  penapis approved, jadi pemilik nampak juga ucapan tersembunyi
+//  (dibenarkan oleh cabang pemilik dalam firestore.rules).
+// ------------------------------------------------------------
+function mulaLanggananUcapan() {
+  if (!senaraiUcapan) return;
+  const q = query(
+    collection(db, "guestbook"),
+    where("eventId", "==", eventId),
+    orderBy("created_at", "desc")
+  );
+
+  unsubUcapan = onSnapshot(
+    q,
+    (snap) => {
+      senaraiUcapan.innerHTML = "";
+      snap.forEach((d) => senaraiUcapan.appendChild(binaKadUcapan(d.id, d.data())));
+      if (statUcapan) statUcapan.textContent = `${snap.size} ucapan`;
+      zonUcapanKosong?.classList.toggle("hidden", snap.size > 0);
+    },
+    (err) => {
+      console.error("Ralat langganan ucapan:", err);
+      const teks = String(err?.message || "").includes("index")
+        ? "Ucapan memerlukan index Firestore. Buka konsol pelayar (F12) dan klik pautan yang diberi."
+        : "Gagal memuat ucapan. Semak rules & sambungan.";
+      senaraiUcapan.innerHTML =
+        `<p class="col-span-full text-center text-red-600">${esc(teks)}</p>`;
+    }
+  );
+}
+
+// ------------------------------------------------------------
+//  KAD MODERASI UCAPAN (teks sahaja — tiada gambar)
+// ------------------------------------------------------------
+function binaKadUcapan(id, u) {
+  const kad = document.createElement("div");
+  kad.className =
+    "rounded-2xl border bg-white/70 p-3 shadow-sm " +
+    (u.approved ? "border-[#e5d5ca]" : "border-red-300 opacity-70");
+
+  const lencana = u.approved
+    ? `<span class="rounded-full bg-green-100 text-green-700 text-xs px-2 py-0.5">Dipapar</span>`
+    : `<span class="rounded-full bg-red-100 text-red-700 text-xs px-2 py-0.5">Disembunyikan</span>`;
+
+  // esc() pada SETIAP nilai — ini innerHTML dan teks ini datang dari tetamu.
+  kad.innerHTML = `
+    <div class="flex items-center justify-between gap-2 mb-1.5">
+      <p class="font-medium text-sm text-[#5a4a42] truncate">${esc(u.name) || "Tetamu"}</p>
+      ${lencana}
+    </div>
+    <p class="text-sm text-[#8a7a70] mb-1 break-words whitespace-pre-line">${esc(u.message)}</p>
+    <p class="text-[11px] text-[#a09088] mb-3">${esc(formatTarikh(u.created_at))}</p>
+    <div class="flex gap-2">
+      <button data-act="toggle" class="flex-1 rounded-lg py-2 text-sm font-medium ${
+        u.approved
+          ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
+          : "bg-green-50 text-green-700 hover:bg-green-100"
+      }">${u.approved ? "Sembunyikan" : "Luluskan"}</button>
+      <button data-act="delete" class="rounded-lg px-3 py-2 text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100">Padam</button>
+    </div>
+  `;
+
+  kad.querySelector('[data-act="toggle"]').addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      await updateDoc(doc(db, "guestbook", id), { approved: !u.approved });
+      // UI dikemas kini automatik oleh onSnapshot
+    } catch (err) {
+      console.error(err);
+      alert("Gagal mengemas kini. Sila cuba lagi.");
+      btn.disabled = false;
+    }
+  });
+
+  kad.querySelector('[data-act="delete"]').addEventListener("click", async (e) => {
+    if (!confirm(`Padam ucapan daripada "${u.name || "Tetamu"}"? Tindakan ini tidak boleh dibatalkan.`)) return;
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      await deleteDoc(doc(db, "guestbook", id));
+    } catch (err) {
+      console.error(err);
+      alert("Gagal memadam. Sila cuba lagi.");
+      btn.disabled = false;
+    }
+  });
+
+  return kad;
 }
 
 // ------------------------------------------------------------

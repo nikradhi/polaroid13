@@ -22,6 +22,25 @@
       ]
     },
     {
+      "//": "guestbook.js (galeri awam): where(eventId) + where(approved) + orderBy(created_at desc)",
+      "collectionGroup": "guestbook",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "eventId", "order": "ASCENDING" },
+        { "fieldPath": "approved", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "admin.js moderasi ucapan: where(eventId) + orderBy(created_at desc) (semua status)",
+      "collectionGroup": "guestbook",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "eventId", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "DESCENDING" }
+      ]
+    },
+    {
       "//": "tetapan.js: senarai event milik pelanggan. where(ownerUid) + orderBy(createdAt desc)",
       "collectionGroup": "events",
       "queryScope": "COLLECTION",

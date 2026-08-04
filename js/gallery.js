@@ -30,6 +30,7 @@ import {
 } from "./muat-turun.js";
 import { pasangBorangUpload } from "./upload.js";
 import { pasangPhotobooth } from "./photobooth.js";
+import { pasangGuestbook, muatUcapan, binaKadUcapan } from "./guestbook.js";
 import { bolehGuna } from "./gating.js";
 import { adalahJalur } from "./imej.js";
 
@@ -69,6 +70,11 @@ const butangKosongUpload = document.getElementById("butang-kosong-upload");
 // Modal photobooth (Premium+)
 const modalPhotobooth = document.getElementById("modal-photobooth");
 
+// Buku tetamu / ucapan (Premium+)
+const modalGuestbook = document.getElementById("modal-guestbook");
+const zonUcapan = document.getElementById("zon-ucapan");
+const zonUcapanKosong = document.getElementById("zon-ucapan-kosong");
+
 // Lightbox
 const lightbox = document.getElementById("lightbox");
 const lbImg = document.getElementById("lb-img");
@@ -83,8 +89,9 @@ let sedangMemuat = false;
 const fotoDimuat = []; // {id, name, message, img, likes, jenis, el, kiraEl, butangHati}
 let lbIndeks = -1;
 
-// Tab jenis aktif: "gambar" (muat naik biasa) atau "jalur" (photobooth).
-// Tiada nilai "semua" — dua tab sengaja BERASINGAN, tidak pernah bercampur.
+// Tab aktif: "gambar" (muat naik biasa), "jalur" (photobooth) atau
+// "ucapan" (buku tetamu). Tiada nilai "semua" — tab sengaja BERASINGAN,
+// tidak pernah bercampur.
 let tabAktif = "gambar";
 
 // Apa yang tetamu ini BOLEH buat — menentukan label & keterlihatan pil
@@ -92,10 +99,24 @@ let tabAktif = "gambar";
 // yang mungkin cuma: dua-dua, gambar sahaja, atau tiada langsung.
 let bolehTambahGambar = false;
 let bolehTambahJalur = false;
+let bolehTulisUcapan = false;
 // Pakej menyokong photobooth? BUKAN sama dengan bolehTambahJalur — yang itu
 // turut menuntut kamera. Tetamu desktop tanpa kamera masih patut boleh
 // MELIHAT tab jalur.
 let cirianJalur = false;
+// Pakej menyokong buku tetamu? (Premium & Eksklusif)
+let cirianUcapan = false;
+
+// Ucapan buku tetamu. Koleksi BERASINGAN daripada `photos`, jadi ia
+// disimpan berasingan daripada fotoDimuat juga — memasukkannya ke sana
+// akan menariknya masuk ke lightbox, probe nisbah aspek, ♥ dan SIMPAN,
+// yang semuanya tidak bermakna untuk teks.
+const ucapanDimuat = []; // {id, name, message, cari, el}
+let ucapanSudahMuat = false;
+let semulaBorangUcapan = null;
+// Teks ralat muatan ucapan (cth indeks belum dicipta), atau "" bila sihat.
+// Disimpan supaya mesejnya kekal betul selepas tetamu bertukar tab.
+let ralatUcapan = "";
 
 // ------------------------------------------------------------
 //  UTILITI: senarai "disukai" dalam localStorage (dedupe)
@@ -456,8 +477,9 @@ document.addEventListener("keydown", (e) => {
 // ------------------------------------------------------------
 function tapisGaleri() {
   const q = inputCari ? inputCari.value.trim().toLowerCase() : "";
+  const ucapanTab = tabAktif === "ucapan";
   let jumpa = 0;
-  const kira = { gambar: 0, jalur: 0 };
+  const kira = { gambar: 0, jalur: 0, ucapan: ucapanDimuat.length };
 
   fotoDimuat.forEach((foto) => {
     kira[foto.jenis]++;
@@ -466,27 +488,93 @@ function tapisGaleri() {
     if (padan) jumpa++;
   });
 
-  kemasKiraTab(kira);
+  // Ucapan ditapis berasingan: ia bukan sebahagian fotoDimuat.
+  ucapanDimuat.forEach((u) => {
+    const padan = ucapanTab && (!q || u.cari.includes(q));
+    u.el.style.display = padan ? "" : "none";
+    if (padan) jumpa++;
+  });
 
-  // Bar tab hanya berguna bila jalur benar-benar mungkin wujud: pakej
-  // menyokongnya, ATAU majlis ini memang sudah ada jalur (cth pakej
-  // diturunkan selepas majlis). Jika tidak, satu tab sahaja = bukan tab.
+  kemasKiraTab(kira);
+  kemasPaparanTab();
+
+  // Satu tab sahaja = bukan tab. Setiap tab dinilai sendiri, kemudian
+  // seluruh jalur disembunyikan bila kurang daripada dua yang berguna.
   // Dinilai di sini kerana kiraan `jenis` hanya muktamad selepas probe
   // nisbah aspek selesai, dan tapisGaleri() memang dijalankan semula ketika itu.
   if (zonTab) {
-    const tabJalurBerguna = cirianJalur || kira.jalur > 0;
-    zonTab.classList.toggle("hidden", !(fotoDimuat.length > 0 && tabJalurBerguna));
+    // Jalur/ucapan "berguna" bila pakej menyokongnya ATAU majlis ini
+    // memang sudah ada kandungan jenis itu (cth pakej diturunkan selepas
+    // majlis — kandungan lama tidak patut jadi tidak boleh dicapai).
+    // "gambar" sentiasa kelihatan: ia tab rumah — menyembunyikannya akan
+    // mengurung tetamu dalam tab lain tanpa jalan balik. Majlis tanpa
+    // ciri tambahan tetap tidak nampak jalur ini, kerana satu butang
+    // sahaja tidak mencukupi (bilNampak < 2 di bawah).
+    const nampak = {
+      gambar: true,
+      jalur: cirianJalur || kira.jalur > 0,
+      ucapan: cirianUcapan || ucapanDimuat.length > 0,
+    };
+    let bilNampak = 0;
+    zonTab.querySelectorAll(".tab-galeri__btn").forEach((btn) => {
+      const tunjuk = !!nampak[btn.dataset.tab];
+      btn.classList.toggle("hidden", !tunjuk);
+      if (tunjuk) bilNampak++;
+    });
+    zonTab.classList.toggle("hidden", bilNampak < 2);
   }
   // Ikon carian hanya bila ada sesuatu untuk dicari.
-  butangCariTogol?.classList.toggle("hidden", fotoDimuat.length === 0);
+  butangCariTogol?.classList.toggle(
+    "hidden",
+    fotoDimuat.length === 0 && ucapanDimuat.length === 0
+  );
 
   if (zonTiadaHasil) {
     // Majlis yang langsung tiada gambar sudah dilindungi oleh #zon-kosong
     // ("Belum Ada Gambar Lagi"); tanpa syarat kedua ini, tetamu nampak DUA
-    // mesej "tiada" bertindih.
-    const tunjuk = jumpa === 0 && fotoDimuat.length > 0;
+    // mesej "tiada" bertindih. Tab ucapan ada mesej kosongnya sendiri.
+    const tunjuk = !ucapanTab && jumpa === 0 && fotoDimuat.length > 0;
     zonTiadaHasil.classList.toggle("hidden", !tunjuk);
     if (tunjuk) zonTiadaHasil.textContent = mesejTiadaHasil(q);
+  }
+
+  if (zonUcapanKosong) {
+    // "Belum ada ucapan" hanya selepas muatan selesai — sebelum itu
+    // senarai kosong bermakna "belum dibaca", bukan "tiada".
+    const tunjukKosong =
+      ucapanTab && jumpa === 0 && (ucapanSudahMuat || !!ralatUcapan);
+    zonUcapanKosong.classList.toggle("hidden", !tunjukKosong);
+    if (tunjukKosong) {
+      zonUcapanKosong.textContent =
+        ralatUcapan ||
+        (q
+          ? "Tiada ucapan sepadan dengan carian anda."
+          : "Belum ada ucapan. Jadilah yang pertama menulis!");
+    }
+  }
+}
+
+// ------------------------------------------------------------
+//  TUKAR BEKAS IKUT TAB
+// ------------------------------------------------------------
+//  Tab Ucapan memakai bekas yang BERBEZA sepenuhnya daripada dua tab
+//  gambar. Tanpa penukaran ini, tetamu nampak "Belum Ada Gambar Lagi"
+//  dan butang "Muat Lebih Banyak" bertindih atas senarai ucapan —
+//  kedua-duanya milik koleksi photos, bukan buku tetamu.
+// ------------------------------------------------------------
+function kemasPaparanTab() {
+  const ucapanTab = tabAktif === "ucapan";
+  zonUcapan?.classList.toggle("hidden", !ucapanTab);
+  zonGaleri?.classList.toggle("hidden", ucapanTab);
+  if (ucapanTab) {
+    zonKosong?.classList.add("hidden");
+    butangMuatLebih?.classList.add("hidden");
+  } else {
+    // Keterlihatan sebenar kedua-duanya dimiliki oleh muatGambar();
+    // di sini kita hanya pulihkan apa yang tab ucapan sembunyikan,
+    // dengan syarat yang SAMA seperti di sana (lihat muatGambar).
+    if (fotoDimuat.length === 0) zonKosong?.classList.remove("hidden");
+    if (masihAda) butangMuatLebih?.classList.remove("hidden");
   }
 }
 
@@ -503,6 +591,9 @@ function mesejTiadaHasil(q) {
     return masihAda
       ? 'Tiada nama atau ucapan sepadan dalam gambar yang dimuat. Cuba "Muat Lebih Banyak".'
       : "Tiada nama atau ucapan sepadan dengan carian anda.";
+  }
+  if (tabAktif === "ucapan") {
+    return "Belum ada ucapan dalam buku tetamu majlis ini.";
   }
   if (tabAktif === "jalur") {
     return masihAda
@@ -537,7 +628,54 @@ async function pilihTab(tab) {
   });
   tapisGaleri();
   kemasButangTambah();
+  // Ucapan dibaca MALAS — hanya bila tab dibuka kali pertama. Tetamu yang
+  // datang untuk gambar sahaja tidak patut membayar bacaan koleksi kedua.
+  if (tab === "ucapan" && !ucapanSudahMuat) await muatSenaraiUcapan();
   await tambahHalamanAuto();
+}
+
+// ------------------------------------------------------------
+//  MUAT & PAPAR UCAPAN (buku tetamu)
+// ------------------------------------------------------------
+async function muatSenaraiUcapan() {
+  if (ucapanSudahMuat || !zonUcapan) return;
+  ucapanSudahMuat = true; // tetapkan awal: elak dua muatan serentak
+
+  const { senarai, ralat } = await muatUcapan(eventId);
+  if (ralat) {
+    ucapanSudahMuat = false; // benarkan cuba lagi bila tab dibuka semula
+    ralatUcapan = ralat;
+    tapisGaleri();
+    return;
+  }
+  ralatUcapan = "";
+  senarai.forEach((u) => tambahUcapan(u));
+  tapisGaleri();
+}
+
+function tambahUcapan(u, diAtas = false) {
+  if (!zonUcapan) return;
+  const el = binaKadUcapan(u);
+  const item = {
+    id: u.id,
+    name: u.name || "",
+    message: u.message || "",
+    cari: `${u.name || ""} ${u.message || ""}`.toLowerCase(),
+    el,
+  };
+  if (diAtas) {
+    zonUcapan.insertBefore(el, zonUcapan.firstChild);
+    ucapanDimuat.unshift(item);
+  } else {
+    zonUcapan.appendChild(el);
+    ucapanDimuat.push(item);
+  }
+}
+
+// Ucapan baharu daripada borang — muncul serta-merta tanpa muat semula.
+function masukkanUcapanBaru(u) {
+  tambahUcapan(u, true);
+  tapisGaleri();
 }
 
 // ------------------------------------------------------------
@@ -548,17 +686,24 @@ async function pilihTab(tab) {
 //  Itu yang membolehkan kita buang baris butang kedua tanpa menambah menu
 //  perantara. Label turut berubah supaya tetamu tahu apa yang akan berlaku.
 // ------------------------------------------------------------
+//  Peta satu tempat untuk ketiga-tiga tab. Label lalai HTML pada
+//  #butang-tambah MESTI sepadan dengan label tab "gambar".
+const TAB = {
+  gambar: { label: "Take a selfie", modal: () => modalUpload,     boleh: () => bolehTambahGambar },
+  jalur:  { label: "Photobooth",    modal: () => modalPhotobooth, boleh: () => bolehTambahJalur  },
+  ucapan: { label: "Tulis Ucapan",  modal: () => modalGuestbook,  boleh: () => bolehTulisUcapan  },
+};
+
 function kemasButangTambah() {
   if (!butangTambah) return;
-  const jalur = tabAktif === "jalur";
-  const label = jalur ? "Photobooth" : "Take a selfie";
+  const cfg = TAB[tabAktif] || TAB.gambar;
   // Tulis ke <span>, BUKAN textContent butang — butang ada dua anak (＋ dan
   // label) dan textContent akan memusnahkan ikonnya. aria-label pula wajib:
   // teks label disembunyikan di telefon.
   const teks = butangTambah.querySelector(".bar-kawalan__teks");
-  if (teks) teks.textContent = label;
-  butangTambah.setAttribute("aria-label", label);
-  butangTambah.classList.toggle("hidden", !(jalur ? bolehTambahJalur : bolehTambahGambar));
+  if (teks) teks.textContent = cfg.label;
+  butangTambah.setAttribute("aria-label", cfg.label);
+  butangTambah.classList.toggle("hidden", !cfg.boleh());
 }
 
 // Togol kotak carian. MENUTUPNYA mesti turut mengosongkan pertanyaan — jika
@@ -577,12 +722,19 @@ butangCariTogol?.addEventListener("click", () => {
 });
 
 butangTambah?.addEventListener("click", () => {
-  bukaModal(tabAktif === "jalur" ? modalPhotobooth : modalUpload);
+  // Borang ucapan dipulihkan setiap kali dibuka, jika tidak tetamu kedua
+  // disambut skrin "Terima Kasih" tetamu pertama.
+  if (tabAktif === "ucapan") semulaBorangUcapan?.();
+  bukaModal((TAB[tabAktif] || TAB.gambar).modal());
 });
 
 // Tab kosong selalunya bermakna "belum dimuat", bukan "tiada" — muat
 // beberapa halaman lagi sendiri sebelum menyerah kepada tetamu.
 async function tambahHalamanAuto() {
+  // Ucapan datang dari koleksi LAIN — memuat halaman `photos` tidak akan
+  // sekali-kali mengisi tab ini, jadi tanpa jaga ini ia membazir 3 halaman
+  // (48 foto × ~78 KiB base64) setiap kali tab Ucapan dibuka.
+  if (tabAktif === "ucapan") return;
   for (let i = 0; i < HALAMAN_AUTO_MAKS; i++) {
     await tungguProbe(); // jenis mesti muktamad sebelum diperiksa
     if (!masihAda) return;
@@ -726,6 +878,20 @@ function paparRalatMula(mesej) {
   // Keterlihatan TAB jalur ikut pakej sahaja, bukan hasilPB — tetamu desktop
   // tanpa kamera masih patut boleh MELIHAT jalur yang orang lain hantar.
   cirianJalur = !!majlis && bolehGuna(majlis, "photobooth");
+
+  // Buku tetamu — ciri Premium+. Sama prinsip dengan photobooth: tab
+  // kelihatan ikut PAKEJ, butang tulis ikut kelayakan hantar (majlis
+  // masih aktif & belum luput).
+  const hasilGb = pasangGuestbook({
+    eventId,
+    majlis,
+    onBerjaya: masukkanUcapanBaru,
+  });
+  bolehTulisUcapan = hasilGb.boleh;
+  semulaBorangUcapan = hasilGb.semula || null;
+  if (bolehTulisUcapan) pasangModal(modalGuestbook);
+  cirianUcapan = !!majlis && bolehGuna(majlis, "guestbook");
+
   kemasButangTambah();
 
   butangMuatLebih.addEventListener("click", muatGambar);

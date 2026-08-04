@@ -119,6 +119,25 @@
 
     <!-- Senarai gambar -->
     <div id="senarai" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"></div>
+
+    <!-- ============ UCAPAN / BUKU TETAMU (Premium+) ============
+         Bahagian berasingan: statistik di atas mengira GAMBAR sahaja,
+         jadi mencampurkan ucapan ke dalam #senarai akan merosakkannya.
+         Seluruh bahagian ini kekal tersembunyi untuk majlis yang
+         pakejnya tidak membuka ciri guestbook. -->
+    <section id="zon-ucapan-admin" class="hidden mt-10">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h2 class="font-serif-elegan text-2xl font-semibold text-[#5a4a42]">Ucapan Tetamu</h2>
+        <span id="stat-ucapan" class="text-sm text-[#a09088]">0 ucapan</span>
+      </div>
+
+      <div id="zon-ucapan-kosong" class="hidden text-center py-10">
+        <div class="text-5xl mb-3">📖</div>
+        <p class="text-[#8a7a70]">Belum ada ucapan dihantar.</p>
+      </div>
+
+      <div id="senarai-ucapan" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+    </section>
   </section>
 
   <script type="module" src="js/admin.js"></script>

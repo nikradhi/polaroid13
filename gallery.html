@@ -110,6 +110,50 @@
       margin-right: auto;
     }
 
+    /* ---- Kad ucapan (buku tetamu) ----
+       Kad teks tulen — tiada gambar untuk dibingkai, jadi ia sengaja
+       TIDAK guna .kad-galeri mahupun gaya polaroid. Satu lajur berpusat
+       supaya ucapan senang dibaca; masonry tidak sesuai untuk teks. */
+    .senarai-ucapan {
+      max-width: 34rem;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: .85rem;
+    }
+    .senarai-ucapan.hidden { display: none; }
+    .kad-ucapan {
+      background: var(--warna-kad);
+      border: 1px solid color-mix(in srgb, var(--tema) 14%, transparent);
+      border-radius: 1rem;
+      padding: 1.15rem 1.25rem 1rem;
+      box-shadow: 0 6px 18px -12px color-mix(in srgb, var(--tema) 45%, transparent);
+    }
+    .kad-ucapan__mesej {
+      font-family: var(--font-tangan);
+      font-size: 1.35rem;
+      line-height: 1.4;
+      color: var(--warna-teks);
+      overflow-wrap: break-word;
+    }
+    .kad-ucapan__mesej::before { content: "\201C"; }
+    .kad-ucapan__mesej::after  { content: "\201D"; }
+    /* Garis pemisah nipis + nama rata kanan: memberi kad rasa "ditandatangani". */
+    .kad-ucapan__nama {
+      margin-top: .75rem;
+      padding-top: .6rem;
+      border-top: 1px solid color-mix(in srgb, var(--tema) 16%, transparent);
+      text-align: right;
+      font-size: .72rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--tema);
+      overflow-wrap: break-word;
+    }
+    @media (max-width: 640px) {
+      .kad-ucapan__mesej { font-size: 1.2rem; }
+    }
+
     /* ---- Kad galeri rata (gaya feed Pinterest/Motion) ----
        Gambar sudut bulat di atas, tajuk tebal + petikan italic, baris
        ❤ (kiri) + SIMPAN (kanan) di bawah. Semua warna ikut var(--tema)/
@@ -374,6 +418,11 @@
       color: var(--warna-teks-lembut);
       transition: background .2s ease, color .2s ease;
     }
+    /* Sama sebab seperti .tab-galeri.hidden di atas: JS kini menogol .hidden
+       pada setiap BUTANG (tab jalur & ucapan muncul ikut pakej), jadi jangan
+       bergantung pada susunan lembaran gaya Tailwind Play CDN. */
+    .tab-galeri__btn.hidden { display: none; }
+
     .tab-galeri__btn:hover:not(.aktif) {
       background: color-mix(in srgb, var(--tema) 8%, transparent);
       color: var(--tema);
@@ -418,14 +467,18 @@
       /* Cincin fokus lut sinar untuk medan borang */
       --cincin-fokus: color-mix(in srgb, var(--warna-aksen) 50%, transparent);
     }
-    #modal-upload, #modal-photobooth {
+    /* Setiap modal BARU mesti ditambah pada KEDUA-DUA pemilih di bawah.
+       Tanpa yang pertama ia jadi blok statik di tengah halaman; tanpa
+       yang kedua `display:flex` di sini mengalahkan .hidden Tailwind
+       dan modal tidak pernah tertutup. */
+    #modal-upload, #modal-photobooth, #modal-guestbook {
       position: fixed; inset: 0; z-index: 60;
       background: rgba(40, 26, 32, .55);
       display: flex; align-items: flex-start; justify-content: center;
       padding: 4vh 4vw; overflow-y: auto;
       animation: lbMasuk .2s ease both;
     }
-    #modal-upload.hidden, #modal-photobooth.hidden { display: none; }
+    #modal-upload.hidden, #modal-photobooth.hidden, #modal-guestbook.hidden { display: none; }
     .modal-kotak {
       position: relative;
       width: 100%; max-width: 28rem;
@@ -440,14 +493,14 @@
     @media (min-width: 768px) {
       .modal-kotak { max-width: 32rem; padding: 1.75rem 1.75rem 2rem; }
     }
-    #modal-tutup, #pb-tutup {
+    #modal-tutup, #pb-tutup, #gb-tutup {
       position: absolute; top: 12px; right: 12px;
       background: rgba(255,255,255,.7); color: var(--warna-teks);
       border: 1px solid var(--warna-sempadan);
       width: 36px; height: 36px; border-radius: 999px; font-size: 1.4rem; line-height: 1;
       cursor: pointer; transition: background .2s;
     }
-    #modal-tutup:hover, #pb-tutup:hover { background: #fff; }
+    #modal-tutup:hover, #pb-tutup:hover, #gb-tutup:hover { background: #fff; }
 
     /* Kotak status mesej */
     .kotak-status { border-radius: 12px; padding: 12px 16px; font-size: 0.95rem; text-align: center; }
@@ -734,6 +787,10 @@
                 role="tab" aria-selected="false" aria-label="Photobooth">
           🎞️ <span class="tab-galeri__teks">Photobooth</span> <span class="tab-galeri__kira"></span>
         </button>
+        <button type="button" class="tab-galeri__btn" data-tab="ucapan"
+                role="tab" aria-selected="false" aria-label="Ucapan">
+          📖 <span class="tab-galeri__teks">Ucapan</span> <span class="tab-galeri__kira"></span>
+        </button>
       </div>
 
       <button id="butang-cari-togol" type="button" class="bar-kawalan__ikon hidden"
@@ -786,6 +843,17 @@
 
     <!-- Galeri masonry -->
     <section id="zon-galeri" class="masonry" aria-label="Galeri gambar polaroid tetamu"></section>
+
+    <!-- ============ BUKU TETAMU (tab Ucapan) ============
+         Bekas BERASINGAN daripada #zon-galeri: ucapan ialah teks tanpa
+         gambar, jadi ia tidak masuk ke dalam masonry mahupun tatasusunan
+         fotoDimuat (yang menggerakkan lightbox, ♥ dan SIMPAN). -->
+    <section id="zon-ucapan" class="senarai-ucapan hidden" aria-label="Ucapan tetamu"></section>
+
+    <!-- Keadaan kosong / ralat khusus tab Ucapan -->
+    <p id="zon-ucapan-kosong" class="hidden text-center text-sm text-[color:var(--warna-teks-samar)] py-10">
+      Belum ada ucapan. Jadilah yang pertama menulis!
+    </p>
 
     <!-- Butang muat lebih -->
     <div class="text-center mt-8">
@@ -1024,6 +1092,63 @@
             Lihat Galeri
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL UCAPAN / BUKU TETAMU (Premium+) ============ -->
+  <div id="modal-guestbook" class="hidden" role="dialog" aria-modal="true" aria-label="Tulis ucapan">
+    <div class="modal-kotak">
+      <button id="gb-tutup" data-tutup-modal aria-label="Tutup">×</button>
+
+      <header class="text-center mb-5 pr-6">
+        <h2 class="font-serif-elegan text-3xl font-semibold tracking-wide">Tulis Ucapan</h2>
+        <p class="mt-1.5 text-sm text-[color:var(--warna-teks-lembut)] leading-relaxed">
+          Tinggalkan ucapan untuk pengantin — tanpa perlu muat naik gambar.
+        </p>
+      </header>
+
+      <div id="gb-zon-borang">
+        <form id="gb-form" class="space-y-4" novalidate>
+          <!-- Nama (wajib) -->
+          <div>
+            <label for="gb-input-nama" class="block text-sm font-medium mb-1.5">
+              Nama anda <span class="text-[color:var(--tema)]">*</span>
+            </label>
+            <input id="gb-input-nama" name="nama" type="text" required autocomplete="name" maxlength="60"
+              placeholder="cth. Aisyah &amp; Danial"
+              class="w-full rounded-xl border border-[color:var(--warna-sempadan)] bg-white/90 px-4 py-3 text-base focus:border-[color:var(--tema)] focus:ring-2 focus:ring-[color:var(--cincin-fokus)] focus:outline-none" />
+          </div>
+
+          <!-- Ucapan (wajib — ia SATU-SATUNYA kandungan di sini) -->
+          <div>
+            <label for="gb-input-ucapan" class="block text-sm font-medium mb-1.5">
+              Ucapan anda <span class="text-[color:var(--tema)]">*</span>
+            </label>
+            <textarea id="gb-input-ucapan" name="ucapan" rows="4" required maxlength="300"
+              placeholder="cth. Selamat pengantin baru! Semoga bahagia ke akhir hayat."
+              class="w-full resize-none rounded-xl border border-[color:var(--warna-sempadan)] bg-white/90 px-4 py-3 text-base focus:border-[color:var(--tema)] focus:ring-2 focus:ring-[color:var(--cincin-fokus)] focus:outline-none"></textarea>
+            <div id="gb-kaunter" class="mt-1 text-right text-xs text-[color:var(--warna-teks-samar)]">0/300</div>
+          </div>
+
+          <div id="gb-kotak-status" class="kotak-status hidden" role="status" aria-live="polite"></div>
+
+          <button id="gb-butang-hantar" type="submit" class="btn-utama w-full rounded-xl py-4 text-lg font-medium">
+            Hantar Ucapan
+          </button>
+        </form>
+      </div>
+
+      <!-- ZON TERIMA KASIH (selepas berjaya) -->
+      <div id="gb-zon-terima-kasih" class="hidden text-center py-6">
+        <div class="text-5xl mb-3">💌</div>
+        <h2 class="font-serif-elegan text-3xl font-semibold mb-2">Terima Kasih!</h2>
+        <p class="text-[color:var(--warna-teks-lembut)] mb-6 leading-relaxed">
+          Ucapan anda telah muncul dalam buku tetamu majlis.
+        </p>
+        <button data-tutup-modal class="rounded-xl border border-[color:var(--warna-aksen)] w-full py-3.5 font-medium text-[color:var(--tema)] hover:bg-white/60 transition">
+          Lihat Ucapan
+        </button>
       </div>
     </div>
   </div>

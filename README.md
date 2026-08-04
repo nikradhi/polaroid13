@@ -133,6 +133,7 @@ Gambar di-compress di client dan disimpan sebagai **base64** dalam dokumen.
 | `eventsPrivate/{eventId}` | `{ ownerEmail, ownerUid }` — maklumat peribadi pelanggan | **Admin sahaja** |
 | `slugs/{slug}` | `{ eventId }` — doc ID ialah slug, menjamin URL unik | Awam (perlu untuk landing) |
 | `photos/{id}` | `name, message, image_url` (base64), `approved, likes, created_at, **eventId**` | Awam jika `approved == true` |
+| `guestbook/{id}` | `name, message, approved, created_at, **eventId**` — ucapan teks tanpa gambar. Ciri **Premium/Eksklusif** (dikuatkuasa dalam rules, bukan frontend sahaja) | Awam jika `approved == true` |
 
 **Kunci multi-tenancy:** setiap gambar membawa `eventId`. Semua query galeri/wall/export/
 moderasi menapis `where('eventId','==',...)`, jadi gambar majlis A tidak pernah bercampur
@@ -207,7 +208,7 @@ Panduan penuh: **[SETUP-SAAS.md](SETUP-SAAS.md)**. Ringkasannya:
 3. **Publish [`firestore.rules`](firestore.rules)** (Firestore → tab Rules → Publish).
 4. **Lantik diri sebagai admin:** Authentication → Add user → salin **UID** →
    Firestore → cipta koleksi `admins` → Document ID = UID → medan `role` = `super`.
-5. **Cipta 2 composite index** (lihat bawah).
+5. **Cipta composite index** (lihat bawah).
 6. Buka `super-admin.html` → log masuk → cipta pelanggan pertama.
 
 ### Composite index yang diperlukan
@@ -220,7 +221,12 @@ Firestore papar, tunggu sehingga status bertukar **Enabled**.
 |---|---|---|
 | `photos` | `eventId` ↑, `approved` ↑, `created_at` ↓ | Galeri, Live Wall, Export |
 | `photos` | `eventId` ↑, `created_at` ↓ | Panel moderasi |
+| `guestbook` | `eventId` ↑, `approved` ↑, `created_at` ↓ | Tab Ucapan di galeri |
+| `guestbook` | `eventId` ↑, `created_at` ↓ | Moderasi ucapan |
 | `events` | `ownerUid` ↑, `createdAt` ↓ | Senarai majlis pelanggan (jika perlu) |
+
+> Dua indeks `guestbook` hanya diperlukan bila majlis Premium/Eksklusif mula
+> menggunakan tab Ucapan — sehingga itu ia tidak akan pernah dicetuskan.
 
 ---
 
@@ -415,6 +421,32 @@ Semua dikuatkuasakan di **Firestore Security Rules**, bukan frontend sahaja:
 - [ ] Super-admin **Mampat semula** → jalur **dilangkau** (di bawah `HAD_LANGKAU_MAMPAT`);
       jalankan kali kedua, masih dilangkau; kapsyen **masih tajam**.
 - [ ] `pakej.html` & `tetapan.html` memapar "Photobooth digital (3 syot)" secara automatik
+
+**Buku tetamu / Ucapan (`gallery.html?e=<eventId>`)**
+- [ ] Majlis **Premium/Eksklusif** → tab **📖 Ucapan** muncul di sebelah 🎞️ Photobooth.
+- [ ] Majlis **Basic** → tab Ucapan **tidak** muncul langsung.
+- [ ] **Gating server:** dari konsol pelayar, `addDoc` terus ke koleksi `guestbook` dengan
+      `eventId` majlis **Basic** → ditolak `permission-denied`. (Ini yang membuktikan ciri
+      berbayar benar-benar dikuatkuasa, bukan sekadar disorok di frontend.)
+- [ ] Klik tab Ucapan → grid gambar hilang, "Muat Lebih Banyak" & "Belum Ada Gambar Lagi"
+      **tidak** kelihatan, pil bertukar jadi **Tulis Ucapan**.
+- [ ] Hantar ucapan → kad muncul serta-merta di atas senarai; F5 → masih ada; kiraan tab naik.
+- [ ] Hantar ucapan kedua → borang kosong semula (bukan skrin "Terima Kasih" tetamu pertama).
+- [ ] Nama kosong / ucapan kosong → ditolak dengan mesej, bukan dokumen kosong.
+- [ ] Ucapan 301 aksara melalui konsol (memintas `maxlength`) → ditolak oleh rules.
+- [ ] `<img src=x onerror=alert(1)>` sebagai nama **dan** ucapan → dipapar sebagai teks
+      mentah di galeri **dan** dalam `admin.html`; tiada dialog.
+- [ ] Kuota gambar **penuh** → ucapan **masih** boleh dihantar (ucapan tidak makan kuota
+      gambar; `events.photoCount` **tidak** berubah).
+- [ ] Majlis tamat tempoh / dinyahaktifkan → pil Tulis Ucapan tersorok; tulisan ditolak rules.
+- [ ] Buka tab Gambar sahaja → tiada query `guestbook` dalam tab Network (muatan malas).
+- [ ] Carian 🔍 menapis ucapan ikut nama & teks ucapan.
+- [ ] Majlis Premium **tanpa** photobooth → jalur tab masih muncul (Gambar + Ucapan).
+- [ ] Majlis Basic tanpa ciri tambahan → jalur tab **langsung tersembunyi** (seperti dahulu).
+- [ ] Telefon (≤640px) → tiga tab membalut ke baris sendiri, tiada limpahan mendatar.
+- [ ] `admin.html` (pemilik Premium) → bahagian **Ucapan Tetamu** muncul; Sembunyikan →
+      hilang dari galeri awam tetapi masih kelihatan bertanda "Disembunyikan"; Padam → hilang.
+- [ ] `admin.html` (pemilik Basic) → bahagian Ucapan Tetamu **tidak** muncul.
 
 **Bingkai jalur photobooth**
 - [ ] Selepas 3 syot siap → pemilih **11 bingkai** muncul di bawah pratonton.
