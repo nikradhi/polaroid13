@@ -31,4 +31,7 @@ if (eventId) {
       "Halaman ini untuk tetamu majlis. Nak cipta galeri untuk majlis anda?";
   zonRalat?.classList.remove("hidden");
   document.getElementById("cta-pakej")?.classList.remove("hidden");
+  // Bar atas (nama produk + Log masuk) hanya untuk bakal/sedia pelanggan,
+  // bukan tetamu majlis — sebab itu ia didedah di sini sahaja.
+  document.getElementById("bar-atas")?.classList.remove("hidden");
 }

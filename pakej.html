@@ -113,6 +113,19 @@
 
 <body class="antialiased">
 
+  <!-- Bar atas awam. Tiada `hidden` dan tiada JS: halaman ini sentiasa
+       halaman pemasaran, tiada laluan tetamu. Lebar disamakan dengan
+       <main> supaya bar sejajar dengan kandungan. Warna guna hex
+       literal kerana fail ini memang tidak menggunakan pemboleh ubah
+       tema (lihat tajuk di bawah). -->
+  <header class="mx-auto w-full max-w-2xl lg:max-w-4xl px-4 sm:px-6 pt-5 flex items-center justify-between gap-3">
+    <a href="index.html" class="font-serif-elegan text-lg font-semibold text-[#5a4a42] hover:opacity-80 transition">Polaroid Wedding</a>
+    <a href="tetapan.html"
+      class="btn-kedua inline-flex items-center justify-center gap-1.5 rounded-xl px-6 py-3 font-medium">
+      Log masuk <span aria-hidden="true">→</span>
+    </a>
+  </header>
+
   <!-- lg:max-w-4xl memberi ruang kepada tiga kad pakej (sm:grid-cols-3);
        pada 42rem setiap kad hanya ~13rem dan harga mula terbungkus. -->
   <main class="mx-auto w-full max-w-2xl lg:max-w-4xl px-4 sm:px-6 py-8 sm:py-12">

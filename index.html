@@ -91,6 +91,19 @@
     .btn-kedua:hover:not(:disabled) { background: #fff; border-color: var(--rosegold); }
     .btn-kedua:disabled, .zon-fail:disabled { opacity: .5; cursor: not-allowed; }
 
+    /* Butang log masuk pada bar atas: padding & saiz sendiri supaya ia
+       sepadan dengan butang yang sama di pakej.html. Diskop pada
+       #bar-atas kerana .btn-kedua di SINI sudah ada padding sendiri —
+       utiliti Tailwind (.px-6) cuma seri kekhususan dengannya (0,1,0)
+       dan pemenangnya bergantung susunan lembaran gaya, yang Play CDN
+       tulis semula setiap rebuild. #bar-atas .btn-kedua = (1,1,0),
+       menang secara pasti. */
+    #bar-atas .btn-kedua {
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 1rem;
+    }
+
     /* Butang buang — kotak merah menonjol supaya pengguna perasan */
     .btn-buang {
       background: #c0392b;
@@ -115,6 +128,23 @@
 </head>
 
 <body class="antialiased">
+  <!-- Bar atas awam. Bermula `hidden` dan hanya didedah oleh js/index.js
+       pada laluan PEMASARAN — tetamu majlis yang mendarat dengan ?e=
+       dialihkan terus ke galeri, dan mereka tidak sepatutnya nampak
+       kelipan butang "Log masuk" yang bukan untuk mereka.
+
+       MESTI <header>, bukan <footer>: js/index.js memanggil
+       document.querySelector("footer") dan menyembunyikan padanan
+       pertama. Lebar disamakan dengan <main> supaya bar sejajar
+       dengan kandungan. -->
+  <header id="bar-atas" class="hidden mx-auto w-full max-w-md sm:max-w-lg px-5 pt-5 flex items-center justify-between gap-3">
+    <a href="index.html" class="font-serif-elegan text-lg font-semibold hover:opacity-80 transition">Polaroid Wedding</a>
+    <a href="tetapan.html"
+      class="btn-kedua inline-flex items-center justify-center gap-1.5">
+      Log masuk <span aria-hidden="true">→</span>
+    </a>
+  </header>
+
   <!-- Borang satu lajur: melebihi ~32rem tidak membantu, cuma menjarakkan
        label daripada medannya. Naik satu tingkat sahaja pada tablet ke atas. -->
   <main class="mx-auto w-full max-w-md sm:max-w-lg px-5 py-8 sm:py-12">
