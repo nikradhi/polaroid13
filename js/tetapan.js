@@ -377,7 +377,7 @@ function isiBorang() {
   // Amaran jika tidak aktif / luput
   if (luput || eventData.status !== "active") {
     amaranMajlis.textContent = luput
-      ? "Majlis anda telah tamat tempoh. Tetapan kini dikunci (baca sahaja) dan tetamu tidak boleh muat naik gambar lagi. Galeri kekal boleh dilihat, dan muat turun gambar anda kekal selama-lamanya. Hubungi admin untuk melanjutkan."
+      ? "Majlis anda telah tamat tempoh. URL & butiran majlis kini dikunci, dan tetamu tidak boleh muat naik gambar lagi. Anda MASIH boleh mengubah reka bentuk galeri (Langkah 4), dan muat turun gambar kekal selama-lamanya. Hubungi admin untuk melanjutkan."
       : "Majlis anda belum diaktifkan. Hubungi admin.";
     amaranMajlis.classList.remove("hidden");
   } else {
@@ -677,12 +677,21 @@ function terapGatingTema() {
 //  MOD BACA SAHAJA — majlis tamat tempoh / dinyahaktifkan
 // ------------------------------------------------------------
 //  Selepas tamat tempoh pelanggan masih boleh MELIHAT tetapannya,
-//  berkongsi pautan/QR, dan MUAT TURUN gambar — tetapi tidak boleh
-//  mengedit apa-apa. Corak kunci sama seperti terapGatingTema().
+//  berkongsi pautan/QR, dan MUAT TURUN gambar. Yang dibekukan ialah
+//  REKOD majlis — Langkah 2 (URL) & Langkah 3 (Butiran).
 //
-//  MESTI dipanggil SELEPAS terapGatingTema(): fungsi ini hanya
-//  menambah kunci, tidak pernah membuka. Kalau urutannya diterbalik,
-//  gating pakej akan membuka semula medan yang sepatutnya dikunci.
+//  LANGKAH 4 (Reka) SENGAJA KEKAL TERBUKA: galeri majlis boleh dilihat
+//  selama-lamanya, jadi pengantin patut boleh mengemas kini rupanya
+//  walaupun langganan sudah tamat. Ini dipadankan oleh lane (2b) dalam
+//  firestore.rules, yang membenarkan themeColor/latarId/fontId bila-bila
+//  masa — jadi jangan kunci Langkah 4 di sini tanpa mengubah rules juga,
+//  atau sebaliknya (UI terbuka + rules menyekat = "Gagal simpan" berulang).
+//
+//  MESTI dipanggil SELEPAS terapGatingTema(): fungsi ini hanya menambah
+//  kunci, tidak pernah membuka. Selepas Langkah 4 dikeluarkan dari sini,
+//  terapGatingTema() menjadi SATU-SATUNYA yang mengunci Langkah 4 (untuk
+//  pakej tanpa kustom warna/font) — urutan itu kini lebih kritikal, bukan
+//  kurang.
 //
 //  `#c-tarikh` (tarikh majlis) dikunci TANPA SYARAT — ia milik
 //  super-admin kerana ia penambat tempoh langganan (firestore.rules
@@ -698,18 +707,18 @@ function terapModBacaSahaja() {
 
   if (!bacaSahaja) return;
 
-  // Langkah 2 (URL) + Langkah 3 (Butiran)
+  // Langkah 2 (URL) + Langkah 3 (Butiran) — dibekukan.
   [cSlug, cNama, cWelcome].forEach((el) => { if (el) el.disabled = true; });
 
-  // Langkah 4 (Reka) — swatch, warna sendiri, corak latar, font.
-  [swatches, barisWarnaSendiri, latarPilihan, fonPilihan].forEach((el) => {
-    if (!el) return;
-    el.classList.add("opacity-50", "pointer-events-none");
-  });
-  if (cTema) cTema.disabled = true;
+  // Langkah 4 (Reka) TIDAK disentuh — lihat nota di atas.
 
-  // Nota kunci di setiap langkah medan supaya sebabnya jelas.
+  // Nota kunci pada Langkah 2 & 3 supaya sebabnya jelas...
   formTetapan.querySelectorAll(".nota-baca-sahaja").forEach((el) => {
+    el.classList.remove("hidden");
+  });
+  // ...dan nota "masih boleh diubah" pada Langkah 4, supaya pelanggan tahu
+  // borang yang terbuka itu memang disengajakan dan bukan terlepas kunci.
+  formTetapan.querySelectorAll(".nota-reka-terbuka").forEach((el) => {
     el.classList.remove("hidden");
   });
 }
@@ -801,8 +810,12 @@ async function teruskanLangkah(n) {
     return;
   }
 
-  // Mod baca sahaja: tiada apa untuk disimpan — terus maju.
+  // Mod baca sahaja: Langkah 2 & 3 beku, jadi tiada apa untuk disimpan.
+  // Langkah 4 (Reka) TETAP disimpan — tanpa flush ini, perubahan warna/
+  // corak/font yang dibuat sejurus sebelum menekan "Teruskan" akan hilang
+  // senyap kerana debounce 800 ms belum sempat berjalan.
   if (bacaSahaja) {
+    if (n === 4) await simpanMedanBiasa();
     bukaLangkah(n + 1);
     return;
   }
@@ -1081,12 +1094,25 @@ function tunjukStatusSimpan(keadaan) {
 // terbuka akan menjadikan nilai DOM basi — ia masuk ke affectedKeys
 // dan SETIAP simpanan seterusnya gagal `permission-denied`.
 function kumpulMedan() {
-  return {
-    coupleName: cNama.value.trim(),
+  // Langkah 4 (Reka) — satu-satunya yang kekal boleh diedit selepas
+  // majlis tamat tempoh. Sepadan dengan lane (2b) firestore.rules.
+  const reka = {
     themeColor: cTema.value || "#b76e79",
-    welcomeMessage: cWelcome.value.trim(),
     latarId: latarSah(latarDipilih) || "bunga",
     fontId: fontIdSah(fonDipilih) || "klasik-elegan",
+  };
+
+  // Selepas tamat tempoh: hantar REKA BENTUK sahaja. Medan Langkah 3
+  // memang disabled jadi nilainya tidak berubah, tetapi menghantarnya
+  // tetap bergantung pada nilai DOM kekal sinkron dengan Firestore —
+  // andaian yang SUDAH pernah pecah sekali (weddingDate basi). Hantar
+  // apa yang server benarkan sahaja; jangan bergantung pada nasib.
+  if (bacaSahaja) return reka;
+
+  return {
+    coupleName: cNama.value.trim(),
+    welcomeMessage: cWelcome.value.trim(),
+    ...reka,
   };
 }
 
@@ -1100,10 +1126,12 @@ function autoSimpan() {
 async function simpanMedanBiasa() {
   clearTimeout(pemasaSimpan); // batalkan jadual tertunda (jika dipanggil terus)
   if (!eventId) return;
-  // Mod baca sahaja: server akan tolak tulisan ini (firestore.rules).
-  // Keluar awal supaya pelanggan tidak dihidangkan "Gagal simpan" untuk
-  // sesuatu yang memang tidak sepatutnya boleh diedit.
-  if (bacaSahaja) return;
+  // TIADA keluar-awal untuk bacaSahaja di sini: selepas tamat tempoh
+  // pelanggan masih boleh menyimpan Langkah 4 (Reka). Yang mengehadkan
+  // skop ialah kumpulMedan(), yang memulangkan tiga medan reka bentuk
+  // sahaja bila bacaSahaja — dan firestore.rules lane (2b) yang hanya
+  // menerima tiga medan itu. Medan Langkah 2 & 3 dilindungi oleh
+  // `disabled` + simpanSlug() yang masih keluar awal.
   simpanRalat.classList.add("hidden");
   const medan = kumpulMedan();
   tunjukStatusSimpan("menyimpan");
@@ -1124,7 +1152,9 @@ async function simpanMedanBiasa() {
 let sedangSimpanSlug = false; // pengawal in-flight: elak blur + "Teruskan" simpan berganda
 async function simpanSlug() {
   if (!eventId) return;
-  if (bacaSahaja) return; // lihat nota dalam simpanMedanBiasa()
+  // Slug ialah Langkah 2 — kekal beku selepas tamat tempoh. (Berbeza
+  // dengan simpanMedanBiasa yang kini dibenarkan untuk Langkah 4.)
+  if (bacaSahaja) return;
   const slugBaru = bersihkanSlug(cSlug.value);
   const slugLama = eventData?.slug || "";
   if (!slugBaru || slugBaru.length < 3) return; // slugStatus sudah papar sebab

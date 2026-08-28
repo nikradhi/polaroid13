@@ -108,26 +108,26 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow delete: if isAdmin();
 
-      // Kemas kini: tiga jalur berasingan.
+      // Kemas kini: empat jalur berasingan.
       allow update: if
         // (1) Admin — boleh ubah apa sahaja (pakej, status, tarikh luput, dll).
         isAdmin()
 
-        // (2) Pemilik event — hanya boleh customize medan tertentu, dan
-        //     HANYA sebelum majlis tamat tempoh.
-        //     TIDAK boleh ubah pakej/status/luput/had/kaunter/pemilik.
+        // (2a) Pemilik event, SEBELUM majlis tamat tempoh — boleh customize
+        //      medan tertentu. TIDAK boleh ubah pakej/status/luput/had/
+        //      kaunter/pemilik.
         //
-        //     `weddingDate` SENGAJA TIADA dalam senarai ini: ia penambat
-        //     tempoh langganan (expiresAt = weddingDate + tempoh pakej,
-        //     lihat kiraLuput() dalam js/majlis.js). Kalau pemilik boleh
-        //     mengubahnya, dia boleh menolak tarikh majlis ke hadapan
-        //     berulang kali dan melanjutkan langganan sendiri tanpa bayar.
-        //     Ditetapkan oleh super-admin sahaja.
+        //      `weddingDate` SENGAJA TIADA dalam senarai ini: ia penambat
+        //      tempoh langganan (expiresAt = weddingDate + tempoh pakej,
+        //      lihat kiraLuput() dalam js/majlis.js). Kalau pemilik boleh
+        //      mengubahnya, dia boleh menolak tarikh majlis ke hadapan
+        //      berulang kali dan melanjutkan langganan sendiri tanpa bayar.
+        //      Ditetapkan oleh super-admin sahaja.
         //
-        //     Semakan tempoh di sini menjadikan "mod baca sahaja" panel
-        //     tetapan.html dikuatkuasa di SERVER, bukan sekadar input
-        //     disabled yang boleh dibuka semula dari browser console.
-        //     Muat turun ZIP tidak terjejas — ia operasi BACA.
+        //      Semakan tempoh di sini menjadikan "mod baca sahaja" panel
+        //      tetapan.html dikuatkuasa di SERVER, bukan sekadar input
+        //      disabled yang boleh dibuka semula dari browser console.
+        //      Muat turun ZIP tidak terjejas — ia operasi BACA.
         || (
           request.auth != null
           && resource.data.ownerUid == request.auth.uid
@@ -136,6 +136,28 @@ service cloud.firestore {
               .hasOnly(['coupleName', 'themeColor',
                         'welcomeMessage', 'slug', 'preModeration', 'latarId',
                         'fontId'])
+        )
+
+        // (2b) Pemilik event, REKA BENTUK sahaja — BILA-BILA MASA, termasuk
+        //      selepas majlis tamat tempoh.
+        //
+        //      Galeri majlis kekal boleh dilihat selama-lamanya, jadi
+        //      pengantin patut boleh mengemas kini rupanya walaupun tempoh
+        //      langganan sudah berakhir. Yang dibekukan selepas tamat tempoh
+        //      ialah REKOD majlis (URL, nama, tarikh, mesej aluan) — bukan
+        //      kosmetiknya.
+        //
+        //      SENGAJA tiada semakan `expiresAt` di sini: senarai ini ialah
+        //      subset ketat lane (2a), jadi satu lane melindungi kedua-dua
+        //      tempoh tanpa menduakan logik tarikh.
+        //
+        //      Padan dengan kumpulMedan() dalam js/tetapan.js, yang
+        //      mengehadkan payload kepada tiga medan ini bila bacaSahaja.
+        || (
+          request.auth != null
+          && resource.data.ownerUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['themeColor', 'latarId', 'fontId'])
         )
 
         // (3) Tetamu — hanya menaikkan kaunter foto (+1) semasa upload.

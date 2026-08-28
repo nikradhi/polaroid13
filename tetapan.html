@@ -246,6 +246,11 @@
       <p class="text-sm text-amber-800">
         ⚠️ <strong>Mod super-admin</strong> — anda sedang mengedit panel
         <span id="jalur-admin-nama" class="font-medium"></span>. Setiap perubahan disimpan terus ke majlis pelanggan.
+        <br />
+        <!-- Ketiadaan penanda ini pernah menyebabkan mod baca sahaja disangka
+             rosak: borang nampak terbuka pada majlis yang sudah tamat tempoh
+             semata-mata kerana modAdmin memintas kunci (js/tetapan.js). -->
+        Borang <strong>tidak dikunci</strong> di sini walaupun majlis sudah tamat tempoh — pelanggan sendiri nampak Langkah 2 &amp; 3 sebagai baca sahaja.
       </p>
       <a href="super-admin.html" class="text-sm font-medium text-amber-900 underline">← Kembali ke super-admin</a>
     </div>
@@ -353,7 +358,11 @@
         <!-- ===== Langkah 4: Reka bentuk ===== -->
         <section class="langkah" data-langkah="4">
           <h3 class="font-serif-elegan text-xl font-semibold mb-3">Reka bentuk</h3>
-          <p class="nota-baca-sahaja hidden kotak-amaran mb-3">🔒 Majlis telah tamat tempoh — tetapan ini kini baca sahaja.</p>
+          <!-- Kelas BERBEZA daripada .nota-baca-sahaja: Langkah 4 sengaja
+               kekal boleh diedit selepas majlis tamat tempoh (lihat lane 2b
+               dalam firestore.rules). Nota ini menjelaskan borang yang
+               terbuka itu memang disengajakan. -->
+          <p class="nota-reka-terbuka hidden kotak-jaya mb-3">✏️ Majlis telah tamat tempoh, tetapi anda masih boleh mengubah reka bentuk galeri di sini bila-bila masa.</p>
           <!-- Tema warna -->
           <label class="block text-sm font-medium mb-1.5">Tema warna</label>
           <div id="swatches" class="flex flex-wrap items-center gap-2 mb-2"></div>
