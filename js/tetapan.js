@@ -29,7 +29,7 @@ import {
   updateDoc,
   writeBatch,
 } from "./firebase.js";
-import { bolehMuatTurun, formatTarikhMajlis, sudahLuput, modBacaSahaja } from "./majlis.js";
+import { bolehMuatTurun, formatTarikhMajlis, sudahLuput, modBacaSahaja, dapatEventId, muatEvent } from "./majlis.js";
 import { muatTurunZipMajlis, mesejRalatMuatTurun, cetusMuatTurun, namaBersih } from "./muat-turun.js";
 import {
   LATAR_PILIHAN, gayaLatar, latarSah,
@@ -69,6 +69,8 @@ const emelPelanggan = document.getElementById("emel-pelanggan");
 const butangKeluar = document.getElementById("butang-keluar");
 const zonTiadaMajlis = document.getElementById("zon-tiada-majlis");
 const zonMajlis = document.getElementById("zon-majlis");
+const jalurAdmin = document.getElementById("jalur-admin");
+const jalurAdminNama = document.getElementById("jalur-admin-nama");
 
 const infoPakej = document.getElementById("info-pakej");
 const infoStatus = document.getElementById("info-status");
@@ -128,6 +130,12 @@ const cetakQrEl = document.getElementById("cetak-qrcode");
 
 let eventId = null;   // id majlis pengguna
 let eventData = null; // data majlis semasa
+// MOD SUPER-ADMIN: ?e=<eventId> membenarkan super-admin membuka panel
+// mana-mana pelanggan (untuk membantu set URL/tema/QR). Hanya DILAYAN jika
+// admins/{uid} wujud — lihat sahkanAdmin(). Pelanggan biasa yang membuka
+// pautan yang sama jatuh balik ke laluan ownerUid seperti biasa.
+const idDiminta = dapatEventId();
+let modAdmin = false;
 let slugSah = false;  // adakah slug semasa dalam input sah & tersedia
 // Majlis tamat tempoh / dinyahaktifkan -> panel jadi BACA SAHAJA.
 // Dikira sekali dalam isiBorang() dan dirujuk oleh penjaga simpan.
@@ -228,15 +236,23 @@ butangKeluar.addEventListener("click", async () => {
 // ------------------------------------------------------------
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    // ?e= hanya dilayan untuk super-admin sebenar. JANGAN bergantung pada
+    // kejayaan membaca events/{id} sebagai gate — majlis status 'active'
+    // boleh dibaca sesiapa (firestore.rules).
+    modAdmin = !!idDiminta && (await sahkanAdmin(user.uid));
     zonLogin.classList.add("hidden");
     zonPanel.classList.remove("hidden");
     emelPelanggan.textContent = user.email || "";
-    await muatMajlis(user.uid);
+    if (modAdmin) await muatMajlisAdmin(idDiminta);
+    else await muatMajlis(user.uid);
   } else {
     zonPanel.classList.add("hidden");
     zonLogin.classList.remove("hidden");
     zonMajlis.classList.add("hidden");
     zonTiadaMajlis.classList.add("hidden");
+    modAdmin = false;
+    jalurAdmin?.classList.add("hidden");
+    butangKeluar.classList.remove("hidden");
     eventId = null; eventData = null;
     // Kunci semula butang muat turun supaya keadaan pengguna sebelum
     // ini tidak tertinggal untuk pengguna seterusnya.
@@ -258,11 +274,7 @@ async function muatMajlis(uid) {
       return;
     }
     const d = snap.docs[0];
-    eventId = d.id;
-    eventData = d.data();
-    zonTiadaMajlis.classList.add("hidden");
-    zonMajlis.classList.remove("hidden");
-    isiBorang();
+    pasangMajlis(d.id, d.data());
   } catch (err) {
     console.error("Ralat muat majlis:", err);
     zonMajlis.classList.add("hidden");
@@ -272,6 +284,79 @@ async function muatMajlis(uid) {
   }
 }
 
+// Satu tempat untuk memasang majlis ke dalam panel — dikongsi laluan
+// pemilik (muatMajlis) dan laluan super-admin (muatMajlisAdmin).
+function pasangMajlis(id, data) {
+  eventId = id;
+  eventData = data;
+  zonTiadaMajlis.classList.add("hidden");
+  zonMajlis.classList.remove("hidden");
+  isiBorang();
+}
+
+// ------------------------------------------------------------
+//  MOD SUPER-ADMIN
+// ------------------------------------------------------------
+//  Adakah pengguna ini super-admin? Corak sama seperti sahkanAdmin()
+//  dalam js/super-admin.js: rules menolak baca admins/{uid} untuk
+//  bukan admin, jadi ralat = bukan admin.
+async function sahkanAdmin(uid) {
+  try {
+    const snap = await getDoc(doc(db, "admins", uid));
+    return snap.exists();
+  } catch {
+    return false;
+  }
+}
+
+// Muat majlis mana-mana pelanggan mengikut id (super-admin sahaja).
+// Rules memberi isAdmin() baca/tulis penuh pada events, jadi tiada
+// sign-in sebagai pelanggan diperlukan — sesi admin kekal utuh.
+async function muatMajlisAdmin(id) {
+  // Pasang "chrome" mod admin DAHULU, sebelum sebarang I/O: walaupun
+  // majlis tidak dijumpai, admin mesti ada pautan kembali dan TIDAK
+  // boleh terjumpa butang Log Keluar (ia membunuh sesi super-admin juga).
+  jalurAdminNama.textContent = id;
+  jalurAdmin.classList.remove("hidden");
+  butangKeluar.classList.add("hidden");
+  try {
+    const ev = await muatEvent(id);
+    if (!ev) {
+      zonMajlis.classList.add("hidden");
+      zonTiadaMajlis.classList.remove("hidden");
+      zonTiadaMajlis.querySelector("p").textContent =
+        "Majlis tidak dijumpai. Semak ID majlis dalam pautan.";
+      return;
+    }
+    pasangMajlis(ev.id, ev);
+    await paparJalurAdmin(ev);
+  } catch (err) {
+    console.error("Ralat muat majlis (mod admin):", err);
+    zonMajlis.classList.add("hidden");
+    zonTiadaMajlis.classList.remove("hidden");
+    zonTiadaMajlis.querySelector("p").textContent =
+      "Gagal memuat majlis. Semak sambungan / rules Firestore.";
+  }
+}
+
+async function paparJalurAdmin(ev) {
+  // Emel pelanggan hanya ada dalam eventsPrivate (admin sahaja). Gagal
+  // baca bukan alasan untuk menggagalkan panel — papar nama sahaja.
+  let emel = "";
+  try {
+    const p = await getDoc(doc(db, "eventsPrivate", ev.id));
+    // Fallback ev.ownerEmail: majlis lama sebelum eventsPrivate wujud
+    // (corak sama seperti emelEvent() dalam js/super-admin.js).
+    emel = (p.exists() ? p.data().ownerEmail : "") || ev.ownerEmail || "";
+  } catch (err) {
+    console.warn("Tidak dapat membaca emel pelanggan:", err);
+  }
+  const nama = (ev.coupleName || "").trim() || "(tiada nama)";
+  jalurAdminNama.textContent = emel ? `${nama} — ${emel}` : nama;
+  // Header menunjuk pelanggan yang sedang diedit, bukan emel admin.
+  emelPelanggan.textContent = emel || nama;
+}
+
 // ------------------------------------------------------------
 //  ISI BORANG dari data sedia ada
 // ------------------------------------------------------------
@@ -279,7 +364,11 @@ function isiBorang() {
   // Info pakej
   infoPakej.textContent = namaPakej(eventData);
   const luput = sudahLuput(eventData);
-  bacaSahaja = modBacaSahaja(eventData);
+  // Mod super-admin: jangan kunci borang. Gunaan utamanya ialah membetulkan
+  // majlis yang tamat tempoh / belum aktif, dan firestore.rules memang
+  // membenarkan isAdmin() menulis — kunci UI di sini hanya menyusahkan.
+  // Amaran #amaran-majlis di bawah kekal dipapar (maklumat, bukan kunci).
+  bacaSahaja = modAdmin ? false : modBacaSahaja(eventData);
   infoStatus.textContent = luput ? "Tamat tempoh" : (eventData.status === "active" ? "Aktif" : "Nyahaktif");
   infoTamat.textContent = formatTarikh(eventData.expiresAt);
   paparKuota();      // "142 / 300 gambar" + jalur

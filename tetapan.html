@@ -240,6 +240,16 @@
       <button id="butang-keluar" class="rounded-xl border border-[#d9a5ac] px-4 py-2 text-sm font-medium text-[#b76e79] hover:bg-white/60 transition">Log Keluar</button>
     </header>
 
+    <!-- Jalur MOD SUPER-ADMIN — hanya dinyahsembunyi bila admins/{uid} wujud
+         DAN ?e=<eventId> ada dalam URL. Lihat paparJalurAdmin() di js/tetapan.js. -->
+    <div id="jalur-admin" class="hidden mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+      <p class="text-sm text-amber-800">
+        ⚠️ <strong>Mod super-admin</strong> — anda sedang mengedit panel
+        <span id="jalur-admin-nama" class="font-medium"></span>. Setiap perubahan disimpan terus ke majlis pelanggan.
+      </p>
+      <a href="super-admin.html" class="text-sm font-medium text-amber-900 underline">← Kembali ke super-admin</a>
+    </div>
+
     <!-- Tiada majlis -->
     <div id="zon-tiada-majlis" class="hidden text-center py-16">
       <div class="text-5xl mb-3">🔎</div>

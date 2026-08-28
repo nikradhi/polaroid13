@@ -40,6 +40,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   increment,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -47,13 +48,12 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updatePassword,
   sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-import { firebaseConfig } from "./config.js";
+import { firebaseConfig, URL_API } from "./config.js";
 
 // Amaran mesra jika kredential belum diisi
 if (String(firebaseConfig.apiKey).includes("MASUKKAN_")) {
@@ -89,13 +89,13 @@ export {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   increment,
   writeBatch,
   // Auth
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updatePassword,
   sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
@@ -139,34 +139,62 @@ export async function ciptaAkaunPelanggan(emel, kataLaluan) {
 }
 
 // ------------------------------------------------------------
-//  Tukar kata laluan pelanggan TANPA backend (super-admin sahaja).
+//  Tetapkan kata laluan pelanggan (super-admin sahaja).
 //
-//  Firebase SDK sisi-klien TIDAK boleh menukar kata laluan pengguna
-//  lain — updatePassword() perlu sesi pengguna itu sendiri. Jalan
-//  keluar tanpa pelayan: log masuk sebagai pelanggan itu pada app
-//  Firebase KEDUA (sesi super-admin pada `auth` utama kekal tidak
-//  tersentuh — sama seperti ciptaAkaunPelanggan di atas), kemudian
-//  updatePassword(). Log masuk baru sahaja berlaku, jadi syarat
-//  "recent login" updatePassword() sentiasa dipenuhi.
+//  SDK sisi-klien tidak boleh menukar kata laluan pengguna lain tanpa
+//  kelayakan semasa pengguna itu, jadi kerja sebenar dibuat oleh Admin
+//  SDK dalam api/tetap-kata-laluan.js. Ini SATU-SATUNYA panggilan fetch
+//  ke backend milik sendiri dalam seluruh kod pelanggan.
 //
-//  klLama diambil daripada eventsPrivate/{id}.kataLaluan yang direkod
-//  ketika akaun dicipta. Jika ia tidak lagi sepadan (pelanggan sudah
-//  menukarnya sendiri melalui pautan emel), signIn campak
-//  auth/invalid-credential — pemanggil menterjemahkannya kepada
-//  cadangan guna butang "Reset kata laluan" (emel).
+//  Ia duduk di sini, bersebelahan ciptaAkaunPelanggan(), kerana ia
+//  operasi akaun berhak-istimewa yang sama jenisnya dan ia perlukan
+//  `auth.currentUser` yang sudah dimiliki fail ini.
+//
+//  Fungsi itu hidup dalam projek Vercel BERASINGAN (tapak sendiri di
+//  GitHub Pages), jadi panggilan ini silang-asal — asal tapak mesti ada
+//  dalam ASAL_DIBENAR di sebelah pelayan atau pelayar menolaknya.
+//
+//  Campak Error dengan .message dalam BM sedia-papar (terus ke alert).
 // ------------------------------------------------------------
-export async function tukarKataLaluanPelanggan(emel, klLama, klBaru) {
-  // Nama app unik: dua panggilan berturut-turut untuk emel yang sama
-  // akan campak "app already exists" jika emel diguna sebagai nama.
-  const namaApp = "tukar-kl-" + Date.now();
-  const appKedua = initializeApp(firebaseConfig, namaApp);
-  const authKedua = getAuth(appKedua);
+export async function tetapKataLaluanPelanggan(eventId, kataLaluanBaru) {
+  if (!URL_API) {
+    throw new Error(
+      "Ciri ini belum disediakan: URL_API masih kosong dalam js/config.js.\n\n" +
+      'Sementara itu guna butang "Reset kata laluan" (hantar emel).'
+    );
+  }
+
+  const pengguna = auth.currentUser;
+  if (!pengguna) throw new Error("Sesi tamat. Sila log masuk semula.");
+  // forceRefresh: token segar supaya akaun yang baru dinyahdayakan ditolak.
+  const token = await pengguna.getIdToken(true);
+
+  let res;
   try {
-    const kredensial = await signInWithEmailAndPassword(authKedua, emel, klLama);
-    await updatePassword(kredensial.user, klBaru);
-    // Log keluar app sementara supaya tiada sesi tergantung
-    await signOut(authKedua);
-  } finally {
-    await deleteApp(appKedua);
+    res = await fetch(`${URL_API}/api/tetap-kata-laluan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ eventId, kataLaluanBaru }),
+    });
+  } catch {
+    // fetch hanya campak untuk kegagalan rangkaian — CORS yang ditolak
+    // juga sampai ke sini, jadi sebut kedua-dua kemungkinan.
+    throw new Error(
+      "Tidak dapat menghubungi pelayan. Semak sambungan internet, dan " +
+      "pastikan asal tapak ini disenarai dalam ASAL_DIBENAR pada fungsi itu."
+    );
+  }
+
+  if (res.status === 404) {
+    throw new Error(
+      `Fungsi tidak dijumpai di ${URL_API}/api/tetap-kata-laluan.\n\n` +
+      "Semak URL_API dalam js/config.js dan pastikan projek Vercel sudah di-deploy."
+    );
+  }
+
+  let data = null;
+  try { data = await res.json(); } catch { /* bukan JSON — biar null */ }
+  if (!res.ok || !data || data.ok !== true) {
+    throw new Error((data && data.mesej) || `Gagal menetapkan kata laluan (HTTP ${res.status}).`);
   }
 }

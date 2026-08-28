@@ -17,7 +17,7 @@ import {
   db,
   configSiap,
   ciptaAkaunPelanggan,
-  tukarKataLaluanPelanggan,
+  tetapKataLaluanPelanggan,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
@@ -30,6 +30,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   increment,
   query,
   where,
@@ -292,7 +293,6 @@ let unsubs = [];
 let dataEvents = [];        // [{ id, ...medan event }]
 let petaEmel = new Map();   // eventId -> ownerEmail (dari eventsPrivate)
 let petaTelefon = new Map();// eventId -> telefon (dari eventsPrivate)
-let petaKl = new Map();     // eventId -> kata laluan terakhir yang direkod admin
 
 let istilahCari = "";              // teks carian semasa (huruf kecil)
 let statusPilih = "";              // penapis status: "" | "active" | "inactive" | "luput"
@@ -311,7 +311,6 @@ function hentikanLangganan() {
   dataEvents = [];
   petaEmel = new Map();
   petaTelefon = new Map();
-  petaKl = new Map();
   storanTepatBait = null;
   storanTepatBil = 0;
   storanTepatMasa = "";
@@ -600,11 +599,6 @@ formCipta.addEventListener("submit", async (e) => {
       ownerEmail: emel,
       ownerUid: uid,
       telefon,
-      // Direkod supaya super-admin boleh menetapkan kata laluan baharu
-      // terus dari kad majlis tanpa backend (lihat tukarKataLaluanPelanggan).
-      // WAJIB kekal dalam eventsPrivate — hanya admin boleh membacanya.
-      // JANGAN sesekali pindahkan ke `events`: dokumen itu dibaca awam.
-      kataLaluan,
     });
     await batch.commit();
 
@@ -1061,7 +1055,6 @@ function mulaLangganan() {
     (snap) => {
       petaEmel = new Map(snap.docs.map((d) => [d.id, d.data().ownerEmail]));
       petaTelefon = new Map(snap.docs.map((d) => [d.id, d.data().telefon || ""]));
-      petaKl = new Map(snap.docs.map((d) => [d.id, d.data().kataLaluan || ""]));
       paparSenarai();
     },
     (err) => {
@@ -1086,29 +1079,6 @@ function emelEvent(ev) {
 // No. telefon majlis (koleksi peribadi — admin sahaja)
 function telefonEvent(ev) {
   return petaTelefon.get(ev.id) || "";
-}
-
-// Kata laluan terakhir yang direkod super-admin (koleksi peribadi).
-// Kosong untuk majlis lama yang dicipta sebelum ciri ini wujud — kad
-// tersebut akan meminta kata laluan semasa melalui prompt().
-function klEvent(ev) {
-  return petaKl.get(ev.id) || "";
-}
-
-// Kod ralat Firebase Auth -> mesej BM untuk laluan "Set kata laluan".
-// Kes terpenting: kata laluan yang direkod sudah basi kerana pelanggan
-// menukarnya sendiri melalui pautan emel reset.
-function mesejRalatKl(err) {
-  const kod = err?.code || "";
-  if (kod === "auth/wrong-password" || kod === "auth/invalid-credential") {
-    return "Kata laluan yang direkod tidak lagi sah — pelanggan mungkin sudah " +
-           'menukarnya sendiri. Guna butang "Reset kata laluan" (emel).';
-  }
-  if (kod === "auth/user-not-found") return "Akaun log masuk pelanggan tidak dijumpai.";
-  if (kod === "auth/too-many-requests") return "Terlalu banyak percubaan. Cuba lagi sebentar.";
-  if (kod === "auth/weak-password") return "Kata laluan terlalu lemah (min. 6 aksara).";
-  if (kod === "auth/network-request-failed") return "Masalah rangkaian. Semak sambungan internet.";
-  return "Gagal menukar kata laluan.";
 }
 
 // Tukar no. telefon Malaysia -> format wa.me antarabangsa (cth. "60123456789").
@@ -1197,7 +1167,7 @@ function paparSenarai() {
   if (halamanSemasa > jumlahHalaman) halamanSemasa = jumlahHalaman;
   const mula = (halamanSemasa - 1) * SAIZ_HALAMAN;
   tertapis.slice(mula, mula + SAIZ_HALAMAN).forEach((ev) => {
-    senarai.appendChild(binaBaris(ev.id, ev, emelEvent(ev), klEvent(ev)));
+    senarai.appendChild(binaBaris(ev.id, ev, emelEvent(ev)));
   });
 
   // Zon kosong (tiada majlis langsung) vs tiada hasil carian
@@ -2150,7 +2120,7 @@ if (gPadamSemua) {
 // ------------------------------------------------------------
 //  BINA SATU BARIS MAJLIS (kad — mobile-first)
 // ------------------------------------------------------------
-function binaBaris(id, ev, emel = "", klSemasa = "") {
+function binaBaris(id, ev, emel = "") {
   const luput = sudahLuput(ev.expiresAt);
   const kad = document.createElement("div");
   kad.className = "rounded-2xl border bg-white/70 p-4 " +
@@ -2230,6 +2200,10 @@ function binaBaris(id, ev, emel = "", klSemasa = "") {
             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
         }">${ev.isDemo === true ? "Demo ✓" : "Jadikan demo"}</button>
 
+      <a href="tetapan.html?e=${encodeURIComponent(id)}" target="_blank" rel="noopener"
+        title="Buka panel pelanggan (URL, nama, tema, QR) sebagai super-admin. Sesi admin anda kekal."
+        class="rounded-lg px-3 py-1.5 text-sm font-medium bg-green-50 text-green-700 hover:bg-green-100">Buka panel ↗</a>
+
       <select data-act="pakej" class="rounded-lg border border-[#e5d5ca] bg-white px-2 py-1.5 text-sm">
         ${Object.keys(PAKEJ).map((k) =>
           `<option value="${k}" ${idPakej === k ? "selected" : ""}>${esc(pakejEfektif(k, cfgPakejSemasa).nama)}</option>`
@@ -2289,12 +2263,14 @@ function binaBaris(id, ev, emel = "", klSemasa = "") {
     }
   });
 
-  // --- Set kata laluan pelanggan TERUS (tanpa backend) ---
+  // --- Set kata laluan pelanggan TERUS ---
   //     Berbeza daripada "Reset kata laluan" di atas: yang itu menghantar
-  //     emel dan pelanggan tetapkan sendiri. Yang ini menetapkannya
-  //     serta-merta — untuk pelanggan yang tidak dapat akses emelnya.
-  //     Mekanismenya: log masuk sebagai pelanggan pada app Firebase kedua,
-  //     kemudian updatePassword(). Lihat tukarKataLaluanPelanggan().
+  //     emel dan pelanggan tetapkan sendiri (zero-backend). Yang ini
+  //     menetapkannya serta-merta melalui Admin SDK dalam fungsi
+  //     serverless — untuk pelanggan yang tidak dapat akses emelnya.
+  //     Kata laluan LAMA tidak pernah diperlukan: pelayan menentukan
+  //     sasaran daripada events/{id}.ownerUid. Lihat
+  //     tetapKataLaluanPelanggan() + api/tetap-kata-laluan.js.
   const medanKl = kad.querySelector('[data-act="kl-baru"]');
   const butangSetKl = kad.querySelector('[data-act="set-kl"]');
 
@@ -2306,22 +2282,11 @@ function binaBaris(id, ev, emel = "", klSemasa = "") {
       return;
     }
 
-    // Majlis lama (dicipta sebelum ciri ini) tiada kata laluan direkod —
-    // minta yang semasa sekali sahaja; ia direkod selepas berjaya.
-    let klLama = klSemasa;
-    if (!klLama) {
-      klLama = prompt(
-        `Kata laluan SEMASA untuk ${emel} tidak direkod (majlis lama).\n\n` +
-        "Taip kata laluan semasa untuk meneruskan, atau Batal dan guna " +
-        'butang "Reset kata laluan" (emel).'
-      );
-      if (!klLama) return;
-    }
-
     if (!confirm(
       `Tetapkan kata laluan baharu untuk "${ev.coupleName || id}" (${emel})?\n\n` +
-      "Kata laluan lama akan terus tidak sah. Anda perlu memberitahu kata " +
-      "laluan baharu ini kepada pelanggan secara peribadi."
+      "Kata laluan lama akan terus tidak sah dan pelanggan dilog keluar dari " +
+      "semua peranti. Anda perlu memberitahu kata laluan baharu ini kepada " +
+      "pelanggan secara peribadi."
     )) return;
 
     butangSetKl.disabled = true;
@@ -2329,14 +2294,20 @@ function binaBaris(id, ev, emel = "", klSemasa = "") {
     const teksAsal = butangSetKl.textContent;
     butangSetKl.textContent = "…";
     try {
-      await tukarKataLaluanPelanggan(emel, klLama, klBaru);
-      // Rekod yang baharu supaya reset seterusnya tidak perlu prompt lagi.
-      await updateDoc(doc(db, "eventsPrivate", id), { kataLaluan: klBaru });
+      await tetapKataLaluanPelanggan(id, klBaru);
+      // Bersihkan sisa medan kata laluan teks biasa daripada versi lama
+      // ciri ini. Tidak kritikal, jadi kegagalannya tidak menenggelamkan
+      // operasi yang sudah berjaya.
+      try {
+        await updateDoc(doc(db, "eventsPrivate", id), { kataLaluan: deleteField() });
+      } catch (e) { console.warn("Gagal membersihkan medan kataLaluan lama:", e); }
       medanKl.value = "";
       alert(`Kata laluan untuk ${emel} berjaya ditukar.`);
     } catch (err) {
       console.error(err);
-      alert(mesejRalatKl(err));
+      // Mesej datang terus daripada pelayan (sudah dalam BM) atau daripada
+      // tetapKataLaluanPelanggan untuk kegagalan rangkaian/konfigurasi.
+      alert(err?.message || "Gagal menetapkan kata laluan.");
     } finally {
       // Kad ini mungkin tidak dibina semula (pengawal menaip dalam
       // paparSenarai), jadi kawalan mesti dipulihkan sendiri di sini.
