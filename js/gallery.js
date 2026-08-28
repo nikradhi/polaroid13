@@ -32,12 +32,7 @@ import {
 import { pasangBorangUpload } from "./upload.js";
 import { pasangPhotobooth } from "./photobooth.js";
 import { pasangGuestbook, muatUcapan, binaKadUcapan } from "./guestbook.js";
-import {
-  setDimuatNaik,
-  tandakanDimuatNaik,
-  lupakanDimuatNaik,
-  pangkasDemo,
-} from "./demo.js";
+import { pangkasDemo } from "./demo.js";
 import { bolehGuna } from "./gating.js";
 import { adalahJalur } from "./imej.js";
 
@@ -281,13 +276,17 @@ function tambahFoto(id, row, diAtas = false) {
   butangMuat.addEventListener("click", () => muatTurunFoto(indeks));
   bar.appendChild(butangMuat);
 
-  // Padam — HANYA pada majlis demo, dan hanya untuk gambar yang pelayar
-  // ini sendiri muat naik. Majlis pelanggan sebenar tidak pernah sampai
-  // ke sini (bolehPadamSendiri kekal false).
-  if (bolehPadamSendiri && setDimuatNaik().has(id)) {
+  // Padam — HANYA pada majlis demo. Majlis pelanggan sebenar tidak pernah
+  // sampai ke sini (bolehPadamSendiri kekal false).
+  //
+  // SEMUA gambar demo, bukan yang dimuat naik pelayar ini sahaja: rules
+  // sudah membenarkan sesiapa memadam mana-mana gambar majlis demo
+  // (klausa eventDemo dalam firestore.rules), jadi menapis di UI hanya
+  // menyembunyikan ciri itu daripada pelawat tanpa melindungi apa-apa.
+  if (bolehPadamSendiri) {
     const butangPadam = document.createElement("button");
     butangPadam.className = "reaksi reaksi--padam";
-    butangPadam.setAttribute("aria-label", "Padam gambar yang anda muat naik");
+    butangPadam.setAttribute("aria-label", "Padam gambar ini");
     butangPadam.title = "Padam gambar ini";
     butangPadam.innerHTML = `<span class="ikon">✕</span> PADAM`;
     butangPadam.addEventListener("click", () => padamFoto(indeks));
@@ -458,7 +457,6 @@ async function padamFoto(i) {
     await deleteDoc(doc(db, "photos", foto.id));
     foto.dipadam = true;
     foto.el.remove();
-    lupakanDimuatNaik(foto.id);
     if (lbIndeks === i) tutupLightbox();
     tapisGaleri(); // segarkan kiraan tab & mesej kosong
   } catch (err) {
@@ -852,10 +850,6 @@ pasangModal(modalUpload);
 // Callback bila upload berjaya: masukkan gambar baharu di ATAS galeri.
 function masukkanFotoBaru(foto) {
   zonKosong.classList.add("hidden");
-  // Majlis demo: ingat gambar ini milik pelayar ini SEBELUM tambahFoto()
-  // dipanggil — kad membaca senarai itu semasa dibina untuk memutuskan
-  // sama ada butang padam dipaparkan.
-  if (bolehPadamSendiri) tandakanDimuatNaik(foto.id);
   tambahFoto(
     foto.id,
     {

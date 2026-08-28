@@ -285,7 +285,7 @@ const CIRI_DEMO = [
   "Galeri penuh",
   "Photobooth digital",
   "Ucapan/guestbook",
-  "Padam gambar sendiri",
+  "Padam gambar",
 ];
 
 function binaKadDemo() {

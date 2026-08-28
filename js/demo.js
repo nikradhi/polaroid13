@@ -5,19 +5,18 @@
 //  dokumen events (diset oleh super-admin sahaja — ia tiada dalam
 //  hasOnly() pemilik dalam firestore.rules).
 //
-//  Dua tugas modul ini:
+//  Satu tugas: PANGKAS gambar lama supaya demo awam tidak menelan
+//  kuota Firestore 1 GB yang dikongsi dengan majlis PELANGGAN SEBENAR.
+//  Setiap gambar ~85 KB base64; tanpa pemangkasan, satu demo yang
+//  dipaut dari halaman utama boleh membesar tanpa henti. photoLimit
+//  demo sengaja dibiar tinggi supaya penguji tidak pernah nampak
+//  mesej "kuota penuh" — had sebenar di sini.
 //
-//   1. INGAT gambar yang PELAYAR INI muat naik, supaya butang padam
-//      hanya muncul pada gambar sendiri. Ini keselesaan UI sahaja —
-//      rules membenarkan sesiapa memadam gambar majlis demo, jadi
-//      jangan anggap ini kawalan keselamatan.
-//
-//   2. PANGKAS gambar lama supaya demo awam tidak menelan kuota
-//      Firestore 1 GB yang dikongsi dengan majlis PELANGGAN SEBENAR.
-//      Setiap gambar ~85 KB base64; tanpa pemangkasan, satu demo yang
-//      dipaut dari halaman utama boleh membesar tanpa henti.
-//      photoLimit demo sengaja dibiar tinggi supaya penguji tidak
-//      pernah nampak mesej "kuota penuh" — had sebenar di sini.
+//  NOTA: modul ini pernah menjejak "gambar yang pelayar ini muat naik"
+//  dalam localStorage untuk mengehadkan butang padam kepada gambar
+//  sendiri. Itu dibuang: rules memang membenarkan sesiapa memadam
+//  mana-mana gambar majlis demo, jadi tapisan UI itu menyembunyikan
+//  ciri daripada pelawat tanpa melindungi apa-apa.
 // ============================================================
 
 import {
@@ -39,37 +38,6 @@ export const HAD_DEMO = 150;
 // Buang beberapa lebihan sekali gus supaya kita tidak menjalankan
 // pemangkasan pada setiap muat naik sebaik had dicapai.
 const PANGKAS_SEKALI = 20;
-
-// ------------------------------------------------------------
-//  "Gambar yang pelayar ini muat naik" (localStorage)
-// ------------------------------------------------------------
-//  Sengaja TIDAK berskop eventId: id dokumen Firestore unik global,
-//  jadi satu senarai memadai untuk semua majlis.
-//
-//  Kedua-dua baca DAN tulis dibalut try/catch — localStorage melontar
-//  (bukan sekadar pulangkan null) dalam mod peribadi sesetengah
-//  pelayar dan bila kuota storan penuh.
-// ------------------------------------------------------------
-const KUNCI_DIMUATNAIK = "polaroid_demo_dimuatnaik";
-
-export function setDimuatNaik() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(KUNCI_DIMUATNAIK) || "[]"));
-  } catch {
-    return new Set();
-  }
-}
-
-export function tandakanDimuatNaik(id) {
-  if (!id) return;
-  try {
-    const s = setDimuatNaik();
-    s.add(id);
-    localStorage.setItem(KUNCI_DIMUATNAIK, JSON.stringify([...s]));
-  } catch {
-    /* mod peribadi / kuota penuh — butang padam sekadar tidak muncul */
-  }
-}
 
 // ------------------------------------------------------------
 //  PANGKAS GAMBAR DEMO LAMA
@@ -122,15 +90,3 @@ export async function pangkasDemo(eventId) {
   }
 }
 
-// Buang id daripada senarai tempatan selepas gambar benar-benar dipadam,
-// supaya senarai tidak membesar tanpa henti.
-export function lupakanDimuatNaik(id) {
-  if (!id) return;
-  try {
-    const s = setDimuatNaik();
-    if (!s.delete(id)) return;
-    localStorage.setItem(KUNCI_DIMUATNAIK, JSON.stringify([...s]));
-  } catch {
-    /* abai */
-  }
-}
