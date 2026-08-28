@@ -17,6 +17,7 @@ import {
   db,
   configSiap,
   ciptaAkaunPelanggan,
+  tukarKataLaluanPelanggan,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
@@ -93,6 +94,9 @@ const zonTiadaCarian = document.getElementById("zon-tiada-carian");
 const inputCari = document.getElementById("input-cari");
 const filterStatus = document.getElementById("filter-status");
 const filterPakej = document.getElementById("filter-pakej");
+const cariTelefon = document.getElementById("cari-telefon");
+const filterTarikh = document.getElementById("filter-tarikh");
+const btnTarikhKosong = document.getElementById("filter-tarikh-kosong");
 const zonPagination = document.getElementById("pagination");
 const storanTeks = document.getElementById("storan-teks");
 const storanBar = document.getElementById("storan-bar");
@@ -129,6 +133,7 @@ const cNama = document.getElementById("c-nama");
 const cTelefon = document.getElementById("c-telefon");
 const cPakej = document.getElementById("c-pakej");
 const cTarikhKahwin = document.getElementById("c-tarikh-kahwin");
+const cDemo = document.getElementById("c-demo");
 const butangCipta = document.getElementById("butang-cipta");
 const ciptaRalat = document.getElementById("cipta-ralat");
 const ciptaJaya = document.getElementById("cipta-jaya");
@@ -287,10 +292,13 @@ let unsubs = [];
 let dataEvents = [];        // [{ id, ...medan event }]
 let petaEmel = new Map();   // eventId -> ownerEmail (dari eventsPrivate)
 let petaTelefon = new Map();// eventId -> telefon (dari eventsPrivate)
+let petaKl = new Map();     // eventId -> kata laluan terakhir yang direkod admin
 
 let istilahCari = "";              // teks carian semasa (huruf kecil)
 let statusPilih = "";              // penapis status: "" | "active" | "inactive" | "luput"
 let pakejPilih = "";               // penapis jenis pakej: "" | id pakej
+let telefonCari = "";              // digit telefon ternormal (keWaMe); "" = tiada penapis
+let tarikhPilih = "";              // tarikh majlis "yyyy-mm-dd"; "" = semua tarikh
 let halamanSemasa = 1;             // halaman aktif (pagination sisi-klien, mula 1)
 
 let storanTepatBait = null;  // hasil "Kira tepat" (null = guna anggaran)
@@ -303,6 +311,7 @@ function hentikanLangganan() {
   dataEvents = [];
   petaEmel = new Map();
   petaTelefon = new Map();
+  petaKl = new Map();
   storanTepatBait = null;
   storanTepatBil = 0;
   storanTepatMasa = "";
@@ -521,6 +530,7 @@ formCipta.addEventListener("submit", async (e) => {
   const telefon = cTelefon.value.trim();
   const pakej = cPakej.value;
   const tarikhKahwin = (cTarikhKahwin?.value || "").trim();
+  const demo = !!cDemo?.checked;
   const cfg = PAKEJ[pakej];
 
   if (!emel || kataLaluan.length < 6 || !cfg) {
@@ -533,6 +543,15 @@ formCipta.addEventListener("submit", async (e) => {
     ciptaRalat.classList.remove("hidden");
     return;
   }
+
+  // Pengesahan SEBELUM butang dinyahdayakan — kalau tidak, membatalkan
+  // akan meninggalkan butang tersekat pada "Sedang mencipta…".
+  if (demo && !confirm(
+    "Cipta ini sebagai majlis DEMO awam?\n\n" +
+    "Sesiapa yang tahu pautannya boleh memadam gambar di dalamnya tanpa log masuk, " +
+    "dan galeri akan memangkas gambar lama secara automatik.\n\n" +
+    "Jangan gunakan ini untuk pelanggan sebenar."
+  )) return;
 
   butangCipta.disabled = true;
   const teksAsal = butangCipta.textContent;
@@ -562,6 +581,11 @@ formCipta.addEventListener("submit", async (e) => {
       photoLimit: hadGambarDBEfektif(pakej, cfgPakejSemasa),
       photoCount: 0,
       preModeration: false,
+      // Majlis DEMO awam — lihat eventDemo() dalam firestore.rules.
+      // Sentiasa ditulis (bukan hanya bila true) supaya nilainya eksplisit
+      // pada setiap dokumen baharu; rules guna .get('isDemo', false) jadi
+      // majlis lama tanpa medan ini tetap selamat.
+      isDemo: demo,
       // Snapshot keupayaan pakej BERKESAN (override super-admin) supaya
       // gating berkuat kuasa sebenar untuk majlis ini walau butiran pakej
       // diubah kemudian. Majlis lama tanpa medan ini fallback ke lalai kod.
@@ -576,6 +600,11 @@ formCipta.addEventListener("submit", async (e) => {
       ownerEmail: emel,
       ownerUid: uid,
       telefon,
+      // Direkod supaya super-admin boleh menetapkan kata laluan baharu
+      // terus dari kad majlis tanpa backend (lihat tukarKataLaluanPelanggan).
+      // WAJIB kekal dalam eventsPrivate — hanya admin boleh membacanya.
+      // JANGAN sesekali pindahkan ke `events`: dokumen itu dibaca awam.
+      kataLaluan,
     });
     await batch.commit();
 
@@ -584,6 +613,9 @@ formCipta.addEventListener("submit", async (e) => {
       (tarikhKahwin
         ? `Tarikh majlis <b>${esc(tarikhKahwin)}</b> — tamat tempoh ${esc(formatTarikh(kiraLuput(tarikhKahwin, tempohHariEfektif(pakej, cfgPakejSemasa))))}.<br>`
         : `⚠️ Tarikh majlis belum ditetapkan — tempoh dikira dari hari ini. Set tarikh majlis pada kad majlis untuk membetulkannya.<br>`) +
+      (demo
+        ? `⚠️ Ini majlis <b>DEMO</b>. Log masuk tetapan.html dengan akaun ini dan set slugnya kepada <b>demo</b> supaya butang "Cuba Demo" di halaman utama berfungsi.<br>`
+        : "") +
       `Beritahu pelanggan: log masuk di <b>tetapan.html</b> guna emel &amp; kata laluan ini untuk pilih URL &amp; tema majlis.`;
     ciptaJaya.classList.remove("hidden");
     formCipta.reset();
@@ -1029,6 +1061,7 @@ function mulaLangganan() {
     (snap) => {
       petaEmel = new Map(snap.docs.map((d) => [d.id, d.data().ownerEmail]));
       petaTelefon = new Map(snap.docs.map((d) => [d.id, d.data().telefon || ""]));
+      petaKl = new Map(snap.docs.map((d) => [d.id, d.data().kataLaluan || ""]));
       paparSenarai();
     },
     (err) => {
@@ -1055,6 +1088,29 @@ function telefonEvent(ev) {
   return petaTelefon.get(ev.id) || "";
 }
 
+// Kata laluan terakhir yang direkod super-admin (koleksi peribadi).
+// Kosong untuk majlis lama yang dicipta sebelum ciri ini wujud — kad
+// tersebut akan meminta kata laluan semasa melalui prompt().
+function klEvent(ev) {
+  return petaKl.get(ev.id) || "";
+}
+
+// Kod ralat Firebase Auth -> mesej BM untuk laluan "Set kata laluan".
+// Kes terpenting: kata laluan yang direkod sudah basi kerana pelanggan
+// menukarnya sendiri melalui pautan emel reset.
+function mesejRalatKl(err) {
+  const kod = err?.code || "";
+  if (kod === "auth/wrong-password" || kod === "auth/invalid-credential") {
+    return "Kata laluan yang direkod tidak lagi sah — pelanggan mungkin sudah " +
+           'menukarnya sendiri. Guna butang "Reset kata laluan" (emel).';
+  }
+  if (kod === "auth/user-not-found") return "Akaun log masuk pelanggan tidak dijumpai.";
+  if (kod === "auth/too-many-requests") return "Terlalu banyak percubaan. Cuba lagi sebentar.";
+  if (kod === "auth/weak-password") return "Kata laluan terlalu lemah (min. 6 aksara).";
+  if (kod === "auth/network-request-failed") return "Masalah rangkaian. Semak sambungan internet.";
+  return "Gagal menukar kata laluan.";
+}
+
 // Tukar no. telefon Malaysia -> format wa.me antarabangsa (cth. "60123456789").
 // Buang bukan-digit; "0xx" -> "60xx". Pulang "" jika tiada digit.
 function keWaMe(tel) {
@@ -1064,7 +1120,8 @@ function keWaMe(tel) {
   return d;
 }
 
-// Tapis ikut carian teks + penapis status + penapis jenis pakej (semua bergabung AND)
+// Tapis ikut carian teks + telefon + status + jenis pakej + tarikh majlis
+// (semua bergabung AND)
 function tapisEvents() {
   return dataEvents.filter((ev) => {
     // Carian teks: padan pada nama pasangan / emel / telefon / slug
@@ -1084,11 +1141,34 @@ function tapisEvents() {
       const idPakej = PAKEJ[ev.package] ? ev.package : "basic";
       if (idPakej !== pakejPilih) return false;
     }
+    // Telefon: banding DIGIT ternormal supaya format tersimpan tidak penting.
+    // keWaMe() buang bukan-digit + "0xx" -> "60xx" pada kedua-dua belah, jadi
+    // "0123456789", "012-345", "123456789" dan "+60 12-345 6789" semuanya
+    // menemui rekod yang sama.
+    if (telefonCari) {
+      if (!keWaMe(telefonEvent(ev)).includes(telefonCari)) return false;
+    }
+    // Tarikh majlis: padanan tepat pada rentetan "yyyy-mm-dd" (banding terus).
+    // Majlis TANPA tarikh sah sengaja dibiar lulus supaya rekod belum
+    // bertarikh tidak hilang daripada senarai bila penapis ini aktif.
+    if (tarikhPilih) {
+      const wd = tarikhKahwinSah(ev.weddingDate);
+      if (wd && wd !== tarikhPilih) return false;
+    }
     return true;
   });
 }
 
 function paparSenarai() {
+  // Jangan bina semula ketika admin sedang menaip kata laluan baharu:
+  // render semula membuang seluruh senarai (innerHTML = "") dan medan itu
+  // terpadam. onSnapshot events dicetuskan oleh apa-apa sahaja — termasuk
+  // photoCount yang naik bila tetamu memuat naik gambar ke majlis lain.
+  // Selamat ditangguh: tiada medan lain pada kad boleh berubah tanpa
+  // tindakan admin sendiri, dan snapshot berikutnya akan menampung.
+  const fokus = document.activeElement;
+  if (fokus?.dataset?.act === "kl-baru" && fokus.value !== "") return;
+
   zonMemuat.classList.add("hidden");
   senarai.innerHTML = "";
 
@@ -1117,7 +1197,7 @@ function paparSenarai() {
   if (halamanSemasa > jumlahHalaman) halamanSemasa = jumlahHalaman;
   const mula = (halamanSemasa - 1) * SAIZ_HALAMAN;
   tertapis.slice(mula, mula + SAIZ_HALAMAN).forEach((ev) => {
-    senarai.appendChild(binaBaris(ev.id, ev, emelEvent(ev)));
+    senarai.appendChild(binaBaris(ev.id, ev, emelEvent(ev), klEvent(ev)));
   });
 
   // Zon kosong (tiada majlis langsung) vs tiada hasil carian
@@ -1226,6 +1306,34 @@ if (filterStatus) {
 if (filterPakej) {
   filterPakej.addEventListener("change", () => {
     pakejPilih = filterPakej.value;
+    halamanSemasa = 1;
+    paparSenarai();
+  });
+}
+
+// --- Carian telefon: normalkan SEKALI di sini, bukan setiap baris dalam tapisan ---
+if (cariTelefon) {
+  cariTelefon.addEventListener("input", () => {
+    telefonCari = keWaMe(cariTelefon.value);
+    halamanSemasa = 1;
+    paparSenarai();
+  });
+}
+
+// --- Penapis tarikh majlis + butang kosongkan ---
+if (filterTarikh) {
+  filterTarikh.addEventListener("change", () => {
+    tarikhPilih = tarikhKahwinSah(filterTarikh.value);
+    if (btnTarikhKosong) btnTarikhKosong.classList.toggle("hidden", !tarikhPilih);
+    halamanSemasa = 1;
+    paparSenarai();
+  });
+}
+if (btnTarikhKosong) {
+  btnTarikhKosong.addEventListener("click", () => {
+    if (filterTarikh) filterTarikh.value = "";
+    tarikhPilih = "";
+    btnTarikhKosong.classList.add("hidden");
     halamanSemasa = 1;
     paparSenarai();
   });
@@ -2042,7 +2150,7 @@ if (gPadamSemua) {
 // ------------------------------------------------------------
 //  BINA SATU BARIS MAJLIS (kad — mobile-first)
 // ------------------------------------------------------------
-function binaBaris(id, ev, emel = "") {
+function binaBaris(id, ev, emel = "", klSemasa = "") {
   const luput = sudahLuput(ev.expiresAt);
   const kad = document.createElement("div");
   kad.className = "rounded-2xl border bg-white/70 p-4 " +
@@ -2147,6 +2255,18 @@ function binaBaris(id, ev, emel = "") {
         : `<button disabled title="Tiada emel pelanggan" class="rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-50 text-gray-400 cursor-not-allowed">Reset kata laluan</button>`
       }
 
+      ${emel
+        ? `<label class="flex items-center gap-1 text-sm text-[#8a7a70]"
+             title="Tetapkan kata laluan pelanggan TERUS tanpa emel. Guna bila pelanggan tidak dapat akses emelnya.">
+             KL baharu:
+             <input data-act="kl-baru" type="text" autocomplete="off" spellcheck="false"
+               maxlength="64" placeholder="min. 6 aksara"
+               class="w-32 rounded-lg border border-[#e5d5ca] bg-white px-2 py-1 text-sm" />
+           </label>
+           <button data-act="set-kl" class="rounded-lg px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100">Set</button>`
+        : ""
+      }
+
       <button data-act="padam" class="ml-auto rounded-lg px-3 py-1.5 text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100">Padam</button>
     </div>
   `;
@@ -2167,6 +2287,69 @@ function binaBaris(id, ev, emel = "") {
       alert("Gagal menghantar emel reset. Pastikan emel pelanggan sah.");
       btn.disabled = false;
     }
+  });
+
+  // --- Set kata laluan pelanggan TERUS (tanpa backend) ---
+  //     Berbeza daripada "Reset kata laluan" di atas: yang itu menghantar
+  //     emel dan pelanggan tetapkan sendiri. Yang ini menetapkannya
+  //     serta-merta — untuk pelanggan yang tidak dapat akses emelnya.
+  //     Mekanismenya: log masuk sebagai pelanggan pada app Firebase kedua,
+  //     kemudian updatePassword(). Lihat tukarKataLaluanPelanggan().
+  const medanKl = kad.querySelector('[data-act="kl-baru"]');
+  const butangSetKl = kad.querySelector('[data-act="set-kl"]');
+
+  async function tetapKl() {
+    const klBaru = (medanKl.value || "").trim();
+    if (klBaru.length < 6) {
+      alert("Kata laluan mesti sekurang-kurangnya 6 aksara.");
+      medanKl.focus();
+      return;
+    }
+
+    // Majlis lama (dicipta sebelum ciri ini) tiada kata laluan direkod —
+    // minta yang semasa sekali sahaja; ia direkod selepas berjaya.
+    let klLama = klSemasa;
+    if (!klLama) {
+      klLama = prompt(
+        `Kata laluan SEMASA untuk ${emel} tidak direkod (majlis lama).\n\n` +
+        "Taip kata laluan semasa untuk meneruskan, atau Batal dan guna " +
+        'butang "Reset kata laluan" (emel).'
+      );
+      if (!klLama) return;
+    }
+
+    if (!confirm(
+      `Tetapkan kata laluan baharu untuk "${ev.coupleName || id}" (${emel})?\n\n` +
+      "Kata laluan lama akan terus tidak sah. Anda perlu memberitahu kata " +
+      "laluan baharu ini kepada pelanggan secara peribadi."
+    )) return;
+
+    butangSetKl.disabled = true;
+    medanKl.disabled = true;
+    const teksAsal = butangSetKl.textContent;
+    butangSetKl.textContent = "…";
+    try {
+      await tukarKataLaluanPelanggan(emel, klLama, klBaru);
+      // Rekod yang baharu supaya reset seterusnya tidak perlu prompt lagi.
+      await updateDoc(doc(db, "eventsPrivate", id), { kataLaluan: klBaru });
+      medanKl.value = "";
+      alert(`Kata laluan untuk ${emel} berjaya ditukar.`);
+    } catch (err) {
+      console.error(err);
+      alert(mesejRalatKl(err));
+    } finally {
+      // Kad ini mungkin tidak dibina semula (pengawal menaip dalam
+      // paparSenarai), jadi kawalan mesti dipulihkan sendiri di sini.
+      butangSetKl.disabled = false;
+      medanKl.disabled = false;
+      butangSetKl.textContent = teksAsal;
+    }
+  }
+
+  butangSetKl?.addEventListener("click", tetapKl);
+  // Tiada <form> di sini, jadi Enter perlu diwayarkan secara eksplisit.
+  medanKl?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); tetapKl(); }
   });
 
   // --- Toggle status aktif/nyahaktif ---

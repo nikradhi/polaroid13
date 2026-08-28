@@ -47,6 +47,7 @@ import {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updatePassword,
   sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
@@ -94,6 +95,7 @@ export {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updatePassword,
   sendPasswordResetEmail,
   signOut,
   onAuthStateChanged,
@@ -132,6 +134,39 @@ export async function ciptaAkaunPelanggan(emel, kataLaluan) {
     return { uid };
   } finally {
     // Buang app sementara (bersihkan memori & sambungan)
+    await deleteApp(appKedua);
+  }
+}
+
+// ------------------------------------------------------------
+//  Tukar kata laluan pelanggan TANPA backend (super-admin sahaja).
+//
+//  Firebase SDK sisi-klien TIDAK boleh menukar kata laluan pengguna
+//  lain — updatePassword() perlu sesi pengguna itu sendiri. Jalan
+//  keluar tanpa pelayan: log masuk sebagai pelanggan itu pada app
+//  Firebase KEDUA (sesi super-admin pada `auth` utama kekal tidak
+//  tersentuh — sama seperti ciptaAkaunPelanggan di atas), kemudian
+//  updatePassword(). Log masuk baru sahaja berlaku, jadi syarat
+//  "recent login" updatePassword() sentiasa dipenuhi.
+//
+//  klLama diambil daripada eventsPrivate/{id}.kataLaluan yang direkod
+//  ketika akaun dicipta. Jika ia tidak lagi sepadan (pelanggan sudah
+//  menukarnya sendiri melalui pautan emel), signIn campak
+//  auth/invalid-credential — pemanggil menterjemahkannya kepada
+//  cadangan guna butang "Reset kata laluan" (emel).
+// ------------------------------------------------------------
+export async function tukarKataLaluanPelanggan(emel, klLama, klBaru) {
+  // Nama app unik: dua panggilan berturut-turut untuk emel yang sama
+  // akan campak "app already exists" jika emel diguna sebagai nama.
+  const namaApp = "tukar-kl-" + Date.now();
+  const appKedua = initializeApp(firebaseConfig, namaApp);
+  const authKedua = getAuth(appKedua);
+  try {
+    const kredensial = await signInWithEmailAndPassword(authKedua, emel, klLama);
+    await updatePassword(kredensial.user, klBaru);
+    // Log keluar app sementara supaya tiada sesi tergantung
+    await signOut(authKedua);
+  } finally {
     await deleteApp(appKedua);
   }
 }

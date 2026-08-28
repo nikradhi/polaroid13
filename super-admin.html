@@ -680,6 +680,20 @@
           <p class="text-[11px] text-[#a09088] mt-1">Tempoh pakej mula dikira <b>selepas</b> tarikh ini. Pelanggan tidak boleh mengubahnya. Biar kosong jika belum pasti — tempoh akan dikira dari hari ini sehingga anda menetapkannya.</p>
         </div>
         <div class="sm:col-span-2">
+          <label class="flex items-start gap-2 text-sm cursor-pointer">
+            <input id="c-demo" type="checkbox" class="mt-1" />
+            <span>
+              <b>Majlis DEMO awam</b>
+              <span class="block text-[11px] text-[#a09088] mt-0.5">
+                Untuk bakal pelanggan mencuba produk. Sesiapa yang tahu pautannya boleh
+                memadam gambar di dalamnya <b>tanpa log masuk</b>, dan galeri memangkas
+                gambar lama secara automatik. Jangan tanda untuk pelanggan sebenar.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div class="sm:col-span-2">
           <div id="cipta-ralat" class="hidden kotak-ralat mb-3" role="alert"></div>
           <div id="cipta-jaya" class="hidden kotak-jaya mb-3" role="status"></div>
           <button id="butang-cipta" type="submit" class="btn-utama rounded-xl px-6 py-3 font-medium">Cipta Akaun &amp; Majlis</button>
@@ -774,8 +788,17 @@
       class="w-full rounded-xl border border-[#e5d5ca] bg-white/70 px-4 py-2.5 text-sm mb-2
              focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]" />
 
-    <!-- Penapis: status akaun + jenis pakej (sisi-klien) -->
-    <div class="flex flex-wrap gap-2 mb-4">
+    <!-- Carian telefon: padanan DIGIT ternormal (keWaMe), bukan substring mentah.
+         Kotak berasingan sebab telefon disimpan persis seperti ditaip
+         ("012-3456789", "+60 12-345 6789"), jadi carian teks biasa di atas
+         terlepas melainkan format ditaip semula tepat-tepat. -->
+    <input id="cari-telefon" type="search" inputmode="tel"
+      placeholder="Cari no. telefon… (cth. 012-345 6789)"
+      class="w-full rounded-xl border border-[#e5d5ca] bg-white/70 px-4 py-2.5 text-sm mb-2
+             focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]" />
+
+    <!-- Penapis: status akaun + jenis pakej + tarikh majlis (sisi-klien) -->
+    <div class="flex flex-wrap items-center gap-2 mb-4">
       <select id="filter-status"
         class="rounded-xl border border-[#e5d5ca] bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]">
         <option value="">Semua status</option>
@@ -788,6 +811,16 @@
         <option value="">Semua pakej</option>
         <!-- pilihan pakej diisi oleh JS (ikut nama pakej efektif) -->
       </select>
+      <label class="flex items-center gap-2 text-sm text-[#8a7a70]">
+        Tarikh majlis
+        <input id="filter-tarikh" type="date"
+          class="rounded-xl border border-[#e5d5ca] bg-white/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d9a5ac]" />
+      </label>
+      <!-- Butang ini WAJIB, bukan hiasan: Chrome/Edge moden tiada ikon "clear"
+           pada <input type="date">, jadi tanpanya admin tersekat dengan penapis
+           tarikh yang tidak jelas cara membuangnya. Disembunyi bila tiada tarikh. -->
+      <button id="filter-tarikh-kosong" type="button"
+        class="hidden px-2 py-2 text-sm text-[#8a7a70] hover:text-[#b76e79]">✕ Kosongkan</button>
     </div>
 
     <div id="zon-memuat" class="hidden text-center py-12">
