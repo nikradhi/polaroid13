@@ -608,7 +608,7 @@ function binaKadPakej() {
     const meta = document.createElement("p");
     meta.className = "text-xs text-[#a09088] mb-2";
     meta.textContent =
-      `${p.hadGambar == null ? "Gambar tanpa had" : p.hadGambar + " gambar"} · ${p.tempohHari} hari`;
+      `${p.hadGambar == null ? "Gambar tanpa had" : p.hadGambar + " gambar"} · tempoh ${p.tempohHari} hari`;
     kad.appendChild(meta);
 
     // Senarai ciri

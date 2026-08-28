@@ -130,9 +130,10 @@
     <div class="flex items-center gap-2">
       <!-- Pautan guna SLUG (e.html?e=demo), bukan eventId keras.
 
-           TERSEMBUNYI SEMENTARA: slug `demo` belum wujud — buang kelas
-           `hidden` sebaik majlis demo dicipta. (Sama di index.html.) -->
-      <a href="e.html?e=demo"
+           Bermula `hidden` dan didedah oleh js/pakej.js HANYA bila
+           slugs/demo benar-benar wujud — jadi ia tidak pernah jadi
+           pautan mati, dan tiada langkah manual selepas demo dicipta. -->
+      <a id="pautan-demo" href="e.html?e=demo"
         class="hidden btn-utama inline-flex items-center justify-center gap-1.5 rounded-xl px-6 py-3 font-medium">
         Cuba Demo
       </a>
@@ -143,9 +144,11 @@
     </div>
   </header>
 
-  <!-- lg:max-w-4xl memberi ruang kepada tiga kad pakej (sm:grid-cols-3);
-       pada 42rem setiap kad hanya ~13rem dan harga mula terbungkus. -->
-  <main class="mx-auto w-full max-w-2xl lg:max-w-4xl px-4 sm:px-6 py-8 sm:py-12">
+  <!-- lg:max-w-6xl memberi ruang kepada EMPAT kad pakej (Demo + tiga
+       pakej berbayar). Pada 56rem yang lama, empat kad hanya ~13rem
+       setiap satu dan harga "RM120" mula terbungkus. Hanya Langkah 1
+       melebar — Langkah 2-4 ada max-w-2xl sendiri. -->
+  <main class="mx-auto w-full max-w-2xl lg:max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
 
     <!-- Tajuk -->
     <header class="text-center mb-6">
@@ -173,7 +176,9 @@
         <p id="banner-promo-tajuk" class="font-serif-elegan text-lg font-semibold text-[#b76e79]"></p>
         <p id="banner-promo-tarikh" class="text-xs text-[#a09088] mt-0.5"></p>
       </div>
-      <div id="kad-pakej" class="grid gap-3 sm:grid-cols-3"></div>
+      <!-- 2x2 pada tablet, empat lajur pada desktop. Kad "Demo" disisip
+           di hadapan oleh js/pakej.js, dan HANYA bila slugs/demo wujud. -->
+      <div id="kad-pakej" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
       <div class="mt-5 flex items-start gap-3 rounded-2xl border border-[#ecd7a6] bg-[#fdf6e6] px-4 py-3 max-w-md mx-auto shadow-sm">
         <svg viewBox="0 0 24 24" class="h-5 w-5 flex-shrink-0 text-[#c79a3d] mt-0.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="9"></circle>
@@ -189,7 +194,7 @@
     <!-- ============ LANGKAH 2: Maklumat Majlis ============ -->
     <!-- Langkah 2-4 ialah borang: dikekang pada 42rem walaupun bekas utama
          lebih luas, supaya medan input tidak meregang merentas skrin desktop.
-         Hanya Langkah 1 (tiga kad pakej) menggunakan lebar penuh. -->
+         Hanya Langkah 1 (kad pakej) menggunakan lebar penuh. -->
     <section id="langkah-2" class="langkah hidden max-w-2xl mx-auto">
       <h2 class="font-serif-elegan text-2xl font-semibold mb-1 text-center">Langkah 2 — Maklumat Majlis</h2>
       <p class="text-xs text-[#a09088] mb-4 text-center">Butiran ini akan dipapar pada halaman majlis anda.</p>

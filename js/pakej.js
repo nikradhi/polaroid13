@@ -35,6 +35,11 @@ let promoSemasa = null;
 // Data butiran pakej (settings/pakej). null = belum dimuat / tiada override.
 let cfgPakej = null;
 
+// Adakah majlis demo wujud (slugs/demo)? Kad "Demo" dan butang "Cuba Demo"
+// pada bar atas hanya dipapar bila ya — supaya kita tidak pernah
+// mengiklankan pautan mati semasa demo belum disediakan.
+let adaDemo = false;
+
 // --- Rujukan DOM ---
 const kadPakej = document.getElementById("kad-pakej");
 const bannerPromo = document.getElementById("banner-promo");
@@ -188,7 +193,7 @@ function binaKadPakej() {
       "inline-block self-start rounded-full px-2.5 py-0.5 text-[11px] mb-4 " +
       (popular ? "bg-white/15 text-[#fdf1f2]" : "bg-[#fbeef0] text-[#8a7a70]");
     meta.textContent =
-      `${p.hadGambar == null ? "Gambar tanpa had" : p.hadGambar + " gambar"} · ${p.tempohHari} hari`;
+      `${p.hadGambar == null ? "Gambar tanpa had" : p.hadGambar + " gambar"} · tempoh ${p.tempohHari} hari`;
     kad.appendChild(meta);
 
     // Senarai ciri — sembunyi ciri berkunci; papar "Semua ciri {prev} +"
@@ -254,6 +259,115 @@ function binaKadPakej() {
 
     kadPakej.appendChild(kad);
   });
+
+  // Kad DEMO — disisip di HADAPAN supaya barisnya membaca sebagai tangga:
+  // percuma -> Basic -> Premium -> Eksklusif. (Tukar ke appendChild kalau
+  // mahu ia terakhir.) SENTIASA dipapar; `adaDemo` memacu keadaan
+  // butangnya, bukan kewujudan kad.
+  kadPakej.insertBefore(binaKadDemo(), kadPakej.firstChild);
+}
+
+// ------------------------------------------------------------
+//  KAD DEMO
+// ------------------------------------------------------------
+//  SENGAJA literal statik, BUKAN kunci keempat dalam PAKEJ. Menambahnya
+//  ke PAKEJ akan merebak ke belasan pengguna yang tidak sepatutnya tahu
+//  tentang demo — antaranya pakejTerendahUntukCiri() (yang memacu SETIAP
+//  mesej naik taraf dalam app), petak statistik super-admin yang dikira
+//  untuk tiga tier sahaja, grid override promo/butiran, dan senarai kad
+//  dalam panel pelanggan (js/tetapan.js).
+//
+//  Butangnya <a>, BUKAN <button>: menetapkan pakejDipilih = "demo" akan
+//  jatuh balik kepada harga Basic dalam pakejEfektif()/hargaPakej() dan
+//  menghasilkan pesanan WhatsApp palsu pada Langkah 4.
+// ------------------------------------------------------------
+const CIRI_DEMO = [
+  "Galeri penuh",
+  "Photobooth digital",
+  "Ucapan/guestbook",
+  "Padam gambar sendiri",
+];
+
+function binaKadDemo() {
+  const kad = document.createElement("div");
+  // Varian terang biasa — BUKAN .kad-mewah. Premium mesti kekal
+  // satu-satunya kad yang diserlahkan.
+  //
+  // Bila majlis demo belum wujud, kad guna corak "Akan datang" yang SAMA
+  // seperti kad Eksklusif: malap + lencana kelabu + butang nyahdaya.
+  kad.className =
+    "relative rounded-3xl border p-5 flex flex-col transition-transform " +
+    (adaDemo ? "" : "opacity-70 ") +
+    "shadow-sm hover:-translate-y-0.5 border-[#ecd9cf] bg-white/80";
+
+  if (!adaDemo) {
+    const soon = document.createElement("span");
+    // Kelas sama persis seperti lencana "Akan datang" kad Eksklusif.
+    soon.className =
+      "absolute -top-2 right-3 rounded-full bg-[#a09088] text-white text-[10px] px-2 py-0.5";
+    soon.textContent = "Akan datang";
+    kad.appendChild(soon);
+  }
+
+  const nama = document.createElement("p");
+  nama.className = "font-serif-elegan text-xl font-semibold text-[#5a4a42]";
+  nama.textContent = "Demo";
+  kad.appendChild(nama);
+
+  const tl = document.createElement("p");
+  tl.className = "text-[11px] mb-2 text-[#a09088]";
+  tl.textContent = "Cuba dahulu — percuma";
+  kad.appendChild(tl);
+
+  const harga = document.createElement("p");
+  harga.className = "mb-2";
+  harga.innerHTML = `<span class="text-3xl font-bold text-[#b76e79]">PERCUMA</span>`;
+  kad.appendChild(harga);
+
+  const meta = document.createElement("p");
+  meta.className =
+    "inline-block self-start rounded-full px-2.5 py-0.5 text-[11px] mb-4 " +
+    "bg-[#fbeef0] text-[#8a7a70]";
+  meta.textContent = "Tanpa akaun · Tanpa bayaran";
+  kad.appendChild(meta);
+
+  const ul = document.createElement("ul");
+  // flex-1 = butang semua kad sejajar pada garis bawah yang sama.
+  ul.className = "space-y-1.5 leading-tight text-xs mb-5 flex-1";
+  CIRI_DEMO.forEach((teksCiri) => {
+    const li = document.createElement("li");
+    li.className = "flex items-start gap-1.5 text-[#5a4a42]";
+    li.appendChild(ikonSemak("#b76e79"));
+    const teks = document.createElement("span");
+    teks.textContent = teksCiri;
+    li.appendChild(teks);
+    ul.appendChild(li);
+  });
+  kad.appendChild(ul);
+
+  if (adaDemo) {
+    // Keadaan hidup: <a>, TIDAK PERNAH <button> yang menetapkan
+    // pakejDipilih — nilai "demo" akan jatuh balik kepada harga Basic
+    // dalam pakejEfektif()/hargaPakej() dan menghasilkan pesanan
+    // WhatsApp palsu pada Langkah 4.
+    const pautan = document.createElement("a");
+    pautan.href = "e.html?e=demo";
+    pautan.className =
+      "btn-kedua rounded-xl py-2.5 font-medium text-sm text-center";
+    pautan.textContent = "Buka Demo →";
+    kad.appendChild(pautan);
+  } else {
+    // Belum sedia: butang nyahdaya, tiada pendengar klik — jadi tiada
+    // pautan mati walaupun kad sudah kelihatan.
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.disabled = true;
+    btn.className = "btn-kedua rounded-xl py-2.5 font-medium text-sm";
+    btn.textContent = "Akan datang";
+    kad.appendChild(btn);
+  }
+
+  return kad;
 }
 
 // ------------------------------------------------------------
@@ -432,16 +546,24 @@ function formatTarikhBanner(nilai) {
 
 async function muatPromo() {
   try {
-    const [snapPromo, snapPakej] = await Promise.all([
+    // Bacaan ketiga: adakah majlis demo sudah disediakan? `slugs` boleh
+    // dibaca awam, dan ketiga-tiganya selari — jadi kosnya hampir sifar.
+    const [snapPromo, snapPakej, snapDemo] = await Promise.all([
       getDoc(doc(db, "settings", "promo")),
       getDoc(doc(db, "settings", "pakej")),
+      getDoc(doc(db, "slugs", "demo")),
     ]);
     if (snapPromo.exists()) promoSemasa = snapPromo.data();
     if (snapPakej.exists()) cfgPakej = snapPakej.data();
+    adaDemo = snapDemo.exists();
   } catch (err) {
-    // Bukan kritikal — jika gagal, harga & butiran lalai dipapar.
+    // Bukan kritikal — jika gagal, harga & butiran lalai dipapar dan
+    // kad demo kekal tersembunyi (adaDemo kekal false).
     console.warn("Gagal memuat promosi/butiran pakej:", err);
   }
+
+  // Butang "Cuba Demo" pada bar atas — didedah hanya bila demo wujud.
+  if (adaDemo) document.getElementById("pautan-demo")?.classList.remove("hidden");
 
   // Banner promosi (hanya bila promo aktif)
   if (promoAktifSekarang(promoSemasa)) {

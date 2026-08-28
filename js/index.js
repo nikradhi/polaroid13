@@ -11,6 +11,7 @@
 // ============================================================
 
 import { dapatEventId } from "./majlis.js";
+import { db, doc, getDoc } from "./firebase.js";
 
 const eventId = dapatEventId();
 
@@ -34,4 +35,15 @@ if (eventId) {
   // Bar atas (nama produk + Log masuk) hanya untuk bakal/sedia pelanggan,
   // bukan tetamu majlis — sebab itu ia didedah di sini sahaja.
   document.getElementById("bar-atas")?.classList.remove("hidden");
+
+  // Butang "Cuba Demo" hanya bila majlis demo benar-benar wujud. `slugs`
+  // boleh dibaca awam, jadi tiada log masuk diperlukan. Kegagalan dibiar
+  // senyap: butang sekadar kekal tersembunyi, halaman tetap berfungsi.
+  getDoc(doc(db, "slugs", "demo"))
+    .then((snap) => {
+      if (snap.exists()) {
+        document.getElementById("pautan-demo")?.classList.remove("hidden");
+      }
+    })
+    .catch(() => {});
 }
