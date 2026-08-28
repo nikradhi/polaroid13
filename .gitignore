@@ -15,10 +15,3 @@ node_modules/
 
 # Artifak ujian Playwright (snapshot/screenshot)
 .playwright-mcp/
-
-# Vercel (projek fungsi serverless api/). .env* mengandungi kunci akaun
-# perkhidmatan Firebase — ia memintas SEMUA firestore.rules, jadi ia tidak
-# boleh sesekali dikomit.
-.vercel/
-.env
-.env*.local

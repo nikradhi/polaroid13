@@ -4,15 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Polaroid Online Wedding** — guests upload a photo + message from their phone; photos display as classic polaroids. Wedding-scale, zero-cost hosting: no build step, no Firebase Storage / Blaze plan.
-
-**Hosting is split, and that split matters.** The site itself is static on **GitHub Pages** (`polaroid.murahboss.my`, via the root `CNAME`) — pushing to `main` *is* the deploy. GitHub Pages cannot run server code, so the single serverless function in [api/](api/) is deployed to a **separate Vercel project** from the same repo and called cross-origin; its base URL lives in `URL_API` ([js/config.js](js/config.js)) and its allowed origins in `ASAL_DIBENAR` ([api/tetap-kata-laluan.js](api/tetap-kata-laluan.js)) — **both** must be updated if the domain changes. Everything except the super-admin "Set kata laluan" button works with `URL_API` empty.
+**Polaroid Online Wedding** — guests upload a photo + message from their phone; photos display as classic polaroids. Wedding-scale, zero-cost hosting: no backend, no build step, no Firebase Storage / Blaze plan.
 
 **Language convention:** all code, comments, UI text, and identifiers are in **Bahasa Melayu** (e.g. `tunjukStatus`, `butangHantar`, `zonGaleri`, `gagal`/`berjaya`). Keep new code in Malay to match. User-facing error messages are also Malay.
 
 ## Stack & running
 
-Pure **HTML + vanilla JS ES modules + Tailwind (CDN) + Firebase (CDN)**. No bundler, no lint/test tooling. The root `package.json` exists **only** for the Vercel function in [api/](api/) (`firebase-admin`) — the frontend never loads it, and it deliberately has **no `build` script**, since adding one makes Vercel try to build the static site.
+Pure **HTML + vanilla JS ES modules + Tailwind (CDN) + Firebase (CDN)**. No `package.json`, no bundler, no lint/test tooling.
 
 Because it uses ES modules, it **must be served over HTTP** (not `file://`):
 
@@ -21,9 +19,7 @@ npx serve .          # or:
 python -m http.server 8000
 ```
 
-There are **no automated tests** — `README.md` holds a manual test checklist (`Senarai Semak Ujian`). Deploy of *this* install is `git push` to `main` (GitHub Pages); the Vercel project attached to the same repo redeploys `api/` on the same push. A fresh copy can still be dropped on Netlify or imported to Vercel (preset "Other", no build) — but the "Set kata laluan" button needs the function, and Netlify Functions use a different format (`Request`/`Response`) than the Vercel handler in `api/`.
-
-**Browser caching bites during testing.** GitHub Pages serves JS with `Cache-Control: max-age=600` and the pages load `<script type="module">` with no version query, so a freshly pushed change can be invisible for up to 10 minutes. Hard-refresh (`Ctrl+Shift+R`) before concluding a change didn't deploy.
+There are **no automated tests** — `README.md` holds a manual test checklist (`Senarai Semak Ujian`). Deploy is drag-and-drop to Netlify or import to Vercel (preset "Other", no build).
 
 ### Firebase setup required before it works
 1. Paste your project's `firebaseConfig` into [js/config.js](js/config.js) (safe to commit — security comes from rules, not secrecy).
@@ -101,6 +97,3 @@ Each HTML page loads exactly one page-logic module (`upload.js`, `gallery.js`, `
 - **The super-admin panel has its own colour system, separate from `tema.js`.** `super-admin.html`'s inline `<style>` declares a `--sa-*` token set (light on `:root`, dark on `html.gelap`) plus a *compatibility layer* that re-maps ~30 Tailwind utility classes to those tokens. That layer exists because most of the panel's colour lives in raw utility classes inside `js/super-admin.js` template strings — re-mapping the class beats editing ~200 call sites, and it makes JS-generated markup (event cards, badges, pagination, the storage bar) go dark for free. It wins on **specificity, not source order** (`html.gelap .bg-white\/70` = 0,2,1 vs Tailwind's 0,1,0), which matters because the Play CDN rewrites its stylesheet on every rebuild. Adding a new colour class in `js/super-admin.js` means adding its dark mapping there too, or it silently stays light. Do **not** reuse the `--warna-*` namespace: `terapTema()` in [js/tema.js](js/tema.js) writes those as inline styles on `<html>`, which no stylesheet can beat. The class sits on `<html>` (not `<body>`) because `color-scheme: dark` — what darkens the 12 native `confirm()` dialogs, `<input type="date">` pickers and scrollbars — only applies from the root element. Mode preference is `localStorage` (`polaroid_sa_mod`), never Firestore: `admins/{uid}` is `write:false` in the rules.
 
 
-- **Two password-reset paths in the super-admin panel, and they are not interchangeable.** The card's **"Reset kata laluan"** button is `sendPasswordResetEmail()` — zero-backend, the customer sets their own password from the emailed link; it is the correct default. The **"KL baharu" field + "Set"** button takes effect immediately, for customers who cannot reach their email. The client SDK cannot change another user's password, so the work is done by the Admin SDK in [api/tetap-kata-laluan.js](api/tetap-kata-laluan.js); `tetapKataLaluanPelanggan()` in [js/firebase.js](js/firebase.js) is the only `fetch` to our own backend in the whole client. **The old password is never needed** — the client may only *name an event*, and the server resolves the target itself from `events/{eventId}.ownerUid`. Authorization is the caller's Firebase ID token plus an `admins/{uid}` existence check done server-side; never trust an "I am admin" flag from the client. `admins/{uid}` is `write:false` in the rules, which is what makes that the only door. An earlier version of this feature stored the password in plaintext at `eventsPrivate/{id}.kataLaluan`; that is gone, and a successful set now strips the field with `deleteField()`.
-- **The service-account key is nothing like `firebaseConfig`.** `js/config.js` is meant to be public — real security is Firestore rules. The service account used by `api/` **bypasses every rule** and can change any user's password, so it lives only in Vercel environment variables (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`) and must never reach the browser. `.gitignore` covers `.vercel/` and `.env*` for the same reason.
-- **`paparSenarai()` bails out early while the admin is typing in a "KL baharu" field.** The `events` `onSnapshot` fires on any change — including a guest's `photoCount` increment on an unrelated event — and the re-render does `senarai.innerHTML = ""`, which would wipe a half-typed password. The guard checks `document.activeElement.dataset.act === "kl-baru"`. It defers the render, never cancels it: no other field on a card can change without the admin's own action, and the next snapshot catches up.

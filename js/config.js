@@ -33,26 +33,6 @@ export const firebaseConfig = {
 // Nama pengantin — dipaparkan pada halaman QR (ubah ikut suka)
 export const NAMA_PENGANTIN = "Pengantin";
 
-// ============================================================
-//  URL FUNGSI SERVERLESS (api/)
-// ------------------------------------------------------------
-//  Tapak ini dihidangkan oleh GitHub Pages, yang statik sepenuhnya
-//  dan TIDAK boleh menjalankan /api. Jadi fail dalam api/ di-deploy
-//  ke satu projek Vercel BERASINGAN, dan panel memanggilnya
-//  silang-asal. Isi dengan URL deployment Vercel itu, tanpa "/" di
-//  hujung — contoh: "https://polaroid13.vercel.app".
-//
-//  Kosong = butang "Set kata laluan" dalam panel super-admin
-//  dimatikan dengan mesej jelas (bukan gagal senyap). Segala-galanya
-//  yang lain tetap berfungsi tanpa nilai ini.
-//
-//  PENTING — beza dengan firebaseConfig di atas: config itu MEMANG
-//  selamat didedah. Kunci AKAUN PERKHIDMATAN yang digunakan oleh
-//  fungsi itu TIDAK — ia memintas semua firestore.rules dan hidup
-//  hanya dalam pemboleh ubah persekitaran Vercel, tidak pernah di sini.
-// ============================================================
-export const URL_API = "";
-
 // NOTA: EXPORT_PASSWORD (kata laluan kongsi untuk muat turun ZIP) telah
 // DIBUANG. Muat turun kini berada dalam Panel Tetapan (tetapan.html) dan
 // dilindungi oleh log masuk Firebase Auth: hanya pemilik majlis

@@ -40,7 +40,6 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  deleteField,
   increment,
   writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -53,7 +52,7 @@ import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 
-import { firebaseConfig, URL_API } from "./config.js";
+import { firebaseConfig } from "./config.js";
 
 // Amaran mesra jika kredential belum diisi
 if (String(firebaseConfig.apiKey).includes("MASUKKAN_")) {
@@ -89,7 +88,6 @@ export {
   setDoc,
   updateDoc,
   deleteDoc,
-  deleteField,
   increment,
   writeBatch,
   // Auth
@@ -135,66 +133,5 @@ export async function ciptaAkaunPelanggan(emel, kataLaluan) {
   } finally {
     // Buang app sementara (bersihkan memori & sambungan)
     await deleteApp(appKedua);
-  }
-}
-
-// ------------------------------------------------------------
-//  Tetapkan kata laluan pelanggan (super-admin sahaja).
-//
-//  SDK sisi-klien tidak boleh menukar kata laluan pengguna lain tanpa
-//  kelayakan semasa pengguna itu, jadi kerja sebenar dibuat oleh Admin
-//  SDK dalam api/tetap-kata-laluan.js. Ini SATU-SATUNYA panggilan fetch
-//  ke backend milik sendiri dalam seluruh kod pelanggan.
-//
-//  Ia duduk di sini, bersebelahan ciptaAkaunPelanggan(), kerana ia
-//  operasi akaun berhak-istimewa yang sama jenisnya dan ia perlukan
-//  `auth.currentUser` yang sudah dimiliki fail ini.
-//
-//  Fungsi itu hidup dalam projek Vercel BERASINGAN (tapak sendiri di
-//  GitHub Pages), jadi panggilan ini silang-asal — asal tapak mesti ada
-//  dalam ASAL_DIBENAR di sebelah pelayan atau pelayar menolaknya.
-//
-//  Campak Error dengan .message dalam BM sedia-papar (terus ke alert).
-// ------------------------------------------------------------
-export async function tetapKataLaluanPelanggan(eventId, kataLaluanBaru) {
-  if (!URL_API) {
-    throw new Error(
-      "Ciri ini belum disediakan: URL_API masih kosong dalam js/config.js.\n\n" +
-      'Sementara itu guna butang "Reset kata laluan" (hantar emel).'
-    );
-  }
-
-  const pengguna = auth.currentUser;
-  if (!pengguna) throw new Error("Sesi tamat. Sila log masuk semula.");
-  // forceRefresh: token segar supaya akaun yang baru dinyahdayakan ditolak.
-  const token = await pengguna.getIdToken(true);
-
-  let res;
-  try {
-    res = await fetch(`${URL_API}/api/tetap-kata-laluan`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ eventId, kataLaluanBaru }),
-    });
-  } catch {
-    // fetch hanya campak untuk kegagalan rangkaian — CORS yang ditolak
-    // juga sampai ke sini, jadi sebut kedua-dua kemungkinan.
-    throw new Error(
-      "Tidak dapat menghubungi pelayan. Semak sambungan internet, dan " +
-      "pastikan asal tapak ini disenarai dalam ASAL_DIBENAR pada fungsi itu."
-    );
-  }
-
-  if (res.status === 404) {
-    throw new Error(
-      `Fungsi tidak dijumpai di ${URL_API}/api/tetap-kata-laluan.\n\n` +
-      "Semak URL_API dalam js/config.js dan pastikan projek Vercel sudah di-deploy."
-    );
-  }
-
-  let data = null;
-  try { data = await res.json(); } catch { /* bukan JSON — biar null */ }
-  if (!res.ok || !data || data.ok !== true) {
-    throw new Error((data && data.mesej) || `Gagal menetapkan kata laluan (HTTP ${res.status}).`);
   }
 }

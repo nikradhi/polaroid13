@@ -17,7 +17,6 @@ import {
   db,
   configSiap,
   ciptaAkaunPelanggan,
-  tetapKataLaluanPelanggan,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut,
@@ -30,7 +29,6 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  deleteField,
   increment,
   query,
   where,
@@ -1130,15 +1128,6 @@ function tapisEvents() {
 }
 
 function paparSenarai() {
-  // Jangan bina semula ketika admin sedang menaip kata laluan baharu:
-  // render semula membuang seluruh senarai (innerHTML = "") dan medan itu
-  // terpadam. onSnapshot events dicetuskan oleh apa-apa sahaja — termasuk
-  // photoCount yang naik bila tetamu memuat naik gambar ke majlis lain.
-  // Selamat ditangguh: tiada medan lain pada kad boleh berubah tanpa
-  // tindakan admin sendiri, dan snapshot berikutnya akan menampung.
-  const fokus = document.activeElement;
-  if (fokus?.dataset?.act === "kl-baru" && fokus.value !== "") return;
-
   zonMemuat.classList.add("hidden");
   senarai.innerHTML = "";
 
@@ -2229,18 +2218,6 @@ function binaBaris(id, ev, emel = "") {
         : `<button disabled title="Tiada emel pelanggan" class="rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-50 text-gray-400 cursor-not-allowed">Reset kata laluan</button>`
       }
 
-      ${emel
-        ? `<label class="flex items-center gap-1 text-sm text-[#8a7a70]"
-             title="Tetapkan kata laluan pelanggan TERUS tanpa emel. Guna bila pelanggan tidak dapat akses emelnya.">
-             KL baharu:
-             <input data-act="kl-baru" type="text" autocomplete="off" spellcheck="false"
-               maxlength="64" placeholder="min. 6 aksara"
-               class="w-32 rounded-lg border border-[#e5d5ca] bg-white px-2 py-1 text-sm" />
-           </label>
-           <button data-act="set-kl" class="rounded-lg px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-700 hover:bg-blue-100">Set</button>`
-        : ""
-      }
-
       <button data-act="padam" class="ml-auto rounded-lg px-3 py-1.5 text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100">Padam</button>
     </div>
   `;
@@ -2261,66 +2238,6 @@ function binaBaris(id, ev, emel = "") {
       alert("Gagal menghantar emel reset. Pastikan emel pelanggan sah.");
       btn.disabled = false;
     }
-  });
-
-  // --- Set kata laluan pelanggan TERUS ---
-  //     Berbeza daripada "Reset kata laluan" di atas: yang itu menghantar
-  //     emel dan pelanggan tetapkan sendiri (zero-backend). Yang ini
-  //     menetapkannya serta-merta melalui Admin SDK dalam fungsi
-  //     serverless — untuk pelanggan yang tidak dapat akses emelnya.
-  //     Kata laluan LAMA tidak pernah diperlukan: pelayan menentukan
-  //     sasaran daripada events/{id}.ownerUid. Lihat
-  //     tetapKataLaluanPelanggan() + api/tetap-kata-laluan.js.
-  const medanKl = kad.querySelector('[data-act="kl-baru"]');
-  const butangSetKl = kad.querySelector('[data-act="set-kl"]');
-
-  async function tetapKl() {
-    const klBaru = (medanKl.value || "").trim();
-    if (klBaru.length < 6) {
-      alert("Kata laluan mesti sekurang-kurangnya 6 aksara.");
-      medanKl.focus();
-      return;
-    }
-
-    if (!confirm(
-      `Tetapkan kata laluan baharu untuk "${ev.coupleName || id}" (${emel})?\n\n` +
-      "Kata laluan lama akan terus tidak sah dan pelanggan dilog keluar dari " +
-      "semua peranti. Anda perlu memberitahu kata laluan baharu ini kepada " +
-      "pelanggan secara peribadi."
-    )) return;
-
-    butangSetKl.disabled = true;
-    medanKl.disabled = true;
-    const teksAsal = butangSetKl.textContent;
-    butangSetKl.textContent = "…";
-    try {
-      await tetapKataLaluanPelanggan(id, klBaru);
-      // Bersihkan sisa medan kata laluan teks biasa daripada versi lama
-      // ciri ini. Tidak kritikal, jadi kegagalannya tidak menenggelamkan
-      // operasi yang sudah berjaya.
-      try {
-        await updateDoc(doc(db, "eventsPrivate", id), { kataLaluan: deleteField() });
-      } catch (e) { console.warn("Gagal membersihkan medan kataLaluan lama:", e); }
-      medanKl.value = "";
-      alert(`Kata laluan untuk ${emel} berjaya ditukar.`);
-    } catch (err) {
-      console.error(err);
-      // Mesej datang terus daripada pelayan (sudah dalam BM) atau daripada
-      // tetapKataLaluanPelanggan untuk kegagalan rangkaian/konfigurasi.
-      alert(err?.message || "Gagal menetapkan kata laluan.");
-    } finally {
-      // Kad ini mungkin tidak dibina semula (pengawal menaip dalam
-      // paparSenarai), jadi kawalan mesti dipulihkan sendiri di sini.
-      butangSetKl.disabled = false;
-      medanKl.disabled = false;
-      butangSetKl.textContent = teksAsal;
-    }
-  }
-
-  butangSetKl?.addEventListener("click", tetapKl);
-  // Tiada <form> di sini, jadi Enter perlu diwayarkan secara eksplisit.
-  medanKl?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); tetapKl(); }
   });
 
   // --- Toggle status aktif/nyahaktif ---
