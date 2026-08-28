@@ -149,9 +149,14 @@
     <a href="index.html" class="nama-produk font-serif-elegan text-lg font-semibold hover:opacity-80 transition">Polaroid Wedding</a>
     <div class="flex items-center gap-2">
       <!-- Pautan guna SLUG (e.html?e=demo), bukan eventId keras: majlis
-           demo boleh ditukar tanpa menyentuh kod. -->
+           demo boleh ditukar tanpa menyentuh kod.
+
+           TERSEMBUNYI SEMENTARA: majlis dengan slug `demo` belum wujud,
+           jadi butang ini akan membawa pelawat ke "Majlis tidak dijumpai".
+           BUANG kelas `hidden` sebaik majlis demo dicipta dan slugnya
+           ditetapkan kepada `demo`. -->
       <a href="e.html?e=demo"
-        class="btn-utama inline-flex items-center justify-center gap-1.5 font-medium">
+        class="hidden btn-utama inline-flex items-center justify-center gap-1.5 font-medium">
         Cuba Demo
       </a>
       <a href="tetapan.html"
