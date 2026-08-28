@@ -236,6 +236,18 @@
       color: var(--warna-teks-lembut);
     }
     .reaksi--simpan:hover { background: color-mix(in srgb, var(--tema) 14%, transparent); color: var(--tema); }
+    /* Butang PADAM — majlis DEMO sahaja, dan hanya pada gambar yang
+       pelayar ini muat naik. Merah lembut: cukup jelas sebagai tindakan
+       memusnah, tanpa menjerit lebih kuat daripada ❤ dan SIMPAN. */
+    .reaksi--padam {
+      background: transparent;
+      border-color: #f0c4c4;
+      color: #a13a3a;
+      font-weight: 600; letter-spacing: .02em;
+    }
+    .reaksi--padam:hover { background: #fbe4e4; }
+    .reaksi--padam .ikon { color: #a13a3a; }
+    .reaksi--padam:disabled { opacity: .5; cursor: not-allowed; }
     .reaksi .ikon {
       font-size: 1rem; line-height: 1; font-weight: 700;
       transition: color .2s;
@@ -764,6 +776,24 @@
       <p id="mesej-aluan"
          class="mesej-aluan hidden mt-3 text-sm sm:text-base text-[color:var(--warna-teks-lembut)] leading-relaxed">
       </p>
+
+      <!-- Notis majlis tamat tempoh. Dinyahsembunyi oleh js/gallery.js bila
+           majlis sudah luput: galeri kekal boleh dilihat, cuma butang tambah
+           hilang. Tanpa notis ini, butang yang hilang nampak seperti pepijat. -->
+      <p id="notis-tamat"
+         class="hidden mt-3 mx-auto max-w-md rounded-xl bg-[color:var(--warna-kad,#fff)]/70 border border-[color:var(--tema)]/25 px-4 py-2.5 text-xs sm:text-sm text-[color:var(--warna-teks-lembut)]">
+        Majlis ini telah tamat — muat naik gambar baharu sudah ditutup. Terima kasih! 💕
+      </p>
+
+      <!-- Notis majlis DEMO. Dinyahsembunyi oleh js/gallery.js bila
+           events.isDemo === true. Menerangkan dua perkara yang penguji
+           tidak akan teka sendiri: gambar mereka boleh dipadam sendiri,
+           dan galeri ini membersihkan dirinya. -->
+      <p id="notis-demo"
+         class="hidden mt-3 mx-auto max-w-md rounded-xl bg-[color:var(--warna-kad,#fff)]/70 border border-[color:var(--tema)]/25 px-4 py-2.5 text-xs sm:text-sm text-[color:var(--warna-teks-lembut)]">
+        ✨ Ini galeri <b>DEMO</b> — cuba muat naik gambar, tulis ucapan, atau buat jalur photobooth.
+        Gambar yang anda muat naik boleh anda padam sendiri, dan galeri ini dibersihkan automatik.
+      </p>
     </header>
   </div>
 
@@ -889,7 +919,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
             </svg>
             <span id="teks-pilih-fail" class="block font-medium text-[color:var(--warna-teks)]">Pilih atau ambil gambar</span>
-            <span class="mt-1 block text-xs text-[color:var(--warna-teks-samar)]">Ketik untuk buka kamera, atau pilih dari galeri di bawah</span>
+            <span class="mt-1 block text-xs text-[color:var(--warna-teks-samar)]">Ketik untuk buka kamera, atau upload dari peranti di bawah</span>
           </button>
 
           <!-- Preview polaroid -->
@@ -902,7 +932,7 @@
                 📷 <span id="teks-butang-kamera">Ambil gambar</span>
               </button>
               <button type="button" id="butang-galeri" class="btn-kedua flex-1">
-                🖼️ Galeri
+                🖼️ Upload
               </button>
             </div>
             <button type="button" id="butang-buang" class="btn-buang hidden mt-2 w-full py-1">

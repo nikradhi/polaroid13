@@ -71,6 +71,22 @@ service cloud.firestore {
                ev(eid).get('package', 'basic') in ['premium', 'eksklusif']);
     }
 
+    // Adakah ini majlis DEMO awam (untuk bakal pelanggan mencuba)?
+    // Majlis demo membenarkan penguji memadam gambar TANPA log masuk.
+    //
+    // MEDAN ATAS `isDemo`, bukan kunci dalam snapshot `ciri`: ciriEfektif()
+    // menjana semula seluruh peta `ciri` setiap kali super-admin menukar
+    // pakej majlis, jadi bendera dalam `ciri` akan terpadam senyap.
+    // `isDemo` juga tiada dalam hasOnly() pemilik, jadi hanya super-admin
+    // boleh menghidupkannya.
+    //
+    // .get(key, default) WAJIB — akses terus `.isDemo` akan RALAT lalu
+    // menafikan pada setiap majlis yang tiada medan ini (iaitu semua
+    // majlis pelanggan sebenar).
+    function eventDemo(eid) {
+      return ev(eid).get('isDemo', false) == true;
+    }
+
     // ---------- admins/{uid} ----------
     // Hanya admin boleh baca. TIADA sesiapa boleh tulis dari client
     // (elak orang lantik diri sendiri jadi admin). Urus di Console sahaja.
@@ -97,13 +113,27 @@ service cloud.firestore {
         // (1) Admin — boleh ubah apa sahaja (pakej, status, tarikh luput, dll).
         isAdmin()
 
-        // (2) Pemilik event — hanya boleh customize medan tertentu.
+        // (2) Pemilik event — hanya boleh customize medan tertentu, dan
+        //     HANYA sebelum majlis tamat tempoh.
         //     TIDAK boleh ubah pakej/status/luput/had/kaunter/pemilik.
+        //
+        //     `weddingDate` SENGAJA TIADA dalam senarai ini: ia penambat
+        //     tempoh langganan (expiresAt = weddingDate + tempoh pakej,
+        //     lihat kiraLuput() dalam js/majlis.js). Kalau pemilik boleh
+        //     mengubahnya, dia boleh menolak tarikh majlis ke hadapan
+        //     berulang kali dan melanjutkan langganan sendiri tanpa bayar.
+        //     Ditetapkan oleh super-admin sahaja.
+        //
+        //     Semakan tempoh di sini menjadikan "mod baca sahaja" panel
+        //     tetapan.html dikuatkuasa di SERVER, bukan sekadar input
+        //     disabled yang boleh dibuka semula dari browser console.
+        //     Muat turun ZIP tidak terjejas — ia operasi BACA.
         || (
           request.auth != null
           && resource.data.ownerUid == request.auth.uid
+          && request.time < resource.data.expiresAt
           && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['coupleName', 'weddingDate', 'themeColor',
+              .hasOnly(['coupleName', 'themeColor',
                         'welcomeMessage', 'slug', 'preModeration', 'latarId',
                         'fontId'])
         )
@@ -207,13 +237,25 @@ service cloud.firestore {
           && request.resource.data.likes >= resource.data.likes
         );
 
-      // Padam: admin ATAU pemilik event foto ini.
+      // Padam: admin ATAU pemilik event foto ini ATAU sesiapa pada majlis
+      // DEMO (penguji membuang gambar cubaannya sendiri).
+      //
+      // Klausa demo MESTI TERAKHIR: ia mengenakan satu bacaan dokumen
+      // tambahan. Di kedudukan ini, admin dan pemilik tidak pernah sampai
+      // ke situ, jadi hanya padam demo yang membayarnya. Untuk pemanggil
+      // tanpa auth, dua klausa pertama gagal pada `request.auth != null`
+      // sebelum sebarang get() — jadi majlis biasa kekal sifar bacaan.
+      //
+      // Diterima secara sedar: sesiapa yang tahu eventId demo boleh
+      // memadam SEMUA gambar demo. Majlis demo memang pakai buang, dan
+      // "Padam SEMUA gambar" dalam panel super-admin memulihkannya.
       allow delete: if
         isAdmin()
         || (
           request.auth != null
           && ev(resource.data.eventId).ownerUid == request.auth.uid
-        );
+        )
+        || eventDemo(resource.data.eventId);
     }
 
     // ---------- guestbook/{id} ----------

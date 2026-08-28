@@ -20,9 +20,10 @@ import {
   startAfter,
   doc,
   updateDoc,
+  deleteDoc,
   increment,
 } from "./firebase.js";
-import { dapatEventId, muatEvent, terapTema } from "./majlis.js";
+import { dapatEventId, muatEvent, terapTema, sudahLuput } from "./majlis.js";
 import {
   cetusMuatTurun,
   namaBersih,
@@ -31,6 +32,12 @@ import {
 import { pasangBorangUpload } from "./upload.js";
 import { pasangPhotobooth } from "./photobooth.js";
 import { pasangGuestbook, muatUcapan, binaKadUcapan } from "./guestbook.js";
+import {
+  setDimuatNaik,
+  tandakanDimuatNaik,
+  lupakanDimuatNaik,
+  pangkasDemo,
+} from "./demo.js";
 import { bolehGuna } from "./gating.js";
 import { adalahJalur } from "./imej.js";
 
@@ -106,6 +113,10 @@ let bolehTulisUcapan = false;
 let cirianJalur = false;
 // Pakej menyokong buku tetamu? (Premium & Eksklusif)
 let cirianUcapan = false;
+// Majlis DEMO awam: penguji boleh memadam gambar yang dia sendiri muat
+// naik. Hanya untuk events.isDemo — majlis pelanggan sebenar tidak
+// pernah memaparkan butang padam kepada tetamu.
+let bolehPadamSendiri = false;
 
 // Ucapan buku tetamu. Koleksi BERASINGAN daripada `photos`, jadi ia
 // disimpan berasingan daripada fotoDimuat juga — memasukkannya ke sana
@@ -270,6 +281,20 @@ function tambahFoto(id, row, diAtas = false) {
   butangMuat.addEventListener("click", () => muatTurunFoto(indeks));
   bar.appendChild(butangMuat);
 
+  // Padam — HANYA pada majlis demo, dan hanya untuk gambar yang pelayar
+  // ini sendiri muat naik. Majlis pelanggan sebenar tidak pernah sampai
+  // ke sini (bolehPadamSendiri kekal false).
+  if (bolehPadamSendiri && setDimuatNaik().has(id)) {
+    const butangPadam = document.createElement("button");
+    butangPadam.className = "reaksi reaksi--padam";
+    butangPadam.setAttribute("aria-label", "Padam gambar yang anda muat naik");
+    butangPadam.title = "Padam gambar ini";
+    butangPadam.innerHTML = `<span class="ikon">✕</span> PADAM`;
+    butangPadam.addEventListener("click", () => padamFoto(indeks));
+    bar.appendChild(butangPadam);
+    foto.butangPadam = butangPadam;
+  }
+
   badan.appendChild(bar);
   kad.appendChild(badan);
   item.appendChild(kad);
@@ -414,6 +439,36 @@ async function sukaFoto(i) {
 }
 
 // ------------------------------------------------------------
+//  PADAM GAMBAR SENDIRI (majlis demo sahaja)
+// ------------------------------------------------------------
+//  PENTING: JANGAN splice() fotoDimuat. Setiap kad menangkap indeksnya
+//  dalam penutupan (`const indeks = fotoDimuat.length` dalam tambahFoto),
+//  jadi membuang satu elemen akan menggelincirkan setiap indeks selepasnya
+//  dan butang ♥/SIMPAN kad lain akan bertindak pada gambar yang SALAH.
+//  Sebaliknya kita tandakan batu nisan dan buang nod DOM sahaja.
+// ------------------------------------------------------------
+async function padamFoto(i) {
+  const foto = fotoDimuat[i];
+  if (!foto || foto.dipadam) return;
+  if (!confirm("Padam gambar ini? Tindakan ini tidak boleh dibatalkan.")) return;
+
+  const btn = foto.butangPadam;
+  if (btn) btn.disabled = true;
+  try {
+    await deleteDoc(doc(db, "photos", foto.id));
+    foto.dipadam = true;
+    foto.el.remove();
+    lupakanDimuatNaik(foto.id);
+    if (lbIndeks === i) tutupLightbox();
+    tapisGaleri(); // segarkan kiraan tab & mesej kosong
+  } catch (err) {
+    console.error("Ralat padam gambar:", err);
+    alert("Gagal memadam gambar. Sila cuba lagi.");
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ------------------------------------------------------------
 //  LIGHTBOX
 // ------------------------------------------------------------
 function bukaLightbox(i) {
@@ -447,7 +502,10 @@ function navigasiLightbox(delta) {
   let j = lbIndeks;
   for (let langkah = 0; langkah < n; langkah++) {
     j = (j + delta + n) % n;
-    if (fotoDimuat[j].el.style.display !== "none") {
+    // `dipadam` = batu nisan daripada padamFoto(); nodnya sudah dibuang
+    // daripada DOM tetapi entrinya kekal supaya indeks penutupan kad lain
+    // tidak tergelincir.
+    if (!fotoDimuat[j].dipadam && fotoDimuat[j].el.style.display !== "none") {
       bukaLightbox(j);
       return;
     }
@@ -482,6 +540,9 @@ function tapisGaleri() {
   const kira = { gambar: 0, jalur: 0, ucapan: ucapanDimuat.length };
 
   fotoDimuat.forEach((foto) => {
+    // Batu nisan padamFoto(): entri kekal supaya indeks penutupan kad lain
+    // tidak tergelincir, tetapi ia bukan lagi sebahagian galeri.
+    if (foto.dipadam) return;
     kira[foto.jenis]++;
     const padan = foto.jenis === tabAktif && (!q || foto.cari.includes(q));
     foto.el.style.display = padan ? "" : "none";
@@ -738,7 +799,7 @@ async function tambahHalamanAuto() {
   for (let i = 0; i < HALAMAN_AUTO_MAKS; i++) {
     await tungguProbe(); // jenis mesti muktamad sebelum diperiksa
     if (!masihAda) return;
-    if (fotoDimuat.some((f) => f.jenis === tabAktif)) return;
+    if (fotoDimuat.some((f) => !f.dipadam && f.jenis === tabAktif)) return;
     const tabMula = tabAktif;
     await muatGambar();
     if (tabAktif !== tabMula) return; // tetamu bertukar tab semasa memuat
@@ -791,6 +852,10 @@ pasangModal(modalUpload);
 // Callback bila upload berjaya: masukkan gambar baharu di ATAS galeri.
 function masukkanFotoBaru(foto) {
   zonKosong.classList.add("hidden");
+  // Majlis demo: ingat gambar ini milik pelayar ini SEBELUM tambahFoto()
+  // dipanggil — kad membaca senarai itu semasa dibina untuk memutuskan
+  // sama ada butang padam dipaparkan.
+  if (bolehPadamSendiri) tandakanDimuatNaik(foto.id);
   tambahFoto(
     foto.id,
     {
@@ -806,6 +871,15 @@ function masukkanFotoBaru(foto) {
   // berada di tab "Gambar" tidak akan kelihatan sehingga mereka bertukar tab —
   // itu memang akibat tab yang berasingan, bukan pepijat.
   tapisGaleri();
+
+  // Pangkas gambar demo lama di latar belakang. TANPA await: penguji
+  // tidak patut menunggu kerja pembersihan, dan kegagalannya tidak boleh
+  // merosakkan muat naik yang baru sahaja berjaya.
+  if (bolehPadamSendiri) {
+    pangkasDemo(eventId).catch((err) =>
+      console.error("Ralat memangkas demo:", err)
+    );
+  }
 }
 
 // ------------------------------------------------------------
@@ -844,6 +918,20 @@ function paparRalatMula(mesej) {
       if (mesejAluan && teksAluan) {
         mesejAluan.textContent = teksAluan;
         mesejAluan.classList.remove("hidden");
+      }
+
+      // Majlis tamat tempoh: galeri kekal boleh dilihat (gambar, jalur
+      // photobooth & ucapan), cuma butang tambah hilang sendiri kerana
+      // ketiga-tiga gate mount di bawah memanggil majlisAktif(). Beritahu
+      // tetamu sebabnya — butang yang senyap-senyap hilang nampak rosak.
+      if (sudahLuput(majlis)) {
+        document.getElementById("notis-tamat")?.classList.remove("hidden");
+      }
+
+      // Majlis DEMO — beritahu penguji apa yang mereka lihat, dan bahawa
+      // gambar mereka boleh dipadam sendiri & akan dibersihkan automatik.
+      if (majlis.isDemo === true) {
+        document.getElementById("notis-demo")?.classList.remove("hidden");
       }
     }
   } catch {
@@ -891,6 +979,10 @@ function paparRalatMula(mesej) {
   semulaBorangUcapan = hasilGb.semula || null;
   if (bolehTulisUcapan) pasangModal(modalGuestbook);
   cirianUcapan = !!majlis && bolehGuna(majlis, "guestbook");
+
+  // Ditetapkan SEBELUM muatGambar() di bawah, jadi bendera sudah betul
+  // apabila tambahFoto() membina kad pertama.
+  bolehPadamSendiri = !!majlis && majlis.isDemo === true;
 
   kemasButangTambah();
 

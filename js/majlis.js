@@ -23,9 +23,13 @@ import { terapTemaMajlis } from "./tema.js";
 import { HAD_TANPA_HAD, PAKEJ, PAKEJ_LALAI } from "./packages.js";
 export { HAD_TANPA_HAD };
 
-// Tempoh tangguh muat turun: pengantin masih boleh kutip gambar
-// selama 30 hari SELEPAS majlis tamat tempoh. (expiresAt menutup
-// tingkap muat naik tetamu, bukan hak pemilik mengambil gambarnya.)
+// Tempoh tangguh PEMBERSIHAN STORAN: majlis yang sudah tamat tempoh
+// lebih 30 hari layak dipadam oleh alat super-admin ("padam gambar
+// majlis tamat"). Lihat cariMajlisBolehPadam() dalam js/super-admin.js.
+//
+// NOTA: ini BUKAN lagi gate muat turun. Muat turun ZIP kini seumur
+// hidup (lifetime) untuk pakej yang ada ciri downloadZip — lihat
+// bolehMuatTurun() di bawah.
 export const HARI_TANGGUH = 30;
 const SEHARI_MS = 24 * 60 * 60 * 1000;
 
@@ -80,6 +84,51 @@ export function majlisAktif(ev) {
   return !!ev && ev.status === "active" && !sudahLuput(ev);
 }
 
+// ------------------------------------------------------------
+//  KIRA TARIKH LUPUT — tarikh kahwin + tempoh pakej
+// ------------------------------------------------------------
+//  Tempoh langganan bermula SELEPAS majlis berlangsung, bukan dari
+//  saat akaun dicipta. Pelanggan yang bayar tiga bulan awal tidak
+//  patut tamat tempoh sebelum majlisnya sendiri.
+//
+//  `weddingDate` ialah string "yyyy-mm-dd" (medan events.weddingDate,
+//  ditetapkan oleh super-admin). Kosong/tak sah -> kira dari `asas`
+//  (lalai: sekarang) supaya akaun baharu tidak lahir dalam keadaan
+//  sudah luput sementara menunggu tarikh dimasukkan.
+//
+//  Jam ditetapkan ke 23:59:59 supaya majlis kekal aktif SEPANJANG
+//  hari tamat — corak sama seperti input "Tamat" super-admin.
+// ------------------------------------------------------------
+export function kiraLuput(weddingDate, tempohHari, asas = new Date()) {
+  const hari = Number(tempohHari);
+  const tempoh = Number.isFinite(hari) && hari > 0 ? hari : 0;
+
+  let mula;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(weddingDate || "")) {
+    mula = new Date(weddingDate + "T23:59:59");
+  }
+  // Tarikh tak sah (cth "2026-02-31") jadi Invalid Date — jangan
+  // hasilkan expiresAt rosak yang akan menutup majlis serta-merta.
+  if (!mula || Number.isNaN(mula.getTime())) {
+    mula = new Date(asas);
+    mula.setHours(23, 59, 59, 0);
+  }
+
+  return new Date(mula.getTime() + tempoh * SEHARI_MS);
+}
+
+// ------------------------------------------------------------
+//  MOD BACA SAHAJA (panel pelanggan)
+// ------------------------------------------------------------
+//  Selepas majlis tamat tempoh (atau dinyahaktifkan admin), pelanggan
+//  masih boleh LIHAT tetapannya dan MUAT TURUN gambar, tetapi tidak
+//  boleh mengedit apa-apa. Satu predikat supaya tetapan.js tidak
+//  perlu mencipta salinan logik luput yang kelima.
+// ------------------------------------------------------------
+export function modBacaSahaja(ev) {
+  return !ev || ev.status !== "active" || sudahLuput(ev);
+}
+
 export function adalahPremium(ev) {
   return ev?.package === "premium";
 }
@@ -109,11 +158,19 @@ export function kuotaPenuh(ev) {
 //  Satu sumber kebenaran untuk gate muat turun (diguna oleh
 //  tetapan.js). Pemilikan sebenar (ownerUid == uid) dikuatkuasa
 //  oleh Firestore rules; fungsi ini menguatkuasa syarat PRODUK:
-//  langganan aktif, dalam tempoh tangguh, dan pakej Premium.
+//  langganan aktif + pakej yang ada ciri downloadZip.
+//
+//  SEUMUR HIDUP: sengaja TIADA semakan tarikh di sini. Gambar majlis
+//  ialah kenangan pelanggan — tamat tempoh menutup tingkap muat naik
+//  tetamu dan mengunci tetapan, bukan hak pengantin mengambil balik
+//  gambarnya sendiri. Basic dikecualikan melalui ciri downloadZip.
 // ------------------------------------------------------------
 
 // Adakah masih dalam tempoh tangguh (expiresAt + HARI_TANGGUH)?
 // Tiada expiresAt = tiada had, anggap masih boleh.
+//
+// Pemanggil TUNGGAL: alat pembersih storan super-admin
+// (cariMajlisBolehPadam). BUKAN gate muat turun — lihat bolehMuatTurun().
 export function dalamTempohTangguh(ev) {
   const dt = tarikhLuput(ev);
   if (!dt) return true;
@@ -130,12 +187,6 @@ export function bolehMuatTurun(ev) {
     return {
       boleh: false,
       sebab: "Langganan anda tidak aktif. Sila hubungi admin.",
-    };
-  }
-  if (!dalamTempohTangguh(ev)) {
-    return {
-      boleh: false,
-      sebab: `Tempoh muat turun telah tamat (${HARI_TANGGUH} hari selepas majlis). Hubungi admin untuk melanjutkan.`,
     };
   }
   if (!cirianEvent(ev, "downloadZip")) {

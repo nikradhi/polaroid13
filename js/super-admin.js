@@ -38,7 +38,7 @@ import {
   writeBatch,
 } from "./firebase.js";
 import { compressImej, blobKeBase64, FORMAT_UTAMA, adalahJalur } from "./imej.js";
-import { dalamTempohTangguh, HARI_TANGGUH } from "./majlis.js";
+import { dalamTempohTangguh, HARI_TANGGUH, kiraLuput } from "./majlis.js";
 import { muatTurunZipMajlis, mesejRalatMuatTurun } from "./muat-turun.js";
 // Konfigurasi pakej — SATU SUMBER KEBENARAN (lihat js/packages.js).
 // Nak laras had/tempoh pakej? Ubah di packages.js sahaja.
@@ -53,8 +53,6 @@ import {
   hadGambarDBEfektif,
   badgePakej,
 } from "./packages.js";
-
-const SEHARI_MS = 24 * 60 * 60 * 1000;
 
 // Berapa majlis setiap halaman (pagination sisi-klien).
 const SAIZ_HALAMAN = 10;
@@ -130,6 +128,7 @@ const cKataLaluan = document.getElementById("c-kata-laluan");
 const cNama = document.getElementById("c-nama");
 const cTelefon = document.getElementById("c-telefon");
 const cPakej = document.getElementById("c-pakej");
+const cTarikhKahwin = document.getElementById("c-tarikh-kahwin");
 const butangCipta = document.getElementById("butang-cipta");
 const ciptaRalat = document.getElementById("cipta-ralat");
 const ciptaJaya = document.getElementById("cipta-jaya");
@@ -337,6 +336,16 @@ function keNilaiInputTarikh(nilai) {
   const p = (n) => String(n).padStart(2, "0");
   return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
 }
+// Tarikh kahwin TERVALIDASI untuk disuntik ke HTML.
+//
+// esc() TIDAK melarikan petik ganda (ia guna textContent -> innerHTML),
+// jadi ia TIDAK selamat di dalam atribut. weddingDate pula boleh ditulis
+// pelanggan pada majlis LAMA (sebelum medan ini dikunci kepada admin
+// dalam firestore.rules), jadi nilai lama tidak boleh dipercayai.
+// Terima bentuk yyyy-mm-dd sahaja; selain itu pulangkan "".
+function tarikhKahwinSah(s) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s || "") ? s : "";
+}
 function sudahLuput(expiresAt) {
   const dt = keDate(expiresAt);
   return dt ? dt.getTime() < Date.now() : false;
@@ -511,6 +520,7 @@ formCipta.addEventListener("submit", async (e) => {
   const nama = cNama.value.trim();
   const telefon = cTelefon.value.trim();
   const pakej = cPakej.value;
+  const tarikhKahwin = (cTarikhKahwin?.value || "").trim();
   const cfg = PAKEJ[pakej];
 
   if (!emel || kataLaluan.length < 6 || !cfg) {
@@ -542,7 +552,9 @@ formCipta.addEventListener("submit", async (e) => {
       ownerUid: uid,
       slug: "",                       // pelanggan pilih sendiri nanti
       coupleName: nama || "",
-      weddingDate: "",
+      // Tarikh majlis ditetapkan super-admin SAHAJA (rules tidak lagi
+      // benarkan pemilik mengubahnya) — ia penambat tempoh langganan.
+      weddingDate: tarikhKahwin,
       themeColor: "#b76e79",
       welcomeMessage: "",
       package: pakej,
@@ -554,7 +566,9 @@ formCipta.addEventListener("submit", async (e) => {
       // gating berkuat kuasa sebenar untuk majlis ini walau butiran pakej
       // diubah kemudian. Majlis lama tanpa medan ini fallback ke lalai kod.
       ciri: ciriEfektif(pakej, cfgPakejSemasa),
-      expiresAt: new Date(Date.now() + tempohHariEfektif(pakej, cfgPakejSemasa) * SEHARI_MS),
+      // Tempoh pakej dikira SELEPAS majlis berlangsung. Tarikh kahwin
+      // kosong -> sandaran "hari ini + tempoh" (lihat kiraLuput).
+      expiresAt: kiraLuput(tarikhKahwin, tempohHariEfektif(pakej, cfgPakejSemasa)),
       createdAt: serverTimestamp(),
       createdBy: auth.currentUser.uid,
     });
@@ -567,6 +581,9 @@ formCipta.addEventListener("submit", async (e) => {
 
     ciptaJaya.innerHTML =
       `✓ Akaun <b>${esc(emel)}</b> (${pakejEfektif(pakej, cfgPakejSemasa).nama}) dicipta.<br>` +
+      (tarikhKahwin
+        ? `Tarikh majlis <b>${esc(tarikhKahwin)}</b> — tamat tempoh ${esc(formatTarikh(kiraLuput(tarikhKahwin, tempohHariEfektif(pakej, cfgPakejSemasa))))}.<br>`
+        : `⚠️ Tarikh majlis belum ditetapkan — tempoh dikira dari hari ini. Set tarikh majlis pada kad majlis untuk membetulkannya.<br>`) +
       `Beritahu pelanggan: log masuk di <b>tetapan.html</b> guna emel &amp; kata laluan ini untuk pilih URL &amp; tema majlis.`;
     ciptaJaya.classList.remove("hidden");
     formCipta.reset();
@@ -2049,6 +2066,11 @@ function binaBaris(id, ev, emel = "") {
   const idPakej = PAKEJ[ev.package] ? ev.package : "basic";
   const lencanaPakej =
     `<span class="rounded-full ${gayaPakej[idPakej] || gayaPakej.basic} text-xs px-2 py-0.5">${esc(pakejEfektif(idPakej, cfgPakejSemasa).nama)}</span>`;
+  // Lencana DEMO — majlis percubaan awam. Biru supaya jelas berbeza
+  // daripada lencana pakej & status. Kedua-dua kelas ada pemetaan mod gelap.
+  const lencanaDemo = ev.isDemo === true
+    ? `<span class="rounded-full bg-blue-50 text-blue-700 text-xs px-2 py-0.5">DEMO</span>`
+    : "";
 
   const hadTeks = ev.photoLimit >= HAD_TANPA_HAD ? "∞" : ev.photoLimit;
   const slugTeks = ev.slug
@@ -2071,16 +2093,17 @@ function binaBaris(id, ev, emel = "") {
         <p class="text-xs text-[#a09088] truncate">${esc(emel)}</p>
         ${telefonHtml ? `<p class="text-xs text-[#a09088] truncate">${telefonHtml}</p>` : ""}
       </div>
-      <div class="flex items-center gap-1.5 shrink-0">${lencanaPakej} ${lencanaStatus}</div>
+      <div class="flex items-center gap-1.5 shrink-0">${lencanaDemo} ${lencanaPakej} ${lencanaStatus}</div>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-[#8a7a70] mb-3">
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs text-[#8a7a70] mb-3">
       <div><span class="block text-[#a09088]">URL</span>${slugTeks}</div>
       <div>
         <span class="block text-[#a09088]">Gambar</span>${ev.photoCount ?? 0} / ${hadTeks}
         <button data-act="kaunter" title="Selaraskan kaunter dengan bilangan gambar sebenar"
           class="ml-1 text-[#b76e79] hover:underline">↻</button>
       </div>
+      <div><span class="block text-[#a09088]">Majlis</span>${tarikhKahwinSah(ev.weddingDate) || "— belum set"}</div>
       <div><span class="block text-[#a09088]">Tamat</span>${formatTarikh(ev.expiresAt)}</div>
       <div><span class="block text-[#a09088]">ID majlis</span><code class="text-[10px]">${esc(id)}</code></div>
     </div>
@@ -2092,13 +2115,28 @@ function binaBaris(id, ev, emel = "") {
           : "bg-green-50 text-green-700 hover:bg-green-100"
       }">${ev.status === "active" ? "Nyahaktif" : "Aktifkan"}</button>
 
+      <button data-act="demo" title="Majlis DEMO awam: tetamu boleh memadam gambar yang mereka muat naik sendiri, dan galeri memangkas gambar lama automatik."
+        class="rounded-lg px-3 py-1.5 text-sm font-medium ${
+          ev.isDemo === true
+            ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+        }">${ev.isDemo === true ? "Demo ✓" : "Jadikan demo"}</button>
+
       <select data-act="pakej" class="rounded-lg border border-[#e5d5ca] bg-white px-2 py-1.5 text-sm">
         ${Object.keys(PAKEJ).map((k) =>
           `<option value="${k}" ${idPakej === k ? "selected" : ""}>${esc(pakejEfektif(k, cfgPakejSemasa).nama)}</option>`
         ).join("")}
       </select>
 
-      <label class="flex items-center gap-1 text-sm text-[#8a7a70]">
+      <label class="flex items-center gap-1 text-sm text-[#8a7a70]"
+        title="Tarikh majlis. Tempoh pakej dikira bermula selepas tarikh ini.">
+        Majlis:
+        <input data-act="tarikh-kahwin" type="date" value="${tarikhKahwinSah(ev.weddingDate)}"
+          class="rounded-lg border border-[#e5d5ca] bg-white px-2 py-1 text-sm" />
+      </label>
+
+      <label class="flex items-center gap-1 text-sm text-[#8a7a70]"
+        title="Override manual. Biasanya dikira automatik dari tarikh majlis + tempoh pakej.">
         Tamat:
         <input data-act="tarikh" type="date" value="${keNilaiInputTarikh(ev.expiresAt)}"
           class="rounded-lg border border-[#e5d5ca] bg-white px-2 py-1 text-sm" />
@@ -2146,6 +2184,31 @@ function binaBaris(id, ev, emel = "") {
     }
   });
 
+  // --- Togol majlis DEMO ---
+  //     Medan ATAS `isDemo`, bukan kunci dalam snapshot `ciri`:
+  //     ciriEfektif() menjana semula seluruh peta `ciri` setiap kali
+  //     pakej ditukar, jadi bendera di dalamnya akan terpadam senyap.
+  //     Ia juga tiada dalam hasOnly() pemilik, jadi hanya admin boleh
+  //     menghidupkannya — betul, kerana ia membuka laluan padam tanpa auth.
+  kad.querySelector('[data-act="demo"]').addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const hidupkan = ev.isDemo !== true;
+    if (hidupkan && !confirm(
+      `Jadikan "${ev.coupleName || id}" majlis DEMO awam?\n\n` +
+      "Sesiapa yang tahu pautannya boleh memadam gambar di dalamnya tanpa log masuk, " +
+      "dan galeri akan memangkas gambar lama secara automatik.\n\n" +
+      "Jangan hidupkan ini pada majlis pelanggan sebenar."
+    )) return;
+    btn.disabled = true;
+    try {
+      await updateDoc(doc(db, "events", id), { isDemo: hidupkan });
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menukar mod demo.");
+      btn.disabled = false;
+    }
+  });
+
   // --- Selaraskan kaunter kuota dengan bilangan gambar sebenar ---
   //     Perlu kerana memadam gambar TIDAK menurunkan photoCount
   //     (dan rules tidak benarkan pemilik majlis membetulkannya sendiri).
@@ -2181,7 +2244,15 @@ function binaBaris(id, ev, emel = "") {
     // Guna butiran BERKESAN (override super-admin) — had & ciri.
     const eff = pakejEfektif(pakejBaru, cfgPakejSemasa);
     const hadBaru = hadGambarDBEfektif(pakejBaru, cfgPakejSemasa);
-    if (!confirm(`Tukar pakej kepada ${eff.nama}? Had gambar akan jadi ${eff.hadGambar == null ? "tanpa had" : eff.hadGambar}. (Tarikh tamat tidak berubah.)`)) {
+    // Tempoh terikat pada pakej, jadi tukar pakej MESTI kira semula
+    // tarikh tamat dari penambat yang sama (tarikh majlis).
+    const tempohBaru = tempohHariEfektif(pakejBaru, cfgPakejSemasa);
+    const luputBaru = kiraLuput(ev.weddingDate, tempohBaru);
+    if (!confirm(
+      `Tukar pakej kepada ${eff.nama}? Had gambar akan jadi ` +
+      `${eff.hadGambar == null ? "tanpa had" : eff.hadGambar}.\n\n` +
+      `Tarikh tamat dikira semula: ${formatTarikh(luputBaru)} (${tempohBaru} hari selepas majlis).`
+    )) {
       e.currentTarget.value = idPakej; // pulih pilihan
       return;
     }
@@ -2190,6 +2261,7 @@ function binaBaris(id, ev, emel = "") {
         package: pakejBaru,
         photoLimit: hadBaru,
         ciri: ciriEfektif(pakejBaru, cfgPakejSemasa), // re-snapshot keupayaan
+        expiresAt: luputBaru,
       });
     } catch (err) {
       console.error(err);
@@ -2198,7 +2270,36 @@ function binaBaris(id, ev, emel = "") {
     }
   });
 
-  // --- Set tarikh luput ---
+  // --- Set tarikh majlis (kahwin) — kira semula tarikh luput sekali ---
+  //     Tarikh kahwin ialah PENAMBAT tempoh langganan: tempoh pakej
+  //     bermula selepas majlis berlangsung, bukan dari tarikh bayaran.
+  //     Kedua-dua medan ditulis dalam SATU updateDoc supaya tidak
+  //     wujud keadaan pertengahan (tarikh kahwin baharu + luput lama).
+  kad.querySelector('[data-act="tarikh-kahwin"]').addEventListener("change", async (e) => {
+    const nilai = e.currentTarget.value; // yyyy-mm-dd (atau "" jika dikosongkan)
+    const tempoh = tempohHariEfektif(idPakej, cfgPakejSemasa);
+    const luputBaru = kiraLuput(nilai, tempoh);
+    if (!confirm(
+      `Set tarikh majlis kepada ${nilai || "(kosong)"}?\n\n` +
+      `Tarikh tamat akan dikira semula: ${formatTarikh(luputBaru)} ` +
+      `(${tempoh} hari selepas majlis).`
+    )) {
+      e.currentTarget.value = tarikhKahwinSah(ev.weddingDate);
+      return;
+    }
+    try {
+      await updateDoc(doc(db, "events", id), {
+        weddingDate: nilai,
+        expiresAt: luputBaru,
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menetapkan tarikh majlis.");
+      e.currentTarget.value = tarikhKahwinSah(ev.weddingDate);
+    }
+  });
+
+  // --- Set tarikh luput (override manual) ---
   kad.querySelector('[data-act="tarikh"]').addEventListener("change", async (e) => {
     const nilai = e.currentTarget.value; // yyyy-mm-dd
     if (!nilai) return;

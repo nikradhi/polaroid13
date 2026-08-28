@@ -8,7 +8,10 @@
 //
 //  - Baca slug dari URL: ?e=<slug>  ATAU  path /e/<slug>
 //  - Resolusi: slugs/<slug> -> eventId -> events/<eventId>
-//  - Jika majlis tidak aktif / tamat / tidak wujud -> papar mesej ralat.
+//  - Jika majlis tidak aktif / tidak wujud -> papar mesej ralat.
+//
+//  NOTA: majlis yang TAMAT TEMPOH tetap dibenarkan masuk (mod baca
+//  sahaja) — lihat langkah 3 di bawah.
 // ============================================================
 
 import { db, doc, getDoc } from "./firebase.js";
@@ -73,12 +76,19 @@ function paparRalat(tajuk, mesej) {
       return;
     }
 
-    // 3) Semak status & tarikh luput
-    const luput = ev.expiresAt?.toDate
-      ? ev.expiresAt.toDate().getTime() < Date.now()
-      : false;
-    if (ev.status !== "active" || luput) {
-      paparRalat("Majlis telah tamat", "Majlis ini tidak lagi menerima muat naik gambar. Terima kasih!");
+    // 3) Semak status SAHAJA — bukan tarikh luput.
+    //
+    //    Majlis yang tamat tempoh masih boleh DILIHAT: galeri, jalur
+    //    photobooth dan ucapan kekal sebagai kenangan pengantin, dan kod
+    //    QR yang sudah dicetak tidak patut mati. Yang ditutup ialah
+    //    MENULIS — gallery.js menyembunyikan butang tambah kerana
+    //    ketiga-tiga gate mount memanggil majlisAktif(), dan
+    //    firestore.rules menolak tulisan selepas expiresAt.
+    //
+    //    status != "active" pula bermakna majlis belum diaktifkan atau
+    //    ditutup admin — itu memang disekat sepenuhnya.
+    if (ev.status !== "active") {
+      paparRalat("Majlis tidak aktif", "Majlis ini belum diaktifkan. Sila hubungi pengantin.");
       return;
     }
 

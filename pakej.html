@@ -49,6 +49,13 @@
     .btn-kedua:disabled { opacity: .5; cursor: not-allowed; }
     .btn-kedua:focus-visible { outline: 2px solid #b76e79; outline-offset: 2px; }
 
+    /* Telefon sempit: nama produk + DUA butang bar atas tidak muat pada
+       padding px-6 py-3. Kecilkan supaya bar kekal satu baris. */
+    @media (max-width: 520px) {
+      header .btn-kedua, header .btn-utama { padding: 9px 13px; font-size: .85rem; }
+      .nama-produk { font-size: 1rem; }
+    }
+
     /* ---- Kad "mewah" (pakej disyorkan / popular) ---- */
     .kad-mewah {
       background: linear-gradient(160deg, #6e3f47 0%, #94525c 55%, #b76e79 100%);
@@ -119,11 +126,18 @@
        literal kerana fail ini memang tidak menggunakan pemboleh ubah
        tema (lihat tajuk di bawah). -->
   <header class="mx-auto w-full max-w-2xl lg:max-w-4xl px-4 sm:px-6 pt-5 flex items-center justify-between gap-3">
-    <a href="index.html" class="font-serif-elegan text-lg font-semibold text-[#5a4a42] hover:opacity-80 transition">Polaroid Wedding</a>
-    <a href="tetapan.html"
-      class="btn-kedua inline-flex items-center justify-center gap-1.5 rounded-xl px-6 py-3 font-medium">
-      Log masuk <span aria-hidden="true">→</span>
-    </a>
+    <a href="index.html" class="nama-produk font-serif-elegan text-lg font-semibold text-[#5a4a42] hover:opacity-80 transition">Polaroid Wedding</a>
+    <div class="flex items-center gap-2">
+      <!-- Pautan guna SLUG (e.html?e=demo), bukan eventId keras. -->
+      <a href="e.html?e=demo"
+        class="btn-utama inline-flex items-center justify-center gap-1.5 rounded-xl px-6 py-3 font-medium">
+        Cuba Demo
+      </a>
+      <a href="tetapan.html"
+        class="btn-kedua inline-flex items-center justify-center gap-1.5 rounded-xl px-6 py-3 font-medium">
+        Log masuk <span aria-hidden="true">→</span>
+      </a>
+    </div>
   </header>
 
   <!-- lg:max-w-4xl memberi ruang kepada tiga kad pakej (sm:grid-cols-3);

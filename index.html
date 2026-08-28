@@ -98,10 +98,18 @@
        dan pemenangnya bergantung susunan lembaran gaya, yang Play CDN
        tulis semula setiap rebuild. #bar-atas .btn-kedua = (1,1,0),
        menang secara pasti. */
-    #bar-atas .btn-kedua {
+    #bar-atas .btn-kedua,
+    #bar-atas .btn-utama {
       padding: 12px 24px;
       border-radius: 12px;
       font-size: 1rem;
+    }
+    /* Telefon sempit: nama produk + DUA butang tidak muat pada padding
+       24px. Kecilkan supaya bar kekal satu baris, bukan berbalut. */
+    @media (max-width: 520px) {
+      #bar-atas .btn-kedua,
+      #bar-atas .btn-utama { padding: 9px 13px; font-size: .85rem; }
+      #bar-atas .nama-produk { font-size: 1rem; }
     }
 
     /* Butang buang — kotak merah menonjol supaya pengguna perasan */
@@ -138,11 +146,19 @@
        pertama. Lebar disamakan dengan <main> supaya bar sejajar
        dengan kandungan. -->
   <header id="bar-atas" class="hidden mx-auto w-full max-w-md sm:max-w-lg px-5 pt-5 flex items-center justify-between gap-3">
-    <a href="index.html" class="font-serif-elegan text-lg font-semibold hover:opacity-80 transition">Polaroid Wedding</a>
-    <a href="tetapan.html"
-      class="btn-kedua inline-flex items-center justify-center gap-1.5">
-      Log masuk <span aria-hidden="true">→</span>
-    </a>
+    <a href="index.html" class="nama-produk font-serif-elegan text-lg font-semibold hover:opacity-80 transition">Polaroid Wedding</a>
+    <div class="flex items-center gap-2">
+      <!-- Pautan guna SLUG (e.html?e=demo), bukan eventId keras: majlis
+           demo boleh ditukar tanpa menyentuh kod. -->
+      <a href="e.html?e=demo"
+        class="btn-utama inline-flex items-center justify-center gap-1.5 font-medium">
+        Cuba Demo
+      </a>
+      <a href="tetapan.html"
+        class="btn-kedua inline-flex items-center justify-center gap-1.5">
+        Log masuk <span aria-hidden="true">→</span>
+      </a>
+    </div>
   </header>
 
   <!-- Borang satu lajur: melebihi ~32rem tidak membantu, cuma menjarakkan
@@ -195,7 +211,7 @@
           </svg>
           <span id="teks-pilih-fail" class="block font-medium text-[color:var(--warna-teks)]">Pilih atau ambil gambar</span>
           <!-- <span>, bukan <p> — <button> hanya benarkan kandungan frasa -->
-          <span class="mt-1 block text-xs text-[color:var(--warna-teks-samar)]">Ketik untuk buka kamera, atau pilih dari galeri di bawah</span>
+          <span class="mt-1 block text-xs text-[color:var(--warna-teks-samar)]">Ketik untuk buka kamera, atau upload dari peranti di bawah</span>
         </button>
 
         <!-- Preview polaroid — menggantikan placeholder bila ADA gambar -->
@@ -209,7 +225,7 @@
               📷 <span id="teks-butang-kamera">Ambil gambar</span>
             </button>
             <button type="button" id="butang-galeri" class="btn-kedua flex-1">
-              🖼️ Galeri
+              🖼️ Upload
             </button>
           </div>
           <button type="button" id="butang-buang" class="btn-buang hidden mt-2 w-full py-1">

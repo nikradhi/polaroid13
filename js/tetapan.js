@@ -29,7 +29,7 @@ import {
   updateDoc,
   writeBatch,
 } from "./firebase.js";
-import { bolehMuatTurun, formatTarikhMajlis } from "./majlis.js";
+import { bolehMuatTurun, formatTarikhMajlis, sudahLuput, modBacaSahaja } from "./majlis.js";
 import { muatTurunZipMajlis, mesejRalatMuatTurun, cetusMuatTurun, namaBersih } from "./muat-turun.js";
 import {
   LATAR_PILIHAN, gayaLatar, latarSah,
@@ -84,6 +84,7 @@ const cSlug = document.getElementById("c-slug");
 const slugStatus = document.getElementById("slug-status");
 const cNama = document.getElementById("c-nama");
 const cTarikh = document.getElementById("c-tarikh");
+const tarikhKunci = document.getElementById("tarikh-kunci");
 const cTema = document.getElementById("c-tema");
 const swatches = document.getElementById("swatches");
 const latarPilihan = document.getElementById("latar-pilihan");
@@ -128,6 +129,10 @@ const cetakQrEl = document.getElementById("cetak-qrcode");
 let eventId = null;   // id majlis pengguna
 let eventData = null; // data majlis semasa
 let slugSah = false;  // adakah slug semasa dalam input sah & tersedia
+// Majlis tamat tempoh / dinyahaktifkan -> panel jadi BACA SAHAJA.
+// Dikira sekali dalam isiBorang() dan dirujuk oleh penjaga simpan.
+// Dikuatkuasa juga di server (firestore.rules), ini lapisan UI.
+let bacaSahaja = false;
 let latarDipilih = "bunga"; // id corak latar terpilih
 let fonDipilih = "klasik-elegan"; // id pasangan font terpilih (lalai = rose-gold)
 
@@ -273,7 +278,8 @@ async function muatMajlis(uid) {
 function isiBorang() {
   // Info pakej
   infoPakej.textContent = namaPakej(eventData);
-  const luput = keDate(eventData.expiresAt) && keDate(eventData.expiresAt).getTime() < Date.now();
+  const luput = sudahLuput(eventData);
+  bacaSahaja = modBacaSahaja(eventData);
   infoStatus.textContent = luput ? "Tamat tempoh" : (eventData.status === "active" ? "Aktif" : "Nyahaktif");
   infoTamat.textContent = formatTarikh(eventData.expiresAt);
   paparKuota();      // "142 / 300 gambar" + jalur
@@ -282,7 +288,7 @@ function isiBorang() {
   // Amaran jika tidak aktif / luput
   if (luput || eventData.status !== "active") {
     amaranMajlis.textContent = luput
-      ? "Majlis anda telah tamat tempoh. Tetamu tidak boleh muat naik gambar. Hubungi admin untuk lanjutkan."
+      ? "Majlis anda telah tamat tempoh. Tetapan kini dikunci (baca sahaja) dan tetamu tidak boleh muat naik gambar lagi. Galeri kekal boleh dilihat, dan muat turun gambar anda kekal selama-lamanya. Hubungi admin untuk melanjutkan."
       : "Majlis anda belum diaktifkan. Hubungi admin.";
     amaranMajlis.classList.remove("hidden");
   } else {
@@ -301,7 +307,8 @@ function isiBorang() {
   pratontonLatar(); // papar corak tersimpan pada halaman sebaik dimuat
   fonDipilih = fontIdSah(eventData.fontId) || "klasik-elegan";
   binaPilihanFon();
-  terapGatingTema(); // kunci "warna sendiri" & font untuk pakej tanpa kustom
+  terapGatingTema();      // kunci "warna sendiri" & font untuk pakej tanpa kustom
+  terapModBacaSahaja();   // WAJIB selepas terapGatingTema() — ia hanya menambah kunci
 
   // Jika slug sedia ada, anggap sah
   slugSah = !!eventData.slug;
@@ -578,6 +585,47 @@ function terapGatingTema() {
 }
 
 // ------------------------------------------------------------
+//  MOD BACA SAHAJA — majlis tamat tempoh / dinyahaktifkan
+// ------------------------------------------------------------
+//  Selepas tamat tempoh pelanggan masih boleh MELIHAT tetapannya,
+//  berkongsi pautan/QR, dan MUAT TURUN gambar — tetapi tidak boleh
+//  mengedit apa-apa. Corak kunci sama seperti terapGatingTema().
+//
+//  MESTI dipanggil SELEPAS terapGatingTema(): fungsi ini hanya
+//  menambah kunci, tidak pernah membuka. Kalau urutannya diterbalik,
+//  gating pakej akan membuka semula medan yang sepatutnya dikunci.
+//
+//  `#c-tarikh` (tarikh majlis) dikunci TANPA SYARAT — ia milik
+//  super-admin kerana ia penambat tempoh langganan (firestore.rules
+//  tidak lagi membenarkan pemilik menulisnya).
+// ------------------------------------------------------------
+function terapModBacaSahaja() {
+  // Tarikh majlis: sentiasa baca sahaja, walaupun majlis masih aktif.
+  if (cTarikh) {
+    cTarikh.disabled = true;
+    cTarikh.title = "Tarikh majlis ditetapkan oleh admin.";
+  }
+  if (tarikhKunci) tarikhKunci.classList.remove("hidden");
+
+  if (!bacaSahaja) return;
+
+  // Langkah 2 (URL) + Langkah 3 (Butiran)
+  [cSlug, cNama, cWelcome].forEach((el) => { if (el) el.disabled = true; });
+
+  // Langkah 4 (Reka) — swatch, warna sendiri, corak latar, font.
+  [swatches, barisWarnaSendiri, latarPilihan, fonPilihan].forEach((el) => {
+    if (!el) return;
+    el.classList.add("opacity-50", "pointer-events-none");
+  });
+  if (cTema) cTema.disabled = true;
+
+  // Nota kunci di setiap langkah medan supaya sebabnya jelas.
+  formTetapan.querySelectorAll(".nota-baca-sahaja").forEach((el) => {
+    el.classList.remove("hidden");
+  });
+}
+
+// ------------------------------------------------------------
 //  WIZARD — borang customize 3 langkah (satu langkah/skrin)
 // ------------------------------------------------------------
 //  Langkah 1: URL unik  |  Langkah 2: Butiran  |  Langkah 3: Reka bentuk.
@@ -594,6 +642,10 @@ function semuaSiap() {
 // Adakah langkah n boleh diteruskan (validasi minimum)?
 //  2 = URL (slug sah) · 3 = Butiran (nama diisi) · 1 Pakej & 4 Reka sentiasa sah.
 function bolehTeruskan(n) {
+  // Mod baca sahaja: tiada apa untuk divalidasi (tiada tulisan berlaku),
+  // dan menghalang di sini akan MENGURUNG pelanggan sebelum Langkah 5 —
+  // iaitu tempat butang muat turun gambar berada.
+  if (bacaSahaja) return true;
   if (n === 2) return slugSah && bersihkanSlug(cSlug.value).length >= 3;
   if (n === 3) return cNama.value.trim().length > 0;
   return true;
@@ -603,6 +655,10 @@ function bolehTeruskan(n) {
 //  1 (Pakej): sentiasa · 5 (Kongsi): bila langkah medan siap · 2-4: bila siap.
 function bolehCapai(n) {
   if (n === 1) return true;
+  // Mod baca sahaja: semua langkah boleh dilayari bebas — lihat nota
+  // dalam bolehTeruskan(). Majlis lama yang tidak pernah disiapkan
+  // sepenuhnya masih perlu capai Langkah 5 untuk muat turun gambar.
+  if (bacaSahaja) return true;
   if (n === 5) return semuaSiap();
   return siap[n];
 }
@@ -653,6 +709,12 @@ async function teruskanLangkah(n) {
         : "Sila isi nama pasangan dahulu.";
       ralat.classList.remove("hidden");
     }
+    return;
+  }
+
+  // Mod baca sahaja: tiada apa untuk disimpan — terus maju.
+  if (bacaSahaja) {
+    bukaLangkah(n + 1);
     return;
   }
 
@@ -923,10 +985,15 @@ function tunjukStatusSimpan(keadaan) {
 }
 
 // Kumpul nilai medan biasa semasa dari DOM (BUKAN slug).
+//
+// `weddingDate` SENGAJA TIADA di sini: ia ditetapkan super-admin dan
+// firestore.rules tidak lagi menerimanya daripada pemilik. Kalau ia
+// dihantar, satu perubahan tarikh oleh admin semasa tab pelanggan
+// terbuka akan menjadikan nilai DOM basi — ia masuk ke affectedKeys
+// dan SETIAP simpanan seterusnya gagal `permission-denied`.
 function kumpulMedan() {
   return {
     coupleName: cNama.value.trim(),
-    weddingDate: cTarikh.value || "",
     themeColor: cTema.value || "#b76e79",
     welcomeMessage: cWelcome.value.trim(),
     latarId: latarSah(latarDipilih) || "bunga",
@@ -944,6 +1011,10 @@ function autoSimpan() {
 async function simpanMedanBiasa() {
   clearTimeout(pemasaSimpan); // batalkan jadual tertunda (jika dipanggil terus)
   if (!eventId) return;
+  // Mod baca sahaja: server akan tolak tulisan ini (firestore.rules).
+  // Keluar awal supaya pelanggan tidak dihidangkan "Gagal simpan" untuk
+  // sesuatu yang memang tidak sepatutnya boleh diedit.
+  if (bacaSahaja) return;
   simpanRalat.classList.add("hidden");
   const medan = kumpulMedan();
   tunjukStatusSimpan("menyimpan");
@@ -964,6 +1035,7 @@ async function simpanMedanBiasa() {
 let sedangSimpanSlug = false; // pengawal in-flight: elak blur + "Teruskan" simpan berganda
 async function simpanSlug() {
   if (!eventId) return;
+  if (bacaSahaja) return; // lihat nota dalam simpanMedanBiasa()
   const slugBaru = bersihkanSlug(cSlug.value);
   const slugLama = eventData?.slug || "";
   if (!slugBaru || slugBaru.length < 3) return; // slugStatus sudah papar sebab
@@ -1010,7 +1082,8 @@ async function simpanSlug() {
 // --- Pasang pendengar auto-save ---
 cNama.addEventListener("input", autoSimpan);
 cWelcome.addEventListener("input", autoSimpan);
-cTarikh.addEventListener("change", simpanMedanBiasa); // pemilih tarikh -> simpan segera
+// Tiada pendengar untuk cTarikh: tarikh majlis kini milik super-admin
+// (dikunci di UI, ditolak oleh firestore.rules).
 cSlug.addEventListener("blur", simpanSlug);            // slug: simpan bila keluar medan
 
 // Borang tiada butang simpan — halang submit (cth tekan Enter) & flush terus.
