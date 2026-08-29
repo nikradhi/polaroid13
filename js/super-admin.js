@@ -2139,6 +2139,19 @@ function binaBaris(id, ev, emel = "") {
     ? `<span class="rounded-full bg-blue-50 text-blue-700 text-xs px-2 py-0.5">DEMO</span>`
     : "";
 
+  // Demo separuh siap ialah mod gagal yang SENYAP: bendera isDemo membuka
+  // butang padam dalam galeri, tetapi kad "Demo" pada halaman harga dan
+  // butang "Cuba Demo" pada bar atas bergantung pada slug `demo`. Set satu
+  // tanpa satu lagi = separuh ciri hidup, tanpa apa-apa petunjuk kenapa.
+  const demoTakLengkap = ev.isDemo === true && ev.slug !== "demo";
+  const notaDemo = demoTakLengkap
+    ? `<p class="mb-2 rounded-lg bg-amber-100 text-amber-700 text-xs px-2.5 py-1.5">
+         ⚠️ Demo belum lengkap — slug mesti <b>demo</b> (kini
+         ${ev.slug ? `<b>${esc(ev.slug)}</b>` : "kosong"}) supaya kad Demo
+         pada halaman harga &amp; butang "Cuba Demo" hidup.
+       </p>`
+    : "";
+
   const hadTeks = ev.photoLimit >= HAD_TANPA_HAD ? "∞" : ev.photoLimit;
   const slugTeks = ev.slug
     ? `<a href="e.html?e=${encodeURIComponent(ev.slug)}" target="_blank" class="text-[#b76e79] hover:underline">/e/${esc(ev.slug)}</a>`
@@ -2162,6 +2175,8 @@ function binaBaris(id, ev, emel = "") {
       </div>
       <div class="flex items-center gap-1.5 shrink-0">${lencanaDemo} ${lencanaPakej} ${lencanaStatus}</div>
     </div>
+
+    ${notaDemo}
 
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs text-[#8a7a70] mb-3">
       <div><span class="block text-[#a09088]">URL</span>${slugTeks}</div>
