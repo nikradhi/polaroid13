@@ -1398,7 +1398,11 @@ window.__media = {
       '• Negeri: '+negeri+'\n'+
       (nota? '• Nota: '+nota+'\n':'')+
       '\nMohon maklumkan langkah seterusnya. Terima kasih!';
-    window.open('https://wa.me/'+NOMBOR+'?text='+encodeURIComponent(teks),'_blank');
+    /* Pelayar dalam-app (FB/IG/TikTok) & penyekat popup memulangkan null di
+       sini. Tanpa sandaran, butang nampak rosak dan tempahan hilang tanpa
+       jejak — navigasi tab semasa berjaya kerana ia bukan popup. */
+    var pautan='https://wa.me/'+NOMBOR+'?text='+encodeURIComponent(teks);
+    if(!window.open(pautan,'_blank')) location.href=pautan;
   });
 
   /* ---- TUTORIAL: tab + langkah ---- */
