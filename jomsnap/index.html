@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JOMSNAP — Simpan SEMUA Gambar Majlis Anda Dalam Satu Galeri Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=Shantell+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#170D13;
+  --ink2:#241420;
+  --paper:#F5F3EE;
+  --white:#fff;
+  --text:#20262C;
+  --mute:#69737E;
+  --gold:#E4B23C;
+  --gold-dk:#B8862A;
+  --red:#D6493F;
+  --green:#3E9B57;
+  --blue:#3B7DD8;
+  --orange:#E8823A;
+  --dsp:"Bricolage Grotesque",system-ui,sans-serif;
+  --bd:"Instrument Sans",system-ui,sans-serif;
+  --hand:"Shantell Sans",cursive;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--text);font-family:var(--bd);font-size:17px;line-height:1.68;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}
+.wrap{width:min(1080px,90vw);margin-inline:auto}
+.narrow{width:min(760px,90vw);margin-inline:auto}
+section{padding:72px 0}
+h1,h2,h3,h4{font-family:var(--dsp);font-weight:800;letter-spacing:-.03em;line-height:1.12;margin:0}
+h1{font-size:clamp(1.9rem,4.6vw,3.1rem)}
+h2{font-size:clamp(1.6rem,3.6vw,2.5rem);text-align:center}
+h3{font-size:1.14rem;font-weight:600;letter-spacing:-.02em}
+p{margin:0 0 18px}
+.hl{background:linear-gradient(transparent 60%,rgba(228,178,60,.55) 0);padding:0 3px}
+.hl-r{color:var(--red);font-weight:700}
+strong{font-weight:700}
+
+/* pengumuman atas */
+.promo{background:linear-gradient(90deg,var(--gold-dk),var(--gold),var(--gold-dk));color:#1A1206;text-align:center;font-size:.84rem;font-weight:700;letter-spacing:.02em;padding:9px 14px}
+
+/* header */
+header{position:sticky;top:0;z-index:80;background:rgba(14,18,25,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.09)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 0;color:#fff}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}
+.mark{width:30px;height:30px;border-radius:7px;background:#fff;padding:4px;display:grid;place-items:center}
+.stripe{display:flex;height:8px;width:64px;border-radius:99px;overflow:hidden}
+.stripe i{flex:1}
+.stripe i:nth-child(1){background:var(--blue)}
+.stripe i:nth-child(2){background:var(--green)}
+.stripe i:nth-child(3){background:var(--gold)}
+.stripe i:nth-child(4){background:var(--orange)}
+.stripe i:nth-child(5){background:var(--red)}
+.mark .stripe{width:100%;height:14px;border-radius:3px}
+.brand b{font-family:var(--dsp);font-weight:800;font-size:1.22rem;letter-spacing:-.04em}
+.nav .btn{padding:10px 20px;font-size:.88rem}
+
+/* butang */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:var(--bd);font-weight:700;font-size:1rem;padding:16px 30px;border-radius:12px;text-decoration:none;border:none;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
+.btn-cta{background:linear-gradient(180deg,#E85A4F,#C8392F);color:#fff;box-shadow:0 8px 0 #91231B,0 18px 30px -14px rgba(200,57,47,.9)}
+.btn-cta:hover{transform:translateY(-2px);box-shadow:0 10px 0 #91231B,0 22px 34px -14px rgba(200,57,47,.9)}
+.btn-cta:active{transform:translateY(5px);box-shadow:0 3px 0 #91231B}
+.btn-gold{background:linear-gradient(180deg,#F0C356,#D19B26);color:#1A1206;box-shadow:0 8px 0 #96690F}
+.btn-gold:active{transform:translateY(5px);box-shadow:0 3px 0 #96690F}
+.btn-lg{font-size:1.12rem;padding:20px 40px;width:100%;max-width:520px}
+.btn-blink{animation:blink 2.4s ease-in-out infinite}
+@keyframes blink{0%,100%{filter:brightness(1)}50%{filter:brightness(1.14)}}
+.cta-note{font-size:.86rem;color:var(--mute);margin-top:12px}
+.dark .cta-note{color:rgba(255,255,255,.5)}
+.center{text-align:center}
+
+/* pembahagi */
+.orn{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--gold);margin:14px 0 34px;font-size:.9rem}
+.orn::before,.orn::after{content:"";height:1px;width:80px;background:linear-gradient(90deg,transparent,var(--gold))}
+.orn::after{background:linear-gradient(270deg,transparent,var(--gold))}
+.badge-warn{display:inline-flex;align-items:center;gap:8px;background:rgba(214,73,63,.1);border:1px solid rgba(214,73,63,.35);color:var(--red);font-size:.76rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;border-radius:99px}
+.badge-gold{display:inline-flex;align-items:center;gap:8px;background:rgba(228,178,60,.14);border:1px solid rgba(228,178,60,.4);color:var(--gold-dk);font-size:.76rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;border-radius:99px}
+.dark .badge-gold{color:var(--gold)}
+.eyebrow-wrap{text-align:center;margin-bottom:14px}
+
+/* ---------- KOVER HERO ---------- */
+.kover{display:none}
+.kover img{display:block;width:100%;height:auto}
+@media(min-width:860px){
+  .kover{display:block;width:100vw;margin-left:calc(50% - 50vw)}
+  .hero-teks{display:none}
+}
+/* hero */
+.hero{
+  color:#fff;padding:56px 0 78px;text-align:center;position:relative;overflow:hidden;
+  background:
+    radial-gradient(940px 640px at 50% -14%, rgba(224,140,158,.26), transparent 62%),
+    radial-gradient(720px 540px at 84% 18%, rgba(228,178,60,.15), transparent 60%),
+    radial-gradient(820px 600px at 6% 94%, rgba(150,34,58,.34), transparent 64%),
+    linear-gradient(180deg,#331824 0%,#22111B 46%,#170D13 100%);
+}.kover{cursor:pointer}
+@media(min-width:860px){
+  .hero{padding:0}
+  .kover{margin-bottom:0}
+  .hero-cta-kecil{display:none}
+}
+
+.hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(circle at 12% 22%, rgba(255,214,224,.14) 0 3px, transparent 4px),
+    radial-gradient(circle at 88% 34%, rgba(255,226,180,.12) 0 4px, transparent 5px),
+    radial-gradient(circle at 24% 74%, rgba(255,214,224,.10) 0 5px, transparent 6px),
+    radial-gradient(circle at 72% 86%, rgba(255,226,180,.11) 0 3px, transparent 4px),
+    radial-gradient(circle at 62% 12%, rgba(255,214,224,.11) 0 2px, transparent 3px),
+    radial-gradient(circle at 34% 42%, rgba(255,255,255,.06) 0 2px, transparent 3px),
+    radial-gradient(140% 105% at 50% 38%, transparent 50%, rgba(10,5,8,.6) 100%);
+}
+.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.22;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+}
+.hero .wrap{position:relative;z-index:1}
+.hero h1{color:#fff;margin:20px auto 22px;max-width:20ch}
+.hero p.sub{color:rgba(255,255,255,.72);max-width:56ch;margin-inline:auto;font-size:1.04rem}
+.pills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:26px 0 30px}
+.pill{background:rgba(255,255,255,.09);border:1px solid rgba(255,214,224,.22);border-radius:99px;padding:9px 17px;font-size:.9rem;font-weight:600}
+
+
+
+
+
+
+
+
+/* polaroid */
+.polaroid{background:#fff;padding:10px 10px 38px;border-radius:3px;box-shadow:0 18px 40px -18px rgba(0,0,0,.6)}
+.polaroid .photo{position:relative;aspect-ratio:1/1;overflow:hidden;background:#20262E}
+.polaroid .photo::after{content:"";position:absolute;inset:0;background:#141A20;opacity:1;transition:opacity 1.4s ease}
+.polaroid .img{position:absolute;inset:0;filter:saturate(.15) brightness(.6);transform:scale(1.06);transition:filter 1.8s ease,transform 1.8s ease}
+.developed .photo::after{opacity:0}
+.developed .img{filter:none;transform:scale(1)}
+.polaroid figcaption{font-family:var(--hand);font-size:.92rem;color:#3A424A;padding-top:9px;text-align:center;opacity:0;transition:opacity .8s ease .4s}
+.developed figcaption{opacity:1}
+.img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 40%,rgba(0,0,0,.06))}
+/* ══════════════════════════════════════════════════════════════
+   GAMBAR MAJLIS — LETAK FAIL ANDA DI SINI
+   1. Buat folder bernama "gambar" di sebelah fail HTML ini.
+   2. Masukkan 6 gambar, namakan: majlis-1.jpg hingga majlis-6.jpg
+   3. Saiz cadangan: 1000 x 1000 piksel (segi empat sama), bawah 300KB.
+   Selagi fail belum ada, gradien warna akan dipaparkan sebagai ganti.
+   ══════════════════════════════════════════════════════════════ */
+.ph1{background-image:url('gambar/majlis-1.jpg'),linear-gradient(150deg,#F7D9C4,#E8A87C 45%,#B4654A)}
+.ph2{background-image:url('gambar/majlis-2.jpg'),linear-gradient(160deg,#DCE8DA,#8FB09A 50%,#3F6152)}
+.ph3{background-image:url('gambar/majlis-3.jpg'),linear-gradient(140deg,#FDEBD2,#F2C230 55%,#C77F2A)}
+.ph4{background-image:url('gambar/majlis-4.jpg'),linear-gradient(165deg,#E4E9F5,#9BAAD6 48%,#465383)}
+.ph5{background-image:url('gambar/majlis-5.jpg'),linear-gradient(145deg,#F9DDE0,#D99AA6 50%,#8C4A5C)}
+.ph6{background-image:url('gambar/majlis-6.jpg'),linear-gradient(155deg,#EFE7DC,#C0A583 50%,#6E5B45)}
+.ph1,.ph2,.ph3,.ph4,.ph5,.ph6{background-size:cover;background-position:center}
+
+/* marquee */
+.marquee{background:var(--ink2);color:var(--gold);border-block:1px solid rgba(228,178,60,.25);overflow:hidden;padding:11px 0;font-size:.82rem;font-weight:700;letter-spacing:.1em}
+.marquee-track{display:flex;gap:32px;white-space:nowrap;width:max-content;animation:slide 26s linear infinite}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* masalah */
+.prob-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:12px}
+.prob{background:var(--white);border-radius:16px;overflow:hidden;border:1px solid rgba(32,38,44,.08);box-shadow:0 10px 26px -20px rgba(0,0,0,.5)}
+.prob .thumb{height:170px;position:relative;background-color:#1B1017;background-size:cover;background-position:center;background-repeat:no-repeat}
+.prob .thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(20,26,34,.28))}
+.prob .thumb svg{display:block;width:100%;height:100%}
+/* ══ GAMBAR KAD MASALAH ══
+   Gambar dibenamkan terus dalam fail ini supaya ia berfungsi di mana-mana.
+   Untuk laman sebenar, ganti setiap "url(data:image...)" dengan
+   url('gambar/masalah-1.jpg') dan naikkan folder gambar sekali. ══ */
+.prob .thumb.foto-m1{background-image:url("gambar/masalah-1.jpg")}
+.prob .thumb.foto-m2{background-image:url("gambar/masalah-2.jpg")}
+.prob .thumb.foto-m3{background-image:url("gambar/masalah-3.jpg")}
+.prob .thumb.foto-m4{background-image:url("gambar/masalah-4.jpg")}
+@keyframes coneGlow{0%,100%{opacity:.16}50%{opacity:.3}}
+@keyframes sink{0%,100%{transform:translateY(0);opacity:.9}50%{transform:translateY(6px);opacity:.45}}
+@keyframes drift{0%{transform:translate(0,0);opacity:.85}100%{transform:translate(16px,-14px);opacity:0}}
+@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(-5px)}}
+.i-cone{animation:coneGlow 3.6s ease-in-out infinite}
+.i-sink{animation:sink 3.4s ease-in-out infinite}
+.i-drift{animation:drift 3.2s ease-out infinite}
+.i-drift:nth-of-type(2){animation-delay:.5s}
+.i-drift:nth-of-type(3){animation-delay:1s}
+.i-drift:nth-of-type(4){animation-delay:1.5s}
+.i-nudge{animation:nudge 2.8s ease-in-out infinite}
+.prob .body{padding:20px}
+.prob h3{margin-bottom:8px;font-size:1.06rem;font-weight:800;font-family:var(--dsp)}
+.prob p{font-size:.92rem;color:var(--mute);margin:0}
+@media(max-width:940px){.prob-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.prob-grid{grid-template-columns:1fr}}
+.warn-line{text-align:center;margin-top:38px;font-size:1.06rem;font-weight:600}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* memperkenal */
+.intro{background:var(--ink);color:#fff;text-align:center}
+.intro h2{color:#fff;font-size:clamp(2.4rem,6vw,3.8rem);margin:10px 0}
+.intro .tag{font-family:var(--hand);font-size:1.2rem;color:var(--gold)}
+.intro p{color:rgba(255,255,255,.7);max-width:58ch;margin-inline:auto}
+.checks{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:26px}
+.check{font-size:.88rem;font-weight:600;color:rgba(255,255,255,.8);background:rgba(255,255,255,.07);padding:8px 15px;border-radius:8px}
+
+/* manfaat */
+.ben-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:12px}
+.ben{background:var(--white);border-radius:18px;padding:16px 16px 26px;border:1px solid rgba(32,38,44,.07);box-shadow:0 18px 40px -30px rgba(0,0,0,.45)}
+.ben .art{background:#1B1017;border-radius:12px;overflow:hidden;margin-bottom:18px}
+.ben .art svg{display:block;width:100%;height:auto}
+.ben h3{margin:0 0 8px;font-family:var(--dsp);font-weight:800;font-size:1.08rem;padding-inline:8px}
+.ben p{font-size:.93rem;color:var(--mute);margin:0;padding-inline:8px}
+@media(max-width:900px){.ben-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.ben-grid{grid-template-columns:1fr}}
+
+/* komponen */
+.comp{background:var(--white)}
+
+
+
+
+
+
+.tabmock{display:flex;gap:6px;justify-content:center;background:rgba(90,34,48,.09);border:1px solid rgba(90,34,48,.16);padding:7px;border-radius:99px;width:max-content;max-width:100%;margin:0 auto 8px;flex-wrap:wrap}
+.tabmock span{font-size:.9rem;font-weight:600;color:#8A6470;padding:9px 20px;border-radius:99px;white-space:nowrap}
+.tabmock span.aktif{background:#A84258;color:#fff}
+.tabmock b{font-weight:400;opacity:.65;margin-left:5px}
+.tabhint{text-align:center;font-size:.98rem;color:#4A5560;margin:16px 0 0}
+.tabhint strong{color:var(--text);font-weight:700}
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:34px}
+.comp-card{background:var(--white);border-radius:20px;overflow:hidden;border:1px solid rgba(32,38,44,.09);box-shadow:0 22px 46px -26px rgba(0,0,0,.4);position:relative;transition:transform .25s ease,box-shadow .25s ease}
+.comp-card:hover{transform:translateY(-6px);box-shadow:0 34px 60px -28px rgba(0,0,0,.5)}
+.comp-card::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;z-index:3}
+.comp-card:nth-child(1)::before{background:linear-gradient(90deg,#A84258,#D9808F)}
+.comp-card:nth-child(2)::before{background:linear-gradient(90deg,#B8862A,#E4B23C)}
+.comp-card:nth-child(3)::before{background:linear-gradient(90deg,#3E7A6B,#6FB3A0)}
+.comp-card .tagno{position:absolute;top:16px;left:16px;z-index:3;background:rgba(15,8,16,.72);backdrop-filter:blur(8px);color:#fff;font-family:var(--dsp);font-weight:800;font-size:.74rem;letter-spacing:.12em;padding:6px 12px;border-radius:99px}
+.comp-card h4{font-size:1.28rem;font-family:var(--dsp);font-weight:800;margin-bottom:12px;letter-spacing:-.02em}
+.comp-card .cbody{padding:26px}
+.comp-card .shot{display:block;width:100%;aspect-ratio:3/4;padding:0;border:0;background-color:#5A2230;background-size:cover;background-position:top center;background-repeat:no-repeat;position:relative;font:inherit;color:inherit}
+.comp-card .shot::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 70%,rgba(90,34,48,.35))}
+.comp-card p{font-size:1rem;line-height:1.62;color:#4A5560;margin:0}
+.comp-card p strong{color:var(--text);font-weight:700}
+/* ══ TANGKAPAN SKRIN SISTEM SEBENAR ══
+   Untuk laman sebenar, ganti url("data:image...") dengan url('gambar/ciri-1.jpg') dsb. ══ */
+.shot-1{background-image:url("gambar/shot-1.jpg")}
+.shot-2{background-image:url("gambar/shot-2.jpg")}
+.shot-3{background-image:url("gambar/shot-3.jpg")}
+@media(max-width:820px){.comp-grid{grid-template-columns:1fr}.comp-card .shot{aspect-ratio:4/3}}
+
+/* langkah */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:12px}
+.stp{background:var(--white);border-radius:18px;padding:0;overflow:hidden;text-align:center;position:relative;border:1px solid rgba(32,38,44,.08);box-shadow:0 20px 42px -30px rgba(0,0,0,.45)}
+.stp .foto{display:block;width:100%;aspect-ratio:16/10;background-color:#5A2230;background-size:cover;background-position:center;background-repeat:no-repeat;position:relative}
+.stp .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(23,13,19,.30))}
+.stp .isi{padding:26px 26px 30px;position:relative}
+.stp .n{position:absolute;top:-20px;left:50%;transform:translateX(-50%);z-index:2;box-shadow:0 6px 16px -6px rgba(0,0,0,.6);border:3px solid var(--white)}
+.stp .foto.qr1{background-image:url("gambar/qr-1.jpg")}
+.stp .foto.qr2{background-image:url("gambar/qr-2.jpg")}
+.stp .foto.galeri{background-position:top center}
+
+.stp .n{width:44px;height:44px;border-radius:99px;background:var(--ink);color:var(--gold);font-family:var(--dsp);font-weight:800;display:grid;place-items:center}
+.stp .ic{display:none}
+.stp h3{font-family:var(--dsp);font-weight:800;font-size:1.08rem;margin-bottom:8px}
+.stp p{font-size:.93rem;color:var(--mute);margin:0}
+@media(max-width:820px){.steps{grid-template-columns:1fr}}
+.tip{background:rgba(228,178,60,.14);border:1px solid rgba(228,178,60,.4);border-radius:14px;padding:20px 24px;margin-top:26px;font-size:.97rem}
+
+
+/* ---------- PEMAPAR ZUM ---------- */
+.comp-card .shot{cursor:zoom-in}
+.comp-card .shot .lens{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:99px;background:rgba(10,14,20,.55);backdrop-filter:blur(6px);display:grid;place-items:center;font-size:.95rem;z-index:2;pointer-events:none}
+.lb{position:fixed;inset:0;z-index:200;background:rgba(14,7,11,.96);display:none;overscroll-behavior:contain}
+.lb.on{display:block}
+.lb-stage{position:absolute;inset:0;overflow:hidden;display:grid;place-items:center;touch-action:none;cursor:grab}
+.lb-stage.grabbing{cursor:grabbing}
+.lb-stage img{max-width:min(90vw,460px);max-height:84vh;border-radius:10px;box-shadow:0 30px 70px -20px rgba(0,0,0,.8);transform-origin:center center;transition:transform .2s cubic-bezier(.2,.7,.3,1);user-select:none;-webkit-user-drag:none}
+.lb-stage img.nodelay{transition:none}
+.lb-cap{position:absolute;top:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.72);font-size:.88rem;font-weight:600;z-index:3;pointer-events:none}
+.lb-bar{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);backdrop-filter:blur(12px);padding:7px;border-radius:99px;z-index:3}
+.lb-btn{width:46px;height:46px;border-radius:99px;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:1.15rem;font-weight:700;cursor:pointer;display:grid;place-items:center;font-family:var(--bd);transition:background .15s}
+.lb-btn:hover{background:rgba(255,255,255,.26)}
+.lb-btn:disabled{opacity:.35;cursor:default}
+.lb-zoom{color:#fff;font-size:.86rem;font-weight:700;min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
+.lb-close{position:absolute;top:16px;right:16px;width:46px;height:46px;border-radius:99px;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:1.3rem;cursor:pointer;z-index:3}
+.lb-close:hover{background:rgba(255,255,255,.26)}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:99px;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:1.4rem;cursor:pointer;z-index:3}
+.lb-nav:hover{background:rgba(255,255,255,.26)}
+.lb-prev{left:14px}.lb-next{right:14px}
+@media(max-width:600px){.lb-nav{display:none}}
+
+
+
+/* tangkapan skrin dalam kad manfaat */
+/* skrin dewan penuh gambar + penonton */
+.dewan{position:relative;height:196px;overflow:hidden}
+.dewan .tv{position:absolute;left:50%;top:12px;transform:translateX(-50%);width:82%;background:#39434F;border-radius:9px;padding:7px;box-shadow:0 12px 26px -10px rgba(0,0,0,.9)}
+.dewan .tvskrin{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:3px;aspect-ratio:16/10;background:#0B0F15;border-radius:3px;overflow:hidden;padding:3px}
+.dewan .tvskrin span{border-radius:2px;background-color:#2C2028;animation:tayang 9s ease-in-out infinite}
+.dewan .tvskrin span:nth-child(3n){animation-delay:1.2s}
+.dewan .tvskrin span:nth-child(3n+1){animation-delay:2.4s}
+@keyframes tayang{0%,88%,100%{opacity:1}92%{opacity:.35}}
+.dewan .kaki{position:absolute;left:50%;transform:translateX(-50%);bottom:58px;width:52px;height:12px;background:#39434F;clip-path:polygon(38% 0,62% 0,100% 100%,0 100%)}
+.dewan .tapak{position:absolute;left:50%;transform:translateX(-50%);bottom:54px;width:74px;height:5px;border-radius:3px;background:#39434F}
+.dewan .penonton{position:absolute;left:0;right:0;bottom:0;height:70px;background-size:cover;background-position:center bottom;background-repeat:no-repeat;background-image:url("gambar/penonton.png")}
+
+/* panel terbelah: tangkapan skrin + ilustrasi */
+.ben .art .belah{display:flex;gap:10px;padding:10px;height:186px;align-items:stretch}
+.ben .art .belah .kiri{flex:0 0 40%;border-radius:6px;background-size:cover;background-position:top center;background-repeat:no-repeat;background-color:#5A2230;box-shadow:0 6px 16px -6px rgba(0,0,0,.8)}
+.ben .art .belah .kiri.like{background-image:url("gambar/like.jpg")}
+.ben .art .belah .kanan{flex:1;display:grid;place-items:center;min-width:0}
+.ben .art .belah .kanan svg{width:100%;height:auto}
+.ben .art .tskrin{display:block;width:100%;aspect-ratio:220/120;background-color:#5A2230;background-size:cover;background-position:top center;background-repeat:no-repeat}
+.ben .art .tskrin.zip{background-size:contain;background-position:center}
+.ben .art .tskrin.simpan{background-image:url("gambar/skrin-simpan.jpg");background-position:center}
+.ben .art .tskrin.ucapan{background-image:url("gambar/skrin-ucapan.jpg")}
+.ben .art .tskrin.zip{background-image:url("gambar/skrin-zip.jpg")}
+
+[data-zoom]{cursor:zoom-in}
+.kolaj .pol{transition:transform .2s ease}
+.kolaj .pol:hover{z-index:30}
+/* kolaj polaroid — berselerak melebar ke tepi */
+.kolaj{position:relative;height:172px;overflow:hidden}
+.kolaj .pol{position:absolute;background:#F2EFE8;padding:4px 4px 11px;border-radius:2px;box-shadow:0 7px 15px -5px rgba(0,0,0,.85);width:62px}
+.kolaj .pol i{display:block;aspect-ratio:1;background-size:cover;background-position:center;background-color:#2C2028}
+.f1,.f2,.f3,.f4,.f5,.f6,.f7,.f8,.f9{background-size:cover;background-position:center;background-repeat:no-repeat}
+.kolaj .p1{left:-6%;top:10px;transform:rotate(-13deg);z-index:1}
+.kolaj .p2{left:15%;top:2px;transform:rotate(6deg);z-index:2}
+.kolaj .p3{left:35%;top:14px;transform:rotate(-4deg);z-index:3}
+.kolaj .p4{left:56%;top:4px;transform:rotate(11deg);z-index:4}
+.kolaj .p5{left:77%;top:12px;transform:rotate(-8deg);z-index:5}
+.kolaj .p6{left:2%;top:86px;transform:rotate(7deg);z-index:6}
+.kolaj .p7{left:24%;top:94px;transform:rotate(-10deg);z-index:7}
+.kolaj .p8{left:46%;top:84px;transform:rotate(4deg);z-index:8}
+.kolaj .p9{left:68%;top:92px;transform:rotate(13deg);z-index:9}
+.kolaj .kilau{position:absolute;right:4px;top:58px;z-index:0}
+.kolaj .kilau b{display:block;background:var(--gold);border-radius:2px;margin-bottom:7px}
+.kolaj .kilau b:nth-child(1){width:8px;height:8px;margin-left:3px}
+.kolaj .kilau b:nth-child(2){width:5px;height:5px;margin-left:10px}
+.kolaj .kilau b:nth-child(3){width:4px;height:4px;margin-left:3px}
+.kolaj .kira{position:absolute;left:10px;bottom:2px;z-index:20;font-family:var(--bd);font-size:.74rem;font-weight:700;letter-spacing:.04em;color:var(--gold);text-shadow:0 2px 8px rgba(0,0,0,.95)}
+@media(max-width:560px){.kolaj .pol{width:56px}}
+.f1{background-image:url("gambar/kolaj-1.jpg")}
+.f2{background-image:url("gambar/kolaj-2.jpg")}
+.f3{background-image:url("gambar/kolaj-3.jpg")}
+.f4{background-image:url("gambar/kolaj-4.jpg")}
+.f5{background-image:url("gambar/kolaj-5.jpg")}
+.f6{background-image:url("gambar/kolaj-6.jpg")}
+.f7{background-image:url("gambar/kolaj-7.jpg")}
+.f8{background-image:url("gambar/kolaj-8.jpg")}
+.f9{background-image:url("gambar/kolaj-9.jpg")}
+
+/* ---------- DEMO LANGSUNG ---------- */
+.demo{background:var(--ink);color:#fff;position:relative;overflow:hidden}
+.demo::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(760px 520px at 78% 30%,rgba(224,140,158,.18),transparent 62%),
+             radial-gradient(620px 460px at 10% 88%,rgba(228,178,60,.12),transparent 60%)}
+.demo .wrap{position:relative;z-index:1}
+.demo h2{color:#fff}
+.demo-grid{display:grid;grid-template-columns:320px 1fr;gap:52px;align-items:center;margin-top:44px}
+.demo-phone{background:#0F0810;border-radius:30px;padding:12px;box-shadow:0 34px 70px -30px rgba(0,0,0,.85);border:1px solid rgba(255,255,255,.08)}
+.demo-phone .notch{width:56px;height:5px;border-radius:99px;background:rgba(255,255,255,.2);margin:2px auto 10px}
+.demo-screen{border-radius:20px;overflow:hidden;aspect-ratio:9/16;background-color:#5A2230;background-size:cover;background-position:top center;background-repeat:no-repeat;position:relative}
+.demo-screen::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 62%,rgba(23,13,19,.55))}
+.demo-live{position:absolute;top:12px;left:12px;z-index:2;display:inline-flex;align-items:center;gap:7px;background:rgba(15,8,16,.72);backdrop-filter:blur(8px);padding:6px 12px;border-radius:99px;font-size:.7rem;font-weight:700;letter-spacing:.1em}
+.demo-live i{width:7px;height:7px;border-radius:99px;background:#4FA65B;display:block;animation:pulse 2.2s infinite}
+.demo-try{list-style:none;padding:0;margin:26px 0 32px}
+.demo-try li{position:relative;padding:13px 0 13px 40px;border-top:1px solid rgba(255,255,255,.13);color:rgba(255,255,255,.76);font-size:.99rem}
+.demo-try li::before{content:"→";position:absolute;left:6px;top:13px;color:var(--gold);font-weight:700}
+.demo-try li b{color:#fff}
+.demo-note{font-size:.86rem;color:rgba(255,255,255,.45);margin-top:16px}
+@media(max-width:860px){.demo-grid{grid-template-columns:1fr;gap:36px}.demo-phone{max-width:280px;margin-inline:auto}}
+
+/* ---------- CABANG: dua pilihan di tepi telefon ---------- */
+.mediaRow{display:grid;grid-template-columns:1fr;align-items:center}
+.mediaRow.ada-cabang{grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr);gap:0}
+.anak-panah{display:none}
+.mediaRow.ada-cabang .anak-panah{display:block;width:40px;height:100%}
+.anak-panah svg{width:100%;height:100%;display:block;overflow:visible}
+.cabang{display:none}
+.mediaRow.ada-cabang .cabang{display:flex;flex-direction:column;gap:14px}
+.cabang figure{margin:0;background:var(--white);border-radius:12px;overflow:hidden;
+  border:1px solid rgba(32,38,44,.1);box-shadow:0 14px 30px -18px rgba(0,0,0,.55)}
+.cabang .gmb{display:block;width:100%;aspect-ratio:4/5;background-size:cover;background-position:top center;
+  background-repeat:no-repeat;background-color:#F2EFE8;cursor:zoom-in}
+.cabang figcaption{font-family:var(--dsp);font-weight:800;font-size:.82rem;letter-spacing:-.01em;
+  padding:9px 10px;text-align:center;color:var(--text)}
+.cabang .gmb.g-cetak{background-image:url("gambar/cetak.jpg")}
+.cabang .gmb.g-canva{background-image:url("gambar/canva.jpg")}
+@media(max-width:900px){.mediaRow.ada-cabang{grid-template-columns:1fr;gap:16px}.mediaRow.ada-cabang .anak-panah{display:none}}
+
+/* ---------- TUTORIAL ---------- */
+.tuto{background:var(--white)}
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:38px}
+.tab{font-family:var(--bd);font-weight:600;font-size:.95rem;padding:12px 24px;border-radius:99px;border:1.5px solid rgba(32,38,44,.16);background:transparent;color:var(--mute);cursor:pointer;transition:all .18s ease}
+.tab:hover{border-color:var(--gold)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tuto-grid{display:grid;grid-template-columns:1fr 380px;gap:44px;align-items:start;transition:grid-template-columns .3s ease}
+@media(min-width:901px){.tuto-grid.lebar{grid-template-columns:1fr 520px}}
+.stepgroup{display:none}
+.stepgroup.on{display:block}
+.stepitem{display:flex;gap:18px;padding:20px;border-radius:14px;cursor:pointer;border:1.5px solid transparent;transition:all .2s ease;text-align:left;width:100%;background:transparent;font-family:var(--bd)}
+.stepitem:hover{background:rgba(228,178,60,.07)}
+.stepitem.on{background:rgba(228,178,60,.12);border-color:rgba(228,178,60,.45)}
+.stepitem .n{width:34px;height:34px;flex:none;border-radius:99px;background:rgba(32,38,44,.09);color:var(--mute);font-family:var(--dsp);font-weight:800;display:grid;place-items:center;font-size:.9rem;transition:all .2s}
+.stepitem.on .n{background:var(--gold);color:#1A1206}
+.vbadge{display:inline-block;vertical-align:2px;margin-left:8px;background:var(--red);color:#fff;font-family:var(--bd);font-size:.62rem;font-weight:700;letter-spacing:.1em;padding:3px 8px;border-radius:99px}
+.stepitem h4{font-family:var(--dsp);font-weight:800;font-size:1.04rem;margin:0 0 5px;color:var(--text)}
+.stepitem p{margin:0;font-size:.93rem;color:var(--mute);line-height:1.55}
+.media{position:sticky;top:96px}
+.device{background:var(--ink);border-radius:26px;padding:12px;box-shadow:0 26px 54px -28px rgba(0,0,0,.6)}
+.device .notch{width:56px;height:5px;border-radius:99px;background:rgba(255,255,255,.22);margin:2px auto 10px}
+.screen{background:#120A0F;border-radius:16px;overflow:hidden;aspect-ratio:9/16;display:grid;place-items:center;position:relative}
+.screen img,.screen iframe,.screen video{width:100%;height:100%;object-fit:cover;border:0;display:block;background:#000}
+.screen .empty{text-align:center;padding:24px;color:#5A6675;font-size:.86rem;line-height:1.6}
+.screen .empty b{display:block;color:var(--gold);font-family:var(--dsp);font-size:1rem;margin-bottom:8px}
+.device{position:relative}
+.expand{position:absolute;top:24px;right:24px;z-index:4;border:0;cursor:pointer;font-family:var(--bd);font-size:.78rem;font-weight:700;letter-spacing:.04em;color:#fff;background:rgba(10,14,20,.62);backdrop-filter:blur(8px);padding:9px 14px;border-radius:99px;transition:background .15s}
+.expand:hover{background:rgba(10,14,20,.9)}
+.screen img,.screen video{cursor:zoom-in}
+.media-cap{text-align:center;font-size:.84rem;color:var(--mute);margin-top:14px}
+@media(max-width:900px){.tuto-grid{grid-template-columns:1fr;gap:32px}.media{position:static;order:-1;max-width:300px;margin-inline:auto}}
+/* kepercayaan */
+.trust{background:var(--ink);color:#fff}
+.trust h2{color:#fff}
+.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:12px}
+.tcard{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px 18px;text-align:center}
+.tcard .ic{font-size:1.7rem;display:block;margin-bottom:10px}
+.tcard b{display:block;font-family:var(--dsp);font-size:.92rem;letter-spacing:.06em;margin-bottom:6px}
+.tcard span{font-size:.84rem;color:rgba(255,255,255,.55)}
+@media(max-width:820px){.trust-grid{grid-template-columns:1fr 1fr}}
+
+/* testimoni — skrin sembang WhatsApp */
+.chats{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:12px}
+.chat{position:relative;background:#ECE5DD;border-radius:18px;overflow:hidden;box-shadow:0 22px 44px -24px rgba(0,0,0,.5);border:1px solid rgba(0,0,0,.06)}
+.chat:nth-child(odd){transform:rotate(-1.1deg)}
+.chat:nth-child(even){transform:rotate(1deg)}
+.chat-head{background:#075E54;color:#fff;display:flex;align-items:center;gap:11px;padding:11px 14px}
+.chat-head .back{opacity:.85;font-size:1.1rem;line-height:1}
+.chat-head .pfp{width:34px;height:34px;border-radius:99px;flex:none}
+.chat-head .who{flex:1;min-width:0}
+.chat-head .who b{display:block;font-size:.93rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-head .who span{font-size:.74rem;opacity:.75}
+.chat-head .icons{opacity:.8;font-size:.9rem}
+.chat-body{padding:16px 12px 14px;display:flex;flex-direction:column;gap:8px;min-height:280px;background-image:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1px);background-size:16px 16px}
+.daystamp{align-self:center;background:rgba(225,245,254,.92);color:#4A6572;font-size:.68rem;font-weight:600;padding:4px 11px;border-radius:7px;margin-bottom:4px}
+.bub{max-width:82%;padding:7px 10px 6px;border-radius:9px;font-size:.87rem;line-height:1.45;box-shadow:0 1px 1px rgba(0,0,0,.12);color:#20262C}
+.bub .time{display:block;text-align:right;font-size:.63rem;color:#8C9AA0;margin-top:2px;line-height:1}
+.bub.in{background:#fff;align-self:flex-start;border-top-left-radius:2px}
+.bub.out{background:#DCF8C6;align-self:flex-end;border-top-right-radius:2px}
+.bub.out .time{color:#7A9B7E}
+.tick{color:#4FC3F7;font-size:.72rem;margin-left:3px}
+.bub img,.bub .photo-attach{display:block;width:100%;aspect-ratio:4/3;border-radius:5px;margin-bottom:5px;object-fit:cover;background-size:cover;background-position:center;background-color:#C9C4BA}
+.chat-foot{background:#F0F0F0;padding:9px 12px;display:flex;align-items:center;gap:9px;border-top:1px solid rgba(0,0,0,.06)}
+.chat-foot .inp{flex:1;background:#fff;border-radius:99px;padding:8px 14px;font-size:.82rem;color:#B0B7BC}
+.chat-foot .send{width:32px;height:32px;border-radius:99px;background:#075E54;color:#fff;display:grid;place-items:center;font-size:.85rem;flex:none}
+.chat .contoh{position:absolute;top:10px;right:10px;z-index:5;background:var(--red);color:#fff;font-family:var(--bd);font-size:.62rem;font-weight:800;letter-spacing:.14em;padding:4px 9px;border-radius:99px;box-shadow:0 4px 10px -3px rgba(0,0,0,.6)}
+.chat-note{text-align:center;font-size:.86rem;color:var(--mute);margin-top:22px}
+@media(max-width:900px){.chats{grid-template-columns:1fr;max-width:400px;margin-inline:auto}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* pakej */
+.pk{background:var(--ink);color:#fff}
+.pk h2{color:#fff}
+.pk .sub{text-align:center;color:rgba(255,255,255,.6);margin-bottom:8px}
+.pk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:12px;align-items:start}
+.pkg{background:var(--white);color:var(--text);border-radius:18px;padding:26px 22px;text-align:center;position:relative;border:3px solid transparent}
+.pkg.best{border-color:var(--gold);box-shadow:0 0 0 6px rgba(228,178,60,.16)}
+.pkg .ribbon{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1A1206;font-size:.72rem;font-weight:800;letter-spacing:.08em;padding:6px 14px;border-radius:99px;white-space:nowrap}
+.pkg .name{font-family:var(--dsp);font-weight:800;font-size:1.05rem;letter-spacing:.04em}
+.pkg .desc{font-size:.84rem;color:var(--mute);margin-bottom:16px}
+.pkg .thumb{height:96px;border-radius:12px;margin-bottom:16px;position:relative;overflow:hidden}
+.pkg .old{color:var(--mute);text-decoration:line-through;font-size:.98rem}
+.pkg .now{font-family:var(--dsp);font-size:2.2rem;font-weight:800;letter-spacing:-.04em;line-height:1;margin:2px 0 8px}
+.pkg .save{display:inline-block;background:rgba(62,155,87,.14);color:var(--green);font-size:.78rem;font-weight:700;padding:5px 12px;border-radius:99px;margin-bottom:16px}
+.pkg ul{list-style:none;padding:0;margin:0 0 18px;text-align:left;font-size:.9rem}
+.pkg li{padding:7px 0 7px 22px;position:relative;color:var(--mute)}
+.pkg li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+.pkg .btn{width:100%;font-size:.94rem;padding:14px 18px}
+.pkg .qualify{background:rgba(228,178,60,.16);color:var(--gold-dk);font-size:.78rem;font-weight:700;padding:8px;border-radius:8px;margin-bottom:14px}
+@media(max-width:1000px){.pk-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.pk-grid{grid-template-columns:1fr;max-width:360px;margin-inline:auto}}
+
+/* borang */
+.order{background:var(--paper)}
+.order-box{background:var(--white);border-radius:20px;padding:34px;border:1px solid rgba(32,38,44,.1);box-shadow:0 24px 50px -30px rgba(0,0,0,.4)}
+.order-box h3{font-family:var(--dsp);font-weight:800;font-size:1.24rem;margin-bottom:20px}
+.opts{display:grid;gap:10px;margin-bottom:28px}
+.opt{display:flex;align-items:center;gap:14px;border:2px solid rgba(32,38,44,.12);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .15s,background .15s}
+.opt:hover{background:rgba(228,178,60,.06)}
+.opt input{width:20px;height:20px;accent-color:var(--red);flex:none}
+.opt.sel{border-color:var(--gold);background:rgba(228,178,60,.1)}
+.opt .t{flex:1;font-weight:600;font-size:.97rem}
+.opt .t small{display:block;font-weight:400;color:var(--mute);font-size:.84rem}
+.opt .pr{font-family:var(--dsp);font-weight:800;font-size:1.1rem;white-space:nowrap}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:.86rem;font-weight:600}
+.fld input,.fld select,.fld textarea{font-family:var(--bd);font-size:1rem;padding:13px 14px;border:1.5px solid rgba(32,38,44,.18);border-radius:10px;background:#fff;color:var(--text)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--gold);outline:none}
+.total{display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid rgba(32,38,44,.12);margin-top:26px;padding-top:20px;font-family:var(--dsp);font-weight:800;font-size:1.2rem}
+.total .amt{font-size:1.9rem;color:var(--red)}
+.order .btn{margin-top:20px}
+.err{color:var(--red);font-size:.88rem;margin-top:10px;display:none}
+@media(max-width:640px){.order-box{padding:24px}.fields{grid-template-columns:1fr}}
+
+/* stok */
+.scarce{background:var(--white)}
+.bar-out{background:rgba(32,38,44,.1);border-radius:99px;height:26px;overflow:hidden;margin:20px 0 10px}
+.bar-in{height:100%;background:linear-gradient(90deg,var(--orange),var(--red));width:0;transition:width 1.6s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:12px;color:#fff;font-size:.8rem;font-weight:700}
+.bar-lbl{display:flex;justify-content:space-between;font-size:.86rem;color:var(--mute)}
+.clock{display:flex;gap:12px;justify-content:center;margin:34px 0 8px}
+.unit{background:var(--ink);color:#fff;border-radius:14px;padding:16px 10px;min-width:82px;text-align:center}
+.unit b{display:block;font-family:var(--dsp);font-size:2rem;font-weight:800;color:var(--gold);line-height:1}
+.unit span{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+
+/* jaminan */
+.guar{background:var(--white);border:3px dashed rgba(62,155,87,.45);border-radius:20px;padding:36px;display:flex;gap:28px;align-items:flex-start}
+.seal{width:100px;height:100px;flex:none;border-radius:99px;background:var(--green);color:#fff;display:grid;place-items:center;text-align:center;font-family:var(--dsp);font-weight:800;font-size:.9rem;line-height:1.15}
+.guar h3{font-family:var(--dsp);font-weight:800;font-size:1.35rem;margin-bottom:12px}
+.guar ul{list-style:none;padding:0;margin:16px 0 0;font-size:.95rem}
+.guar li{padding:5px 0 5px 24px;position:relative;color:var(--mute)}
+.guar li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+@media(max-width:640px){.guar{flex-direction:column;padding:26px}}
+
+/* ps */
+.ps{background:var(--ink);color:#fff}
+.ps-box{background:rgba(255,255,255,.05);border-left:5px solid var(--gold);border-radius:0 18px 18px 0;padding:32px}
+.ps-box .lbl{font-family:var(--dsp);font-weight:800;color:var(--gold);letter-spacing:.06em;margin-bottom:16px;display:block}
+.ps-box p{color:rgba(255,255,255,.76);font-size:1.01rem}
+.ps-box p:last-of-type{margin-bottom:0}
+.sign{font-family:var(--hand);color:var(--gold);font-size:1.15rem;margin-top:22px}
+
+/* faq */
+details{border-bottom:1px solid rgba(32,38,44,.14);background:var(--white);border-radius:0}
+summary{cursor:pointer;list-style:none;padding:20px 46px 20px 20px;position:relative;font-family:var(--dsp);font-weight:600;font-size:1.04rem}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:20px;top:16px;font-size:1.5rem;color:var(--mute);font-weight:400;transition:transform .25s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{margin:0 20px 22px;color:var(--mute);font-size:.96rem}
+.faq-list{border-radius:16px;overflow:hidden;border:1px solid rgba(32,38,44,.1);margin-top:12px}
+
+footer{background:var(--ink);color:rgba(255,255,255,.42);padding:56px 0 100px;text-align:center;font-size:.86rem}
+footer .mark{margin:0 auto 14px}
+footer .fname{font-family:var(--dsp);font-weight:800;color:#fff;font-size:1.3rem;letter-spacing:-.03em}
+footer .tagline{font-family:var(--hand);color:var(--gold);margin-bottom:22px}
+.disc{font-size:.78rem;color:rgba(255,255,255,.3);max-width:70ch;margin:22px auto 0;line-height:1.6}
+
+/* sticky */
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:90;background:rgba(14,18,25,.96);backdrop-filter:blur(12px);border-top:1px solid rgba(255,255,255,.12);padding:10px 0;transform:translateY(120%);transition:transform .35s ease}
+.sticky.show{transform:none}
+.sticky-in{display:flex;align-items:center;justify-content:space-between;gap:14px;color:#fff}
+.sticky-in .t b{font-family:var(--dsp);font-weight:800;display:block;font-size:.98rem}
+.sticky-in .t span{font-size:.8rem;color:rgba(255,255,255,.5)}
+.sticky .btn{padding:12px 24px;font-size:.92rem;white-space:nowrap}
+
+.rise{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.rise.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition-duration:.01ms!important}
+  .rise{opacity:1;transform:none}
+  .polaroid .photo::after{opacity:0}.polaroid .img{filter:none;transform:none}.polaroid figcaption{opacity:1}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="promo">✦ PROMOSI MUSIM KAHWIN — HARGA LAMA KEMBALI SELEPAS SLOT BULAN INI PENUH ✦</div>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#atas"><span class="mark"><span class="stripe"><i></i><i></i><i></i><i></i><i></i></span></span><b>JOMSNAP</b></a>
+    <a class="btn btn-cta" href="#tempah">TEMPAH SEKARANG</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="atas">
+  <div class="wrap">
+    <a class="kover" href="#tempah" aria-label="Tempah sekarang"><img src="gambar/kover.jpg" alt="Polaroid Wedding — kumpul semua gambar tetamu dalam satu galeri"></a>
+    <div class="hero-teks">
+    <span class="badge-gold">GALERI MAJLIS DALAM TALIAN</span>
+    <h1>Cara Paling Mudah Pengantin Kumpul <span style="color:var(--gold)">SEMUA</span> Gambar Tetamu Dalam Satu Galeri — Siap Dalam 24 Jam</h1>
+    <p class="sub">Satu kod QR di setiap meja. Tetamu imbas, muat naik gambar dari telefon mereka, dan semuanya masuk terus ke galeri peribadi anda. <strong>Tanpa aplikasi, tanpa pendaftaran, tanpa satu pun gambar yang hilang.</strong></p>
+    <div class="pills">
+      <span class="pill">📸 Tanpa Had Muat Naik</span>
+      <span class="pill">⚡ Siap Dalam 24 Jam</span>
+      <span class="pill">🖼️ Resolusi Penuh</span>
+      <span class="pill">♾️ Galeri Kekal</span>
+    </div>
+    </div>
+    <div class="hero-cta-kecil">
+      <a class="btn btn-cta btn-lg btn-blink" href="#tempah">👉 SAYA NAK UNTUK MAJLIS SAYA</a>
+      <div style="margin-top:16px"><a href="#demo" style="color:rgba(255,255,255,.66);font-size:.94rem;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.28);padding-bottom:3px">atau tengok demo galeri sebenar dulu →</a></div>
+    </div>
+
+  </div>
+</section>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span>✦ TANPA APLIKASI ✦ RESOLUSI PENUH ✦ [JUMLAH] MAJLIS SELESAI ✦ SOKONGAN WHATSAPP HARI MAJLIS ✦ GALERI KEKAL SELAMANYA ✦ BUATAN MALAYSIA ✦</span>
+    <span>✦ TANPA APLIKASI ✦ RESOLUSI PENUH ✦ [JUMLAH] MAJLIS SELESAI ✦ SOKONGAN WHATSAPP HARI MAJLIS ✦ GALERI KEKAL SELAMANYA ✦ BUATAN MALAYSIA ✦</span>
+  </div>
+</div>
+
+<!-- MASALAH -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-warn">⚠ BACA INI DULU</span></div>
+    <h2>Adakah Anda Sedang Buat Kesilapan Ini<br>Tanpa Anda Sedari?</h2>
+    <div class="orn">✦</div>
+    <div class="prob-grid">
+      <div class="prob rise"><div class="thumb foto-m1" role="img" aria-label="Jurugambar menumpu pada pelamin sementara mak cik menangis di meja belakang" style="background-position:50% 42%"></div><div class="body">
+        <h3>Jurugambar Seorang Sahaja</h3>
+        <p>Dia di pelamin ketika mak cik anda menangis di meja belakang. Satu orang tak mungkin berada di 30 meja serentak.</p>
+      </div></div>
+
+      <div class="prob rise"><div class="thumb foto-m2" role="img" aria-label="Pasangan pengantin melihat grup WhatsApp yang penuh dengan mesej" style="background-position:50% 40%"></div><div class="body">
+        <h3>Grup WhatsApp Mati</h3>
+        <p>Tiga hari lepas majlis, grup itu senyap. Gambar tenggelam bawah 200 mesej, dan kualiti dah dimampatkan sampai kabur.</p>
+      </div></div>
+
+      <div class="prob rise"><div class="thumb foto-m3" role="img" aria-label="Tetamu teragak-agak menghantar gambar kepada pengantin" style="background-position:34% 38%"></div><div class="body">
+        <h3>Tetamu Segan Nak Hantar</h3>
+        <p>Mereka ada gambar cantik, tapi rasa menyusahkan pengantin. Jadi gambar itu tersimpan dalam telefon mereka selamanya.</p>
+      </div></div>
+
+      <div class="prob rise"><div class="thumb foto-m4" role="img" aria-label="Pasangan melihat telefon yang skrinnya retak" style="background-position:52% 46%"></div><div class="body">
+        <h3>Telefon Rosak, Gambar Lesap</h3>
+        <p>Tiada siapa simpan salinan kedua untuk majlis orang lain. Sekali telefon hilang, gambar itu hilang terus.</p>
+      </div></div>
+    </div>
+    <p class="warn-line rise">Jika <strong>2 atau lebih</strong> keadaan di atas berlaku pada majlis anda…<br><span class="hl">anda WAJIB baca seterusnya sampai habis.</span></p>
+  </div>
+</section>
+
+<!-- MEMPERKENALKAN -->
+<section class="intro">
+  <div class="narrow">
+    <span class="badge-gold">MEMPERKENALKAN</span>
+    <h2>JOMSNAP</h2>
+    <p class="tag">"Jom snap — biar tetamu yang rakam"</p>
+    <p style="margin-top:22px">Sistem pengumpulan gambar majlis yang direka khas untuk pengantin Malaysia — supaya setiap gambar dari setiap tetamu terkumpul di satu tempat, secara automatik, tanpa anda perlu buat apa-apa pada hari majlis.</p>
+    <p>Setiap pakej datang dengan <strong>kad QR direka khas</strong>, <strong>galeri peribadi tanpa had</strong> dan <strong>muat turun resolusi penuh</strong> — sedia digunakan dalam masa 24 jam selepas anda menempah.</p>
+    <div class="checks">
+      <span class="check">✓ Tanpa Aplikasi</span>
+      <span class="check">✓ Tanpa Pendaftaran</span>
+      <span class="check">✓ Data Disimpan Selamat</span>
+      <span class="check">✓ Sokongan Bahasa Melayu</span>
+    </div>
+    <div style="margin-top:34px"><a class="btn btn-gold btn-lg" href="#tempah">🎯 DAPATKAN JOMSNAP UNTUK MAJLIS SAYA</a></div>
+  </div>
+</section>
+
+<!-- MANFAAT -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-gold">✦ APA YANG ANDA DAPAT ✦</span></div>
+    <h2>6 Perkara Yang Anda Akan Rasai<br>Selepas Majlis Anda Selesai</h2>
+    <div class="orn">✦</div>
+    <div class="ben-grid">
+      <div class="ben rise">
+        <div class="art"><div class="kolaj" role="img" aria-label="Gambar selfie tetamu dari pelbagai majlis">
+          <div class="pol p1"><i class="f1" data-zoom></i></div>
+          <div class="pol p2"><i class="f2" data-zoom></i></div>
+          <div class="pol p3"><i class="f3" data-zoom></i></div>
+          <div class="pol p4"><i class="f4" data-zoom></i></div>
+          <div class="pol p5"><i class="f5" data-zoom></i></div>
+          <div class="pol p6"><i class="f6" data-zoom></i></div>
+          <div class="pol p7"><i class="f7" data-zoom></i></div>
+          <div class="pol p8"><i class="f8" data-zoom></i></div>
+          <div class="pol p9"><i class="f9" data-zoom></i></div>
+          <span class="kilau"><b></b><b></b><b></b></span>
+          <span class="kira">1,800 – 4,000 keping</span>
+        </div></div>
+        <h3>Beribu Gambar Baharu</h3>
+        <p>Purata majlis JomSnap terkumpul 1,800 hingga 4,000 keping — gambar yang anda tak pernah tahu wujud.</p>
+      </div>
+
+      <div class="ben rise">
+        <div class="art"><div class="tskrin simpan" data-zoom role="img" aria-label="Tetamu menekan SIMPAN dan telefon meminta pengesahan muat turun"></div></div>
+        <h3>Tetamu Boleh Muat Turun Sendiri</h3>
+        <p>Sesiapa yang buka galeri boleh <span class="hl">simpan mana-mana gambar</span> terus ke telefon masing-masing. <strong>Tak perlu minta pada pengantin</strong>, tak perlu tunggu sesiapa hantar.</p>
+      </div>
+
+      <div class="ben rise">
+        <div class="art"><div class="tskrin zip" data-zoom role="img" aria-label="Halaman muat turun semua gambar dalam satu fail ZIP"></div></div>
+        <h3>Muat Turun Semua Dalam Satu ZIP</h3>
+        <p>Selepas majlis, pengantin boleh <span class="hl">muat turun keseluruhan galeri</span> dalam satu fail ZIP. <strong>Simpan sendiri di komputer atau cloud</strong> — jadi kenangan itu kekal milik anda, selama-lamanya.</p>
+      </div>
+
+      <div class="ben rise">
+        <div class="art"><div class="belah"><div class="kiri like" data-zoom role="img" aria-label="Kad gambar sebenar dengan butang suka dan simpan"></div><div class="kanan"><svg viewBox="0 0 220 120" role="img" aria-label="Tetamu menekan butang suka pada gambar orang lain">
+          <defs>
+            <linearGradient id="lk1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F7D9C4"/><stop offset="1" stop-color="#8C4A5C"/></linearGradient>
+            <linearGradient id="lk2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DCE8DA"/><stop offset="1" stop-color="#3F6152"/></linearGradient>
+            <linearGradient id="lk3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E4E9F5"/><stop offset="1" stop-color="#465383"/></linearGradient>
+          </defs>
+
+          <g>
+            <rect x="8" y="16" width="58" height="48" rx="3" fill="url(#lk2)"/>
+            <rect x="8" y="68" width="40" height="15" rx="7.5" fill="#F2EFE8"/>
+            <path d="M18 72.5 a3 3 0 0 1 6 0 a3 3 0 0 1 6 0 c0 3.7 -6 7.2 -6 7.2 c0 0 -6 -3.5 -6 -7.2z" fill="#D6493F"/>
+            <text x="36" y="80" fill="#5A6675" font-family="Instrument Sans,sans-serif" font-size="8.5" font-weight="700">12</text>
+          </g>
+
+          <g>
+            <rect x="154" y="16" width="58" height="48" rx="3" fill="url(#lk3)"/>
+            <rect x="154" y="68" width="40" height="15" rx="7.5" fill="#F2EFE8"/>
+            <path d="M164 72.5 a3 3 0 0 1 6 0 a3 3 0 0 1 6 0 c0 3.7 -6 7.2 -6 7.2 c0 0 -6 -3.5 -6 -7.2z" fill="#D6493F"/>
+            <text x="182" y="80" fill="#5A6675" font-family="Instrument Sans,sans-serif" font-size="8.5" font-weight="700">3</text>
+          </g>
+
+          <g>
+            <rect x="78" y="10" width="64" height="54" rx="3" fill="url(#lk1)"/>
+            <rect x="78" y="68" width="46" height="17" rx="8.5" fill="#F2EFE8"/>
+            <path d="M89 73.5 a3.4 3.4 0 0 1 6.8 0 a3.4 3.4 0 0 1 6.8 0 c0 4.2 -6.8 8.2 -6.8 8.2 c0 0 -6.8 -4 -6.8 -8.2z" fill="#D6493F"/>
+            <text x="109" y="81" fill="#20262C" font-family="Instrument Sans,sans-serif" font-size="9.5" font-weight="700">28</text>
+          </g>
+
+          <g stroke="#D6493F" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".85">
+            <path d="M92 62 l-5 -7"/><path d="M110 60 l4 -8"/><path d="M101 58 l0 -9"/>
+          </g>
+
+          <g transform="translate(120,86)">
+            <path d="M0 0 l0 15 l4 -4 l4 8 l4 -2 l-4 -8 l6 0z" fill="#F2EFE8" stroke="#20262C" stroke-width="1.4" stroke-linejoin="round"/>
+          </g>
+
+          <text x="8" y="112" fill="#E4B23C" font-family="Instrument Sans,sans-serif" font-size="10.5" font-weight="700">sesiapa boleh tekan suka</text>
+        </svg></div></div></div>
+        <h3>Tetamu Boleh Suka Gambar Sesiapa</h3>
+        <p>Setiap gambar ada butang suka. <span class="hl">Sesiapa boleh tekan pada gambar sesiapa</span> — jadi pengantin terus nampak <strong>detik mana yang paling disukai</strong> antara beribu gambar itu.</p>
+      </div>
+
+      <div class="ben rise">
+        <div class="art"><div class="tskrin ucapan" data-zoom role="img" aria-label="Tab ucapan menunjukkan pesanan tetamu untuk pengantin"></div></div>
+        <h3>Ucapan Terkumpul Rapi</h3>
+        <p>Setiap gambar boleh disertakan pesanan. Semua ucapan dikeluarkan sebagai <strong>fail Excel</strong> yang boleh dibuka di Excel, Numbers atau Google Sheets.</p>
+      </div>
+
+      <div class="ben rise">
+        <div class="art"><div class="dewan" role="img" aria-label="Gambar tetamu berputar di skrin dewan sementara tetamu menonton"><div class="tv"><div class="tvskrin"><span class="f1"></span><span class="f2"></span><span class="f3"></span><span class="f4"></span><span class="f5"></span><span class="f6"></span><span class="f7"></span><span class="f8"></span><span class="f9"></span><span class="f2"></span><span class="f4"></span><span class="f7"></span></div></div><span class="kaki"></span><span class="tapak"></span><div class="penonton"></div></div></div>
+        <h3>Skrin Dewan Jadi Hidup</h3>
+        <p>Gambar tetamu muncul di TV atau projektor sepanjang majlis. Tetamu suka tengok wajah mereka naik atas skrin.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KOMPONEN -->
+<section class="comp">
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-gold">✦ 3 FUNGSI DALAM SATU GALERI ✦</span></div>
+    <h2>Satu Pautan. Tiga Cara Tetamu<br>Tinggalkan Kenangan.</h2>
+    <div class="orn">✦</div>
+    <div class="tabmock">
+      <span class="aktif">📷 Gambar <b>13</b></span>
+      <span>🎞️ Photobooth</span>
+      <span>📖 Ucapan <b>8</b></span>
+    </div>
+    <p class="tabhint">Inilah <strong>tiga tab</strong> yang tetamu nampak sebaik sahaja mereka buka pautan anda.</p>
+
+    <div class="comp-grid">
+      <div class="comp-card rise">
+        <span class="tagno">TAB 01</span><button class="shot shot-1" data-zoom="1" aria-label="Galeri gambar tetamu dengan butang suka dan simpan"><span class="lens">🔍</span></button>
+        <div class="cbody"><h4>🗂️ Galeri Gambar</h4><p>Semua gambar tetamu <span class="hl">terkumpul di satu tempat</span>, lengkap dengan <strong>nama penghantar</strong> dan ucapan ringkas. Tetamu boleh tekan suka, dan sesiapa boleh <strong>simpan terus ke telefon sendiri</strong>.</p></div>
+      </div>
+      <div class="comp-card rise">
+        <span class="tagno">TAB 02</span><button class="shot shot-2" data-zoom="2" aria-label="Jalur photobooth majlis"><span class="lens">🔍</span></button>
+        <div class="cbody"><h4>🎞️ Jalur Photobooth</h4><p>Tetamu ambil selfie terus dari telefon dan ia disusun menjadi <strong>jalur photobooth bergaya polaroid</strong> — <span class="hl">tanpa perlu sewa mesin photobooth</span> di dewan.</p></div>
+      </div>
+      <div class="comp-card rise">
+        <span class="tagno">TAB 03</span><button class="shot shot-3" data-zoom="3" aria-label="Ucapan tetamu untuk pengantin"><span class="lens">🔍</span></button>
+        <div class="cbody"><h4>💌 Ucapan Tetamu</h4><p>Tetamu tinggalkan <strong>ucapan bersama nama mereka</strong>. Semuanya tersusun rapi dalam satu tab, dan boleh <span class="hl">dimuat turun sebagai fail Excel</span> selepas majlis.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LANGKAH -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-gold">✦ CARA PENGGUNAAN ✦</span></div>
+    <h2>Hanya 3 Langkah Mudah,<br>Tetamu Siap Dalam 10 Saat</h2>
+    <div class="orn">✦</div>
+    <div class="steps">
+      <div class="stp rise"><span class="foto qr1" data-zoom role="img" aria-label="Kad QR bergaya di atas meja tetamu"></span><div class="isi"><span class="n">1</span><h3>Letak Kad Di Meja</h3><p>Kami poskan kad QR bercetak ke rumah anda sebelum hari majlis. Anda cuma perlu letak di atas setiap meja tetamu.</p></div></div>
+      <div class="stp rise"><span class="foto qr2" data-zoom role="img" aria-label="Tetamu mengimbas kod QR dengan kamera telefon"></span><div class="isi"><span class="n">2</span><h3>Tetamu Imbas &amp; Muat Naik</h3><p>Kamera telefon terus buka halaman muat naik. Pilih gambar, tulis ucapan kalau nak, tekan hantar — siap.</p></div></div>
+      <div class="stp rise"><span class="foto galeri shot-1" data-zoom role="img" aria-label="Galeri dalam talian yang mula terisi dengan gambar tetamu"></span><div class="isi"><span class="n">3</span><h3>Galeri Terisi Sendiri</h3><p>Malam majlis: gambar mula masuk.<br>Esok pagi: ratusan keping menunggu.<br>Minggu depan: muat turun semuanya.</p></div></div>
+    </div>
+    <div class="tip rise">💡 <strong>Tip dari kami:</strong> Umumkan sekali oleh pengacara majlis ("tetamu boleh imbas kad di atas meja untuk kongsi gambar"). Satu ayat itu boleh naikkan jumlah gambar sehingga dua kali ganda.</div>
+    <div class="center" style="margin-top:36px"><a class="btn btn-cta btn-lg" href="#tempah">🚀 TEMPAH SLOT MAJLIS SAYA</a></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TUTORIAL — letak tangkapan skrin / video anda di sini.
+     Buat folder "tutorial" di sebelah fail HTML ini.
+     Setiap langkah rujuk fail melalui atribut data-media.
+     Untuk video YouTube, tukar data-type="img" kepada data-type="video"
+     dan letak ID video (bahagian selepas "v=") dalam data-media.
+     ══════════════════════════════════════════════════════════════ -->
+<section class="tuto" id="tutorial">
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-gold">📖 ✦ TUTORIAL PENUH ✦</span></div>
+    <h2>Panduan Langkah Demi Langkah</h2>
+    <p style="text-align:center;color:var(--mute);max-width:52ch;margin:16px auto 34px">Tekan mana-mana langkah untuk lihat paparan sebenar sistem.</p>
+
+    <div class="tabs">
+      <button class="tab on" data-tab="pengantin">👰 Untuk Pengantin</button>
+      <button class="tab" data-tab="tetamu">📱 Untuk Tetamu</button>
+      <button class="tab" data-tab="skrin">📺 Skrin Dewan</button>
+    </div>
+
+    <div class="tuto-grid">
+      <div>
+
+        <!-- ─────── TAB 1: PENGANTIN ─────── -->
+        <div class="stepgroup on" data-group="pengantin">
+          <button class="stepitem on" data-default="1" data-media="BENAM:pengantin" data-type="mp4" data-poster="gambar/poster-pengantin.jpg" data-cap="Rakaman sebenar: daftar majlis anda">
+            <span class="n">1</span><span><h4>Pilih pakej dan daftar majlis <span class="vbadge">▶ VIDEO</span></h4>
+            <p>Buka laman, pilih pakej yang sesuai dengan majlis anda, dan ikut empat langkah pendaftaran. Tak perlu tunggu sesiapa — anda boleh siapkan sendiri dalam beberapa minit.</p></span>
+          </button>
+          <button class="stepitem" data-media="gambar/step-1.jpg" data-type="img" data-cap="URL khas majlis, dan butiran nama pasangan">
+            <span class="n">2</span><span><h4>Isi maklumat majlis</h4>
+            <p>Masukkan <strong>nama pasangan</strong>, tarikh majlis dan mesej aluan untuk tetamu. Anda juga dapat <strong>URL khas atas nama pengantin</strong> — contohnya <em>.../e/ali-siti</em> — jadi pautan galeri anda mudah diingat dan nampak kemas di kad jemputan.</p></span>
+          </button>
+          <button class="stepitem" data-media="gambar/step-2.jpg" data-type="img" data-cap="Pilih corak latar dan gaya font kad anda">
+            <span class="n">3</span><span><h4>Pilih reka bentuk kad anda</h4>
+            <p>Pilih daripada <strong>belasan corak latar siap sedia</strong> — bunga klasik, sakura, gingham, marun baldu, botani vintaj dan banyak lagi. Kemudian pilih <strong>gaya font</strong> untuk nama anda berdua, dari klasik elegan sampai romantik kaligrafi. Corak akan diwarnakan mengikut tema warna majlis anda.</p></span>
+          </button>
+          <button class="stepitem" data-media="gambar/step-3.jpg" data-type="img" data-cabang="1" data-cap="Halaman kongsi majlis: cetak atau muat turun kod QR">
+            <span class="n">4</span><span><h4>Cetak kad QR anda</h4>
+            <p>Anda boleh <strong>cetak terus dari sistem kami</strong> — tekan butang Cetak Kad QR dan kad siap dengan corak bunga keluar dari pencetak anda. Atau <strong>muat turun kod QR sebagai fail PNG</strong> dan reka sendiri di Canva kalau anda mahu reka bentuk tersuai mengikut tema majlis. Boleh juga terus kongsi pautan melalui WhatsApp kepada tetamu.</p></span>
+          </button>
+          <button class="stepitem" data-media="gambar/step-4.jpg" data-type="img" data-cap="Ayat jemputan siap ditaip, tinggal tekan Kongsi WhatsApp">
+            <span class="n">5</span><span><h4>Kongsi pautan melalui WhatsApp</h4>
+            <p>Tekan butang WhatsApp dan <strong>ayat jemputan siap ditaip untuk anda</strong>, lengkap dengan pautan galeri. Tak perlu pening fikir nak tulis apa — terus hantar ke grup keluarga atau tempel di kad jemputan digital anda.</p></span>
+          </button>
+          <button class="stepitem" data-media="gambar/step-5.jpg" data-type="img" data-cap="Kad QR berdiri di atas meja tetamu">
+            <span class="n">6</span><span><h4>Letak kad di setiap meja</h4>
+            <p>Pada hari majlis, letak satu kad di setiap meja tetamu dan satu di meja penerima tetamu. Minta pengacara umumkan sekali — itu boleh menggandakan jumlah gambar masuk.</p></span>
+          </button>
+          <button class="stepitem" data-media="gambar/step-6.jpg" data-type="img" data-cap="Muat turun semua gambar dalam satu fail ZIP">
+            <span class="n">7</span><span><h4>Muat turun semuanya selepas majlis</h4>
+            <p>Buka galeri, tekan "Muat Turun Semua Gambar". Anda dapat satu fail ZIP mengandungi setiap gambar dalam resolusi asal, bersama <strong>senarai-ucapan.csv</strong> — fail Excel yang senaraikan semua ucapan tetamu berserta nama mereka.</p></span>
+          </button>
+        </div>
+
+        <!-- ─────── TAB 2: TETAMU ─────── -->
+        <div class="stepgroup" data-group="tetamu">
+          <button class="stepitem on" data-media="tutorial/tetamu-1.jpg" data-type="img" data-cap="Imbas kad di atas meja">
+            <span class="n">1</span><span><h4>Buka kamera dan halakan pada kad</h4>
+            <p>Tak perlu muat turun apa-apa aplikasi. Buka kamera telefon seperti biasa, halakan pada kod QR di atas meja, dan tekan pautan yang muncul di skrin.</p></span>
+          </button>
+          <button class="stepitem" data-default="1" data-media="BENAM:tetamu" data-type="mp4" data-poster="gambar/poster-tetamu.jpg" data-cap="Rakaman sebenar: halaman tetamu">
+            <span class="n">2</span><span><h4>Pilih gambar dari telefon <span class="vbadge">▶ VIDEO</span></h4>
+            <p>Halaman muat naik terus terbuka. Tekan butang besar di tengah, pilih seberapa banyak gambar yang anda mahu — boleh pilih ramai sekali gus.</p></span>
+          </button>
+          <button class="stepitem" data-media="tutorial/tetamu-3.jpg" data-type="img" data-cap="Ruangan nama dan ucapan">
+            <span class="n">3</span><span><h4>Tulis nama dan ucapan (pilihan)</h4>
+            <p>Isi nama supaya pengantin tahu siapa yang hantar. Boleh tinggalkan ucapan sekali — ia akan masuk ke tab Ucapan, dan turut disertakan dalam fail Excel yang pengantin muat turun nanti.</p></span>
+          </button>
+          <button class="stepitem" data-media="tutorial/tetamu-4.jpg" data-type="img" data-cap="Pengesahan muat naik berjaya">
+            <span class="n">4</span><span><h4>Tekan hantar — siap</h4>
+            <p>Gambar mula dimuat naik. Kalau talian dewan lemah, ia akan sambung semula sendiri. Anda boleh tutup halaman, muat naik tetap diteruskan di latar belakang.</p></span>
+          </button>
+        </div>
+
+        <!-- ─────── TAB 3: SKRIN DEWAN ─────── -->
+        <div class="stepgroup" data-group="skrin">
+          <button class="stepitem on" data-media="tutorial/skrin-1.jpg" data-type="img" data-cap="Pautan mod tayangan">
+            <span class="n">1</span><span><h4>Buka pautan tayangan</h4>
+            <p>Dalam galeri anda ada pautan berasingan bertanda "Mod Tayangan". Buka pautan ini pada laptop, TV pintar, atau telefon yang disambung ke projektor.</p></span>
+          </button>
+          <button class="stepitem" data-media="tutorial/skrin-2.jpg" data-type="img" data-cap="Sambungan HDMI ke projektor">
+            <span class="n">2</span><span><h4>Sambung ke skrin dewan</h4>
+            <p>Guna kabel HDMI dari laptop ke projektor, atau hantar skrin melalui TV pintar. Pastikan awal-awal dengan pihak dewan yang port HDMI tersedia.</p></span>
+          </button>
+          <button class="stepitem" data-media="tutorial/skrin-3.jpg" data-type="img" data-cap="Tetapan kelajuan tayangan">
+            <span class="n">3</span><span><h4>Laraskan tetapan tayangan</h4>
+            <p>Pilih berapa lama setiap gambar dipaparkan, dan sama ada nak tunjuk nama penghantar. Hidupkan mod semakan kalau anda mahu luluskan gambar dahulu.</p></span>
+          </button>
+          <button class="stepitem" data-media="tutorial/skrin-4.jpg" data-type="img" data-cap="Tayangan berjalan di dewan">
+            <span class="n">4</span><span><h4>Biarkan ia berjalan sendiri</h4>
+            <p>Gambar baharu muncul secara automatik dalam beberapa saat selepas tetamu muat naik. Tak perlu ada orang jaga — skrin akan terus berputar sepanjang majlis.</p></span>
+          </button>
+        </div>
+
+      </div>
+
+      <div class="media">
+        <div class="mediaRow" id="mediaRow">
+          <div class="device">
+            <div class="notch"></div>
+            <div class="screen" id="screen">
+              <div class="empty"><b>Slot media</b>Letak tangkapan skrin di folder<br><code>tutorial/pengantin-1.jpg</code></div>
+            </div>
+            <button class="expand" id="expand" aria-label="Besarkan paparan" hidden>⤢ Besarkan</button>
+          </div>
+          <div class="anak-panah" aria-hidden="true">
+            <svg viewBox="0 0 40 300" preserveAspectRatio="none">
+              <g stroke="var(--gold)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+                <path d="M2 150 C 16 150, 20 92, 36 78"/>
+                <path d="M28 76 L37 76 L37 86"/>
+                <path d="M2 150 C 16 150, 20 208, 36 222"/>
+                <path d="M28 224 L37 224 L37 214"/>
+              </g>
+            </svg>
+          </div>
+          <div class="cabang">
+            <figure><span class="gmb g-cetak" data-zoom role="img" aria-label="Kad QR yang dicetak terus dari sistem"></span><figcaption>Cetak terus dari sistem</figcaption></figure>
+            <figure><span class="gmb g-canva" data-zoom role="img" aria-label="Kod QR direka semula di Canva"></span><figcaption>Atau kustom di Canva</figcaption></figure>
+          </div>
+        </div>
+        <p class="media-cap" id="mediaCap">Emel pautan galeri anda</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KEPERCAYAAN -->
+<section class="trust">
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-gold">✦ KEPERCAYAAN &amp; KESELAMATAN ✦</span></div>
+    <h2>Kenapa Pengantin Percayakan Kami</h2>
+    <p style="text-align:center;color:rgba(255,255,255,.6);max-width:52ch;margin:0 auto 34px">Gambar majlis anda adalah kenangan yang tak boleh diganti. Kami uruskan seperti milik kami sendiri.</p>
+    <div class="trust-grid">
+      <div class="tcard rise"><span class="ic">🔒</span><b>GALERI PERIBADI</b><span>Tidak muncul dalam carian Google. Hanya pautan anda.</span></div>
+      <div class="tcard rise"><span class="ic">💾</span><b>SALINAN BERGANDA</b><span>Setiap gambar disimpan di dua lokasi berasingan.</span></div>
+      <div class="tcard rise"><span class="ic">🇲🇾</span><b>SOKONGAN TEMPATAN</b><span>WhatsApp kami dalam Bahasa Melayu, waktu Malaysia.</span></div>
+      <div class="tcard rise"><span class="ic">🛡️</span><b>ANDA YANG KAWAL</b><span>Padam mana-mana gambar, atau luluskan dulu sebelum papar.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONI -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-gold">✦ KISAH PENGANTIN ✦</span></div>
+    <h2>[Jumlah] Pasangan Sudah Simpan<br>Kenangan Mereka Dengan JomSnap</h2>
+    <div class="orn">✦</div>
+    <p style="text-align:center;color:var(--mute);max-width:52ch;margin:0 auto 40px">Sembang di bawah adalah <strong>contoh paparan</strong> — ganti dengan sembang pelanggan sebenar sebelum laman ini diterbitkan.</p>
+
+    <div class="chats">
+
+      <div class="chat rise">
+        <span class="contoh">CONTOH</span>
+        <div class="chat-head">
+          <span class="back">‹</span>
+          <span class="pfp" style="background:linear-gradient(145deg,#F9DDE0,#8C4A5C)"></span>
+          <span class="who"><b>Klien 1</b><span>online</span></span>
+          <span class="icons">⋮</span>
+        </div>
+        <div class="chat-body">
+          <span class="daystamp">Semalam</span>
+          <div class="bub in">Alhamdulillah majlis dah selesai 🙏 Terima kasih banyak2<span class="time">9:14 PG</span></div>
+          <div class="bub in"><span class="photo-attach f2"></span>Semalam saya buka galeri sebelum tidur, dah 400 lebih gambar. Pagi ni dah 1,200 😳<span class="time">9:15 PG</span></div>
+          <div class="bub out">MasyaAllah 😍 Ramai tetamu yang guna ya<span class="time">9:22 PG <span class="tick">✓✓</span></span></div>
+          <div class="bub in">Ramai! Banyak gambar candid yang kami tak pernah nampak. Geng sekolah buat lawak kat meja belakang tu semua ada 😂<span class="time">9:26 PG</span></div>
+        </div>
+        <div class="chat-foot"><span class="inp">Taip mesej</span><span class="send">➤</span></div>
+      </div>
+
+      <div class="chat rise">
+        <span class="contoh">CONTOH</span>
+        <div class="chat-head">
+          <span class="back">‹</span>
+          <span class="pfp" style="background:linear-gradient(145deg,#DCE8DA,#3F6152)"></span>
+          <span class="who"><b>Klien 2</b><span>online</span></span>
+          <span class="icons">⋮</span>
+        </div>
+        <div class="chat-body">
+          <span class="daystamp">2 hari lepas</span>
+          <div class="bub in">Nak tanya, kalau mak cik pak cik tak reti guna macam mana ya? Ni yang saya risau sikit<span class="time">8:02 MLM</span></div>
+          <div class="bub out">Tak perlu risau. Tetamu cuma halakan kamera pada kad atas meja, terus buka. Tiada app, tiada daftar 🙂<span class="time">8:10 MLM <span class="tick">✓✓</span></span></div>
+          <div class="bub in">Ok dah cuba. Mak saya 63 tahun terus boleh buat sendiri tanpa saya ajar 😄<span class="time">8:12 MLM</span></div>
+          <div class="bub in">Senang rupanya. Saya dah kongsi link dalam grup keluarga guna ayat yang sistem bagi tu<span class="time">8:13 MLM</span></div>
+        </div>
+        <div class="chat-foot"><span class="inp">Taip mesej</span><span class="send">➤</span></div>
+      </div>
+
+      <div class="chat rise">
+        <span class="contoh">CONTOH</span>
+        <div class="chat-head">
+          <span class="back">‹</span>
+          <span class="pfp" style="background:linear-gradient(145deg,#E4E9F5,#465383)"></span>
+          <span class="who"><b>Klien 3</b><span>online</span></span>
+          <span class="icons">⋮</span>
+        </div>
+        <div class="chat-body">
+          <span class="daystamp">Minggu lepas</span>
+          <div class="bub in">Live Wall tu memang kena! Kami sambung ke skrin dewan, gambar tetamu naik satu-satu<span class="time">2:41 PTG</span></div>
+          <div class="bub out">Tetamu suka tak?<span class="time">2:44 PTG <span class="tick">✓✓</span></span></div>
+          <div class="bub in"><span class="photo-attach f9"></span>Suka sangat. Meja belakang berlumba upload sebab nak tengok muka sendiri atas skrin 😂<span class="time">2:50 PTG</span></div>
+          <div class="bub in">Lepas tu saya download ZIP, ada file Excel ucapan sekali. Semua nama tetamu ada. Terharu baca<span class="time">2:52 PTG</span></div>
+        </div>
+        <div class="chat-foot"><span class="inp">Taip mesej</span><span class="send">➤</span></div>
+      </div>
+
+    </div>
+    <p class="chat-note">↑ Ini contoh sahaja. Buang lencana CONTOH dan ganti dengan tangkapan sembang pelanggan sebenar sebelum terbit.</p>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="demo" id="demo">
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-gold">✦ DEMO LANGSUNG ✦</span></div>
+    <h2>Tengok Sendiri Sebelum Anda Tempah</h2>
+    <p style="text-align:center;color:rgba(255,255,255,.62);max-width:54ch;margin:16px auto 0">
+      Ini galeri sebenar dari majlis yang sudah berlangsung. Buka di telefon anda, cuba setiap tab,
+      dan bayangkan nama anda berdua di bahagian atas.</p>
+
+    <div class="demo-grid">
+      <div class="demo-phone">
+        <div class="notch"></div>
+        <div class="demo-screen shot-1">
+          <span class="demo-live"><i></i> GALERI AKTIF</span>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-family:var(--dsp);font-weight:800;font-size:1.3rem;color:#fff">Cuba benda ini semasa anda di dalam:</h3>
+        <ul class="demo-try">
+          <li>Tekan tab <b>Gambar</b> — tatal lihat gambar yang tetamu muat naik sendiri</li>
+          <li>Tekan tab <b>Ucapan</b> — baca pesanan yang tetamu tinggalkan untuk pengantin</li>
+          <li>Tekan <b>Photobooth</b> — lihat jalur selfie bergaya polaroid</li>
+          <li>Cuba <b>cari nama tetamu</b> di ruangan carian, macam mak cik anda akan buat</li>
+          <li>Tekan <b>SIMPAN</b> pada mana-mana gambar — terus masuk ke telefon anda</li>
+        </ul>
+        <a class="btn btn-cta btn-lg btn-blink" href="https://polaroid.murahboss.my/e.html?e=DEMO"
+           target="_blank" rel="noopener" style="max-width:420px">🔗 BUKA GALERI DEMO</a>
+        <p class="demo-note">Terbuka dalam tab baharu · Tiada pendaftaran diperlukan · Anda tidak perlu muat naik apa-apa</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAKEJ -->
+<section class="pk" id="pakej">
+  <div class="wrap">
+    <div class="eyebrow-wrap"><span class="badge-gold">✦ PILIH PAKEJ ANDA ✦</span></div>
+    <h2>Pilih Pakej Terbaik Untuk Majlis Anda</h2>
+    <p class="sub">Lebih lengkap pakej, lebih banyak anda jimat!</p>
+    <div class="orn">✦</div>
+
+    <div class="pk-grid">
+      <div class="pkg rise">
+        <div class="name">PAKEJ BASIC</div>
+        <div class="desc">Untuk majlis kecil</div>
+        <div class="thumb ph2"></div>
+        <div class="now">RM60</div>
+        <p class="per">satu majlis</p>
+        <ul><li>800 keping gambar</li><li>Galeri 14 hari</li><li>Kemaskini gambar</li><li>Muat turun gambar individu</li><li>Kustom font & tema</li></ul>
+        <a class="btn btn-cta" href="#tempah" data-pick="basic">🛒 PILIH INI</a>
+      </div>
+
+      <div class="pkg best rise">
+        <span class="ribbon">⭐ DISYORKAN</span>
+        <div class="name">PAKEJ PREMIUM</div>
+        <div class="desc">Paling berbaloi</div>
+        <div class="thumb ph5"></div>
+        <div class="now">RM100</div>
+        <p class="per">satu majlis</p>
+        <ul><li>Semua ciri Basic</li><li>Gambar tanpa had</li><li>Galeri 30 hari</li><li>Muat turun ZIP</li><li>Photobooth</li><li>Ucapan guestbook</li></ul>
+        <a class="btn btn-cta" href="#tempah" data-pick="premium">🛒 PILIH INI</a>
+      </div>
+
+      <div class="pkg rise">
+        <div class="name">PAKEJ EKSKLUSIF</div>
+        <div class="desc">Untuk majlis besar</div>
+        <div class="thumb ph3"></div>
+        <div class="now">RM130</div>
+        <p class="per">satu majlis</p>
+        <ul><li>Semua ciri Premium</li><li>Galeri 60 hari</li><li>Live Wall skrin majlis</li><li>Gambar tanpa had</li><li>Muat turun ZIP</li></ul>
+        <a class="btn btn-cta" href="#tempah" data-pick="eksklusif">🛒 PILIH INI</a>
+      </div>
+
+      <div class="pkg rise">
+        <div class="name">PAKEJ GOLD</div>
+        <div class="desc">Tanpa had sepenuhnya</div>
+        <div class="thumb ph6"></div>
+        <div class="now">RM150</div>
+        <p class="per">satu majlis</p>
+        <ul><li>Semua ciri Eksklusif</li><li>Gambar tanpa had</li><li>Durasi tanpa had</li><li>Galeri kekal selamanya</li></ul>
+        <a class="btn btn-cta" href="#tempah" data-pick="gold">🛒 PILIH INI</a>
+      </div>
+
+    </div>
+    <p style="text-align:center;color:rgba(255,255,255,.5);font-size:.9rem;margin-top:26px">💳 Pembayaran melalui FPX, kad kredit, e-Wallet &amp; pemindahan bank</p>
+  </div>
+</section>
+
+<!-- BORANG -->
+<section class="order" id="tempah">
+  <div class="narrow">
+    <h2>Isi Maklumat Majlis Anda</h2>
+    <p style="text-align:center;color:var(--mute);margin-bottom:30px">Ambil masa kurang 2 minit. Kami balas di WhatsApp dalam masa 1 jam waktu bekerja.</p>
+
+    <div class="order-box">
+      <h3>1. Pilih Pakej Anda</h3>
+      <div class="opts" id="opts">
+        <label class="opt"><input type="radio" name="pakej" value="Pakej Basic" data-price="60"><span class="t">PAKEJ BASIC<small>800 gambar · galeri 14 hari</small></span><span class="pr">RM60</span></label>
+        <label class="opt sel"><input type="radio" name="pakej" value="Pakej Premium" data-price="100" checked><span class="t">PAKEJ PREMIUM ⭐<small>Gambar tanpa had · 30 hari · photobooth · guestbook</small></span><span class="pr">RM100</span></label>
+        <label class="opt"><input type="radio" name="pakej" value="Pakej Eksklusif" data-price="130"><span class="t">PAKEJ EKSKLUSIF<small>Semua Premium · 60 hari · Live Wall</small></span><span class="pr">RM130</span></label>
+        <label class="opt"><input type="radio" name="pakej" value="Pakej Gold" data-price="150"><span class="t">PAKEJ GOLD<small>Gambar & durasi tanpa had</small></span><span class="pr">RM150</span></label>
+      </div>
+
+      <h3>2. Maklumat Anda</h3>
+      <div class="fields">
+        <div class="fld full"><label for="nama">Nama Pengantin *</label><input id="nama" type="text" placeholder="Cth: Nadia &amp; Haziq"></div>
+        <div class="fld"><label for="fon">Nombor WhatsApp *</label><input id="fon" type="tel" inputmode="tel" placeholder="Cth: 012-345 6789"></div>
+        <div class="fld"><label for="tarikh">Tarikh Majlis *</label><input id="tarikh" type="date"></div>
+        <div class="fld"><label for="jenis">Jenis Majlis</label>
+          <select id="jenis"><option>Sanding / Resepsi</option><option>Nikah</option><option>Bertandang</option><option>Pertunangan</option><option>Majlis lain</option></select>
+        </div>
+        <div class="fld"><label for="negeri">Negeri</label>
+          <select id="negeri"><option>Selangor</option><option>Kuala Lumpur</option><option>Johor</option><option>Kedah</option><option>Kelantan</option><option>Melaka</option><option>Negeri Sembilan</option><option>Pahang</option><option>Perak</option><option>Perlis</option><option>Pulau Pinang</option><option>Sabah</option><option>Sarawak</option><option>Terengganu</option><option>Putrajaya</option><option>Labuan</option></select>
+        </div>
+        <div class="fld full"><label for="nota">Nota tambahan (pilihan)</label><textarea id="nota" rows="2" placeholder="Cth: tema warna kad, anggaran jumlah tetamu"></textarea></div>
+      </div>
+
+      <div class="total"><span>Jumlah pakej</span><span class="amt" id="amt">RM100</span></div>
+
+      <button class="btn btn-cta btn-lg" id="hantar" style="max-width:none">📲 HANTAR TEMPAHAN VIA WHATSAPP</button>
+      <p class="err" id="err">Sila lengkapkan nama, nombor WhatsApp dan tarikh majlis.</p>
+      <p class="cta-note center">Butang ini akan buka WhatsApp dengan maklumat anda siap ditaip.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STOK & MASA -->
+<section class="scarce">
+  <div class="narrow">
+    <div class="eyebrow-wrap"><span class="badge-warn">⚠ SLOT TERHAD</span></div>
+    <h2>Tinggal 6 Slot Lagi<br>Untuk Majlis Bulan Ini</h2>
+    <p style="text-align:center;color:var(--mute);max-width:56ch;margin:16px auto 0">Setiap majlis JomSnap datang dengan sokongan WhatsApp secara langsung pada hari majlis. Supaya kami boleh berikan perhatian penuh, kami hadkan <strong>24 majlis sebulan</strong> sahaja. Bila penuh, anda perlu menunggu pusingan bulan berikutnya.</p>
+
+      <div class="bar-out"><div class="bar-in" id="bar">75%</div></div>
+      <div class="bar-lbl"><span>0</span><span><strong>18 / 24 slot</strong> telah ditempah</span><span>24</span></div>
+
+      <p style="text-align:center;margin-top:40px;font-weight:700">Harga promosi tamat dalam:</p>
+      <div class="clock">
+        <div class="unit"><b id="d">00</b><span>Hari</span></div>
+        <div class="unit"><b id="h">00</b><span>Jam</span></div>
+        <div class="unit"><b id="m">00</b><span>Minit</span></div>
+        <div class="unit"><b id="s">00</b><span>Saat</span></div>
+      </div>
+      <div class="center" style="margin-top:30px"><a class="btn btn-cta btn-lg btn-blink" href="#tempah">⏰ SAYA NAK KUNCI HARGA INI</a></div>
+  </div>
+</section>
+
+<!-- JAMINAN -->
+<section>
+  <div class="narrow">
+    <div class="eyebrow-wrap"><span class="badge-gold">🛡️ ✦ JAMINAN ✦</span></div>
+    <h2>Jaminan Pulangan Wang 100%<br>Sebelum Hari Majlis</h2>
+    <div class="orn">✦</div>
+    <div class="guar rise">
+      <div class="seal">100%<br>REFUND</div>
+      <div>
+        <h3>Kalau anda ubah fikiran, wang anda dipulangkan penuh.</h3>
+        <p style="margin:0;color:var(--mute)">Kami SANGAT yakin dengan sistem ini. Cuba galeri anda sepenuhnya, semak reka bentuk kad, tunjuk kepada keluarga. Jika pada bila-bila masa <strong>sebelum hari majlis</strong> anda rasa ia tak sesuai — beritahu kami, dan kami pulangkan 100% wang anda.</p>
+        <ul>
+          <li>Tiada risiko langsung untuk anda</li>
+          <li>Tiada borang panjang berjela</li>
+          <li>Cukup WhatsApp sahaja — refund diuruskan dalam 3 hari bekerja</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- P/S -->
+<section class="ps">
+  <div class="narrow">
+    <div class="ps-box">
+      <span class="lbl">P/S — NOTA PENTING DARIPADA KAMI:</span>
+      <p>Kalau anda dah baca sampai sini, maknanya anda <strong>betul-betul ambil berat</strong> tentang kenangan majlis anda. Jangan biarkan gambar-gambar terbaik malam itu terkubur dalam telefon 300 orang tetamu dan hilang selamanya.</p>
+      <p>Anda tak boleh ulang majlis anda untuk tangkap semula gambar yang tertinggal. Tapi anda boleh pastikan tiada satu pun yang tertinggal — hari ini juga.</p>
+      <p>👉 Tekan butang di bawah sebelum slot bulan ini penuh.</p>
+      <div class="center" style="margin-top:26px"><a class="btn btn-gold btn-lg" href="#tempah">TEMPAH SEKARANG →</a></div>
+      <p class="sign">— Pasukan JomSnap 📸</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="narrow">
+    <div class="eyebrow-wrap"><span class="badge-gold">✦ SOALAN LAZIM ✦</span></div>
+    <h2>Soalan Yang Sering Ditanya</h2>
+    <div class="orn">✦</div>
+    <div class="faq-list">
+      <details><summary>Macam mana kalau tetamu saya tak reti teknologi?</summary><p>Itu sebabnya kami buang semua halangan. Tiada aplikasi, tiada akaun, tiada kata laluan. Mereka halakan kamera telefon pada kad di atas meja dan halaman muat naik terus terbuka. Kalau mereka boleh imbas menu di restoran, mereka boleh guna JomSnap.</p></details>
+      <details><summary>Bagaimana kalau internet di dewan lemah?</summary><p>Muat naik disambung semula secara automatik apabila talian pulih. Tetamu juga boleh imbas kod itu selepas balik ke rumah — pautan kekal aktif sepanjang tempoh pakej anda, jadi tiada gambar tercicir.</p></details>
+      <details><summary>Siapa boleh lihat gambar majlis saya?</summary><p>Hanya sesiapa yang ada pautan galeri anda. Ia tidak muncul dalam carian Google. Anda boleh tambah kata laluan, dan hidupkan mod semakan supaya setiap gambar perlu kelulusan anda sebelum dipaparkan.</p></details>
+      <details><summary>Saya dah ada jurugambar. Perlu JomSnap lagi ke?</summary><p>JomSnap bukan pengganti jurugambar — ia melengkapkan. Jurugambar tangkap gambar rasmi yang cantik dan tersusun. JomSnap tangkap segala yang berlaku ketika dia tiada di situ. Ramai jurugambar sendiri yang cadangkan kami kepada klien mereka.</p></details>
+      <details><summary>Berapa lama sebelum majlis saya perlu tempah?</summary><p>Dua minggu memadai untuk pakej dengan kad bercetak. Untuk cetak sendiri, kami siapkan dalam 24 jam. Tetapi slot bulanan terhad, jadi lebih awal lebih selamat.</p></details>
+      <details><summary>Boleh guna untuk majlis selain perkahwinan?</summary><p>Boleh. Pelanggan kami guna JomSnap untuk pertunangan, aqiqah, hari jadi, konvokesyen dan majlis tahunan syarikat. Beritahu kami jenis majlis anda dan kami sesuaikan reka bentuk kad QR.</p></details>
+      <details><summary>Bagaimana cara bayar dan bila?</summary><p>Bayaran dibuat semasa menempah untuk kunci slot dan harga anda. Kami terima FPX, kad kredit, e-Wallet dan pemindahan bank.</p></details>
+      <details><summary>Bagaimana cara minta refund?</summary><p>Mudah sahaja. WhatsApp kami pada bila-bila masa sebelum hari majlis anda. Kami uruskan refund penuh dalam 3 hari bekerja — tiada borang panjang, tiada soalan berbelit.</p></details>
+    </div>
+    <div class="center" style="margin-top:34px"><a class="btn btn-cta btn-lg" href="#tempah">🚀 TEMPAH SEKARANG</a></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="mark" style="display:grid"><span class="stripe"><i></i><i></i><i></i><i></i><i></i></span></span>
+    <div class="fname">JOMSNAP</div>
+    <div class="tagline">Jom snap — biar tetamu yang rakam</div>
+    <p style="margin:0">Dibina di Malaysia 🇲🇾 · WhatsApp 012-345 6789 · hai@jomsnap.my</p>
+    <p style="margin:14px 0 0">© 2026 JomSnap. Hak Cipta Terpelihara.</p>
+    <p class="disc">*Jumlah gambar terkumpul berbeza mengikut saiz majlis, jumlah tetamu dan cara kad QR dipaparkan. Angka yang dinyatakan adalah purata daripada majlis terdahulu dan bukan jaminan hasil.</p>
+  </div>
+</footer>
+
+
+
+
+<div class="sticky" id="sticky">
+  <div class="wrap sticky-in">
+    <div class="t"><b>Pakej Premium — RM100</b><span>Satu majlis, bayar sekali</span></div>
+    <a class="btn btn-cta" href="#tempah">TEMPAH</a>
+  </div>
+</div>
+
+
+<!-- PEMAPAR ZUM -->
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Paparan gambar">
+  <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""></div>
+  <span class="lb-cap" id="lbCap"></span>
+  <button class="lb-close" id="lbClose" aria-label="Tutup">✕</button>
+  <button class="lb-nav lb-prev" id="lbPrev" aria-label="Sebelum">‹</button>
+  <button class="lb-nav lb-next" id="lbNext" aria-label="Seterusnya">›</button>
+  <div class="lb-bar">
+    <button class="lb-btn" id="lbOut" aria-label="Zum keluar">−</button>
+    <span class="lb-zoom" id="lbPct">100%</span>
+    <button class="lb-btn" id="lbIn" aria-label="Zum masuk">+</button>
+    <button class="lb-btn" id="lbReset" aria-label="Set semula">⤢</button>
+  </div>
+</div>
+
+<script>
+window.__media = {
+  tetamu:   {vid:"gambar/tetamu.mp4", anim:"gambar/tetamu.webp"},
+  pengantin:{vid:"gambar/pengantin.mp4", anim:"gambar/pengantin.webp"}
+};
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* reveal */
+  var rs = document.querySelectorAll('.rise');
+  if(reduce){ rs.forEach(function(e){e.classList.add('in')}); }
+  else{
+    var ro = new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting){
+        var sib = [].slice.call(e.target.parentNode.children);
+        e.target.style.transitionDelay = Math.min(sib.indexOf(e.target),5)*60+'ms';
+        e.target.classList.add('in'); ro.unobserve(e.target);
+      }});
+    },{threshold:.12, rootMargin:'0px 0px -50px 0px'});
+    rs.forEach(function(e){ro.observe(e)});
+  }
+
+  /* polaroid develop */
+  var sh = document.querySelectorAll('.develop');
+  if(reduce){ sh.forEach(function(e){e.classList.add('developed')}); }
+  else{
+    var po = new IntersectionObserver(function(en){
+      en.forEach(function(e){ if(e.isIntersecting){
+        var g=[].slice.call(e.target.parentNode.querySelectorAll('.develop'));
+        setTimeout(function(){e.target.classList.add('developed')},200+g.indexOf(e.target)*300);
+        po.unobserve(e.target);
+      }});
+    },{threshold:.25});
+    sh.forEach(function(e){po.observe(e); e.addEventListener('click',function(){e.classList.add('developed')})});
+  }
+
+  /* progress bar */
+  var bar=document.getElementById('bar');
+  new IntersectionObserver(function(en,o){
+    if(en[0].isIntersecting){ bar.style.width='75%'; o.disconnect(); }
+  },{threshold:.4}).observe(bar);
+
+  /* ---- KIRAAN DETIK ----
+     TUKAR TARIKH DI BAWAH kepada tarikh tamat promosi SEBENAR anda.
+     Format: YYYY, BULAN-1, HARI, JAM, MINIT  (bulan bermula 0 = Januari)      */
+  var tamat = new Date(2026, 8, 30, 23, 59).getTime(); // 30 September 2026
+  function tick(){
+    var jrk = tamat - Date.now();
+    if(jrk < 0) jrk = 0;
+    var d=Math.floor(jrk/864e5), h=Math.floor(jrk%864e5/36e5), m=Math.floor(jrk%36e5/6e4), s=Math.floor(jrk%6e4/1e3);
+    var p=function(n){return String(n).padStart(2,'0')};
+    document.getElementById('d').textContent=p(d);
+    document.getElementById('h').textContent=p(h);
+    document.getElementById('m').textContent=p(m);
+    document.getElementById('s').textContent=p(s);
+  }
+  tick(); setInterval(tick,1000);
+
+  /* pilihan pakej */
+  var opts=document.querySelectorAll('#opts .opt');
+  function sync(){
+    opts.forEach(function(o){ o.classList.toggle('sel', o.querySelector('input').checked); });
+    var c=document.querySelector('#opts input:checked');
+    document.getElementById('amt').textContent='RM'+Number(c.dataset.price).toLocaleString('en-MY');
+  }
+  opts.forEach(function(o){ o.querySelector('input').addEventListener('change',sync); });
+  sync();
+
+  /* butang pakej -> pilih dalam borang */
+  var peta={basic:'Pakej Basic',premium:'Pakej Premium',eksklusif:'Pakej Eksklusif',gold:'Pakej Gold'};
+  document.querySelectorAll('[data-pick]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var nama=peta[b.dataset.pick];
+      var inp=document.querySelector('#opts input[value="'+nama+'"]');
+      if(inp){ inp.checked=true; sync(); }
+    });
+  });
+
+  /* hantar ke WhatsApp — TUKAR NOMBOR DI BAWAH */
+  var NOMBOR='60123456789';
+  document.getElementById('hantar').addEventListener('click',function(){
+    var nama=document.getElementById('nama').value.trim();
+    var fon=document.getElementById('fon').value.trim();
+    var tarikh=document.getElementById('tarikh').value;
+    var err=document.getElementById('err');
+    if(!nama||!fon||!tarikh){ err.style.display='block'; return; }
+    err.style.display='none';
+    var pakej=document.querySelector('#opts input:checked').value;
+    var harga=document.getElementById('amt').textContent;
+    var jenis=document.getElementById('jenis').value;
+    var negeri=document.getElementById('negeri').value;
+    var nota=document.getElementById('nota').value.trim();
+    var teks='Assalamualaikum, saya nak tempah JomSnap.\n\n'+
+      '• Pakej: '+pakej+' ('+harga+')\n'+
+      '• Nama pengantin: '+nama+'\n'+
+      '• WhatsApp: '+fon+'\n'+
+      '• Tarikh majlis: '+tarikh+'\n'+
+      '• Jenis majlis: '+jenis+'\n'+
+      '• Negeri: '+negeri+'\n'+
+      (nota? '• Nota: '+nota+'\n':'')+
+      '\nMohon maklumkan langkah seterusnya. Terima kasih!';
+    window.open('https://wa.me/'+NOMBOR+'?text='+encodeURIComponent(teks),'_blank');
+  });
+
+  /* ---- TUTORIAL: tab + langkah ---- */
+  var screenEl=document.getElementById('screen'), capEl=document.getElementById('mediaCap');
+  function paparMedia(btn){
+    var src=btn.dataset.media, jenis=btn.dataset.type, cap=btn.dataset.cap||'';
+    if(jenis==='mp4'){
+      var v=document.createElement('video');
+      var kunci = src.indexOf('BENAM:')===0 ? src.slice(6) : null;
+      v.src = kunci ? window.__media[kunci].vid : src;
+      v.controls=true; v.loop=true; v.muted=true; v.defaultMuted=true;
+      v.autoplay=true; v.playsInline=true;
+      v.setAttribute('muted',''); v.setAttribute('playsinline',''); v.setAttribute('autoplay','');
+      v.preload='auto';
+      if(btn.dataset.poster) v.poster=btn.dataset.poster;
+      screenEl.innerHTML=''; screenEl.appendChild(v);
+      var pulih=false;
+      function sandaran(){
+        if(pulih) return; pulih=true;
+        var g=document.createElement('img');
+        g.src = kunci ? window.__media[kunci].anim : (btn.dataset.poster||''); g.alt=cap; g.loading='lazy';
+        screenEl.innerHTML=''; screenEl.appendChild(g);
+      }
+      v.addEventListener('error', sandaran);
+      v.play().catch(function(){});
+      // jika video tidak bergerak dalam 2.5 saat, tukar kepada animasi
+      setTimeout(function(){
+        if(!v.isConnected) return;
+        if(v.readyState < 2 || v.currentTime === 0) sandaran();
+      }, 2500);
+    } else if(jenis==='video'){
+      screenEl.innerHTML='<iframe src="https://www.youtube.com/embed/'+src+'" title="Tutorial" allowfullscreen loading="lazy"></iframe>';
+    } else {
+      var img=new Image();
+      img.alt=cap;
+      img.onload=function(){ screenEl.innerHTML=''; screenEl.appendChild(img); };
+      img.onerror=function(){
+        screenEl.innerHTML='<div class="empty"><b>Slot media</b>Letak tangkapan skrin di folder<br><code>'+src+'</code></div>';
+      };
+      img.src=src;
+    }
+    capEl.textContent=cap;
+    var baris=document.getElementById('mediaRow'), grid=document.querySelector('.tuto-grid');
+    var cabang = btn.dataset.cabang === '1';
+    if(baris) baris.classList.toggle('ada-cabang', cabang);
+    if(grid) grid.classList.toggle('lebar', cabang);
+    /* simpan untuk pemapar zum */
+    var jenisLb = (jenis==='mp4') ? 'mp4' : (jenis==='video' ? null : 'img');
+    var srcLb   = (jenis==='mp4') ? (src.indexOf('BENAM:')===0 ? window.__media[src.slice(6)].vid : src) : src;
+    var expand=document.getElementById('expand');
+    if(jenisLb){
+      mediaSemasa={jenis:jenisLb, src:srcLb, cap:cap, poster:btn.dataset.poster||''};
+      if(expand) expand.hidden=false;
+    } else {
+      mediaSemasa=null;
+      if(expand) expand.hidden=true;
+    }
+  }
+  var mediaSemasa=null;
+  function bukaZum(){
+    if(!mediaSemasa || !window.__lbBuka) return;
+    /* jika sandaran animasi sedang dipaparkan, guna imej itu */
+    var imgSekarang=screenEl.querySelector('img');
+    if(mediaSemasa.jenis==='mp4' && imgSekarang){
+      window.__lbBuka('img', imgSekarang.src, mediaSemasa.cap);
+    } else {
+      window.__lbBuka(mediaSemasa.jenis, mediaSemasa.src, mediaSemasa.cap, mediaSemasa.poster);
+    }
+  }
+  (function(){
+    var e=document.getElementById('expand');
+    if(e) e.addEventListener('click', bukaZum);
+    screenEl.addEventListener('click', function(ev){
+      if(ev.target.tagName==='IMG') bukaZum();
+    });
+    screenEl.addEventListener('dblclick', function(ev){
+      if(ev.target.tagName==='VIDEO') bukaZum();
+    });
+  })();
+  document.querySelectorAll('.stepitem').forEach(function(b){
+    b.addEventListener('click',function(){
+      var kump=b.closest('.stepgroup');
+      kump.querySelectorAll('.stepitem').forEach(function(x){x.classList.remove('on')});
+      b.classList.add('on');
+      paparMedia(b);
+    });
+  });
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on')});
+      t.classList.add('on');
+      document.querySelectorAll('.stepgroup').forEach(function(g){
+        g.classList.toggle('on', g.dataset.group===t.dataset.tab);
+      });
+      var grp=document.querySelector('.stepgroup.on');
+      var aktif=grp.querySelector('.stepitem[data-default]') || grp.querySelector('.stepitem');
+      grp.querySelectorAll('.stepitem').forEach(function(x){x.classList.remove('on')});
+      aktif.classList.add('on'); paparMedia(aktif);
+    });
+  });
+  var mula=document.querySelector('.stepgroup.on .stepitem.on');
+  if(mula) paparMedia(mula);
+
+
+  /* ---- PEMAPAR ZUM (gambar + video) ---- */
+  (function(){
+    var lb=document.getElementById('lb'), stage=document.getElementById('lbStage'),
+        cap=document.getElementById('lbCap'), pct=document.getElementById('lbPct'),
+        prevBtn=document.getElementById('lbPrev'), nextBtn=document.getElementById('lbNext');
+    if(!lb) return;
+    var shots=[].slice.call(document.querySelectorAll('[data-zoom]'));
+    var medium=document.getElementById('lbImg');
+    var idx=0, s=1, tx=0, ty=0, MIN=1, MAX=5, modGaleri=true;
+
+    function sumberDari(el){
+      var bg=getComputedStyle(el).backgroundImage;
+      var m=bg.match(/url\(["']?([^"')]+)["']?\)/);
+      return m?m[1]:'';
+    }
+    function guna(){
+      if(!medium) return;
+      medium.style.transform='translate('+tx+'px,'+ty+'px) scale('+s+')';
+      pct.textContent=Math.round(s*100)+'%';
+      stage.style.cursor = s>1 ? 'grab' : 'default';
+    }
+    function had(){
+      if(s<=1){ tx=0; ty=0; return; }
+      var r=medium.getBoundingClientRect();
+      var maxX=Math.max(0,(r.width-stage.clientWidth)/2), maxY=Math.max(0,(r.height-stage.clientHeight)/2);
+      tx=Math.max(-maxX,Math.min(maxX,tx)); ty=Math.max(-maxY,Math.min(maxY,ty));
+    }
+    function zum(baru, px, py){
+      var lama=s; s=Math.max(MIN,Math.min(MAX,baru));
+      if(px!=null){ var k=s/lama; tx=(tx-px)*k+px; ty=(ty-py)*k+py; }
+      had(); guna();
+    }
+    function pasang(el){
+      stage.innerHTML=''; medium=el; stage.appendChild(el);
+      s=1;tx=0;ty=0;guna();
+    }
+    function bukaGambar(src, teks){
+      var im=document.createElement('img');
+      im.src=src; im.alt=teks||'';
+      pasang(im);
+      cap.textContent=teks||'';
+      lb.classList.add('on'); document.body.style.overflow='hidden';
+    }
+    function bukaVideo(src, teks, poster){
+      var v=document.createElement('video');
+      v.src=src; v.controls=true; v.loop=true; v.playsInline=true;
+      v.setAttribute('playsinline',''); v.autoplay=true; v.muted=true;
+      v.setAttribute('muted',''); if(poster) v.poster=poster;
+      pasang(v); v.play().catch(function(){});
+      cap.textContent=teks||'';
+      lb.classList.add('on'); document.body.style.overflow='hidden';
+    }
+    function buka(i){
+      modGaleri=true; prevBtn.style.display=''; nextBtn.style.display='';
+      idx=(i+shots.length)%shots.length;
+      var el=shots[idx];
+      bukaGambar(sumberDari(el), el.getAttribute('aria-label')||'');
+    }
+    function tutup(){
+      lb.classList.remove('on'); document.body.style.overflow='';
+      if(medium && medium.tagName==='VIDEO') medium.pause();
+    }
+    /* dipanggil dari bahagian tutorial */
+    window.__lbBuka=function(jenis, src, teks, poster){
+      modGaleri=false; prevBtn.style.display='none'; nextBtn.style.display='none';
+      if(jenis==='mp4') bukaVideo(src, teks, poster); else bukaGambar(src, teks);
+    };
+
+    shots.forEach(function(el,i){ el.addEventListener('click',function(){buka(i)}); });
+    document.getElementById('lbClose').addEventListener('click',tutup);
+    prevBtn.addEventListener('click',function(){ if(modGaleri) buka(idx-1) });
+    nextBtn.addEventListener('click',function(){ if(modGaleri) buka(idx+1) });
+    document.getElementById('lbIn').addEventListener('click',function(){zum(s+.5)});
+    document.getElementById('lbOut').addEventListener('click',function(){zum(s-.5)});
+    document.getElementById('lbReset').addEventListener('click',function(){s=1;tx=0;ty=0;guna()});
+    lb.addEventListener('click',function(e){ if(e.target===lb||e.target===stage) tutup(); });
+    document.addEventListener('keydown',function(e){
+      if(!lb.classList.contains('on')) return;
+      if(e.key==='Escape') tutup();
+      else if(e.key==='ArrowLeft'&&modGaleri) buka(idx-1);
+      else if(e.key==='ArrowRight'&&modGaleri) buka(idx+1);
+      else if(e.key==='+'||e.key==='=') zum(s+.5);
+      else if(e.key==='-') zum(s-.5);
+    });
+
+    stage.addEventListener('wheel',function(e){
+      e.preventDefault();
+      var r=stage.getBoundingClientRect();
+      zum(s*(e.deltaY<0?1.16:1/1.16), e.clientX-r.left-r.width/2, e.clientY-r.top-r.height/2);
+    },{passive:false});
+
+    stage.addEventListener('dblclick',function(e){
+      var r=stage.getBoundingClientRect();
+      if(s>1){ s=1;tx=0;ty=0;guna(); }
+      else zum(2.5, e.clientX-r.left-r.width/2, e.clientY-r.top-r.height/2);
+    });
+
+    var titik={}, seretX=0, seretY=0, mulaX=0, mulaY=0, jarakMula=0, skalaMula=1, tengahMula=null;
+    function jarak(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+    stage.addEventListener('pointerdown',function(e){
+      if(e.target!==medium) return;
+      /* jangan halang kawalan video bila belum dizum */
+      if(medium.tagName==='VIDEO' && s<=1) return;
+      stage.setPointerCapture(e.pointerId);
+      titik[e.pointerId]={x:e.clientX,y:e.clientY};
+      var k=Object.keys(titik);
+      medium.classList.add('nodelay');
+      if(k.length===1){ stage.classList.add('grabbing'); mulaX=e.clientX; mulaY=e.clientY; seretX=tx; seretY=ty; }
+      else if(k.length===2){
+        var a=titik[k[0]],b=titik[k[1]];
+        jarakMula=jarak(a,b); skalaMula=s;
+        var r=stage.getBoundingClientRect();
+        tengahMula={x:(a.x+b.x)/2-r.left-r.width/2,y:(a.y+b.y)/2-r.top-r.height/2};
+      }
+    });
+    stage.addEventListener('pointermove',function(e){
+      if(!titik[e.pointerId]) return;
+      titik[e.pointerId]={x:e.clientX,y:e.clientY};
+      var k=Object.keys(titik);
+      if(k.length===1 && s>1){ tx=seretX+(e.clientX-mulaX); ty=seretY+(e.clientY-mulaY); had(); guna(); }
+      else if(k.length===2){
+        var a=titik[k[0]],b=titik[k[1]];
+        zum(skalaMula*(jarak(a,b)/jarakMula), tengahMula.x, tengahMula.y);
+      }
+    });
+    function lepas(e){
+      delete titik[e.pointerId];
+      if(!Object.keys(titik).length){ stage.classList.remove('grabbing'); if(medium) medium.classList.remove('nodelay'); }
+    }
+    stage.addEventListener('pointerup',lepas);
+    stage.addEventListener('pointercancel',lepas);
+    guna();
+  })();
+
+
+  /* bar melekat */
+  var st=document.getElementById('sticky'), form=document.getElementById('tempah');
+  addEventListener('scroll',function(){
+    var r=form.getBoundingClientRect();
+    st.classList.toggle('show', scrollY>innerHeight*0.85 && !(r.top<innerHeight && r.bottom>0));
+  },{passive:true});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+Aset halaman JOMSNAP.
+
+38 fail di folder ini diekstrak daripada base64 yang asalnya terbenam dalam
+HTML (fail sumber 4.81 MB -> index.html 100 KB). Jangan padam mana-mana:
+setiap satu dirujuk oleh index.html.
+
+MASIH KOSONG (placeholder daripada pengarang asal — bukan hilang):
+  majlis-1.jpg .. majlis-6.jpg   gambar kad pakej (.ph1-.ph6)
+Selagi tiada, gradien warna dalam CSS dipaparkan sebagai ganti; halaman
+kekal elok. Saiz cadangan: 1000 x 1000 px, bawah 300 KB.
