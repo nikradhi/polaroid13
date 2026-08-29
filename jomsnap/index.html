@@ -26,7 +26,9 @@
   --hand:"Shantell Sans",cursive;
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+/* Padanan dengan tinggi .atas-lekat (110px desktop / 132px mobile) supaya
+   sasaran anchor tidak mendarat di bawah blok yang dipin. */
+html{scroll-behavior:smooth;scroll-padding-top:140px}
 body{margin:0;background:var(--paper);color:var(--text);font-family:var(--bd);font-size:17px;line-height:1.68;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit}
 :focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}
@@ -45,8 +47,14 @@ strong{font-weight:700}
 /* pengumuman atas */
 .promo{background:linear-gradient(90deg,var(--gold-dk),var(--gold),var(--gold-dk));color:#1A1206;text-align:center;font-size:.84rem;font-weight:700;letter-spacing:.02em;padding:9px 14px}
 
+/* Promo + header dipin sebagai SATU blok. Teks promo membalut jadi 2 baris
+   pada mobile (41px -> 63px), jadi memberi header `top` tetap akan buat ia
+   bertindih atas promo di skrin sempit. Membungkus kedua-duanya menyerahkan
+   tinggi kepada susun atur, jadi tiada nombor perlu dikekalkan selari. */
+.atas-lekat{position:sticky;top:0;z-index:90}
+
 /* header */
-header{position:sticky;top:0;z-index:80;background:rgba(14,18,25,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.09)}
+header{z-index:80;background:rgba(14,18,25,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.09)}
 .nav{display:flex;align-items:center;justify-content:space-between;padding:12px 0;color:#fff}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}
 .mark{width:30px;height:30px;border-radius:7px;background:#fff;padding:4px;display:grid;place-items:center}
@@ -429,7 +437,7 @@ header{position:sticky;top:0;z-index:80;background:rgba(14,18,25,.92);backdrop-f
 .vbadge{display:inline-block;vertical-align:2px;margin-left:8px;background:var(--red);color:#fff;font-family:var(--bd);font-size:.62rem;font-weight:700;letter-spacing:.1em;padding:3px 8px;border-radius:99px}
 .stepitem h4{font-family:var(--dsp);font-weight:800;font-size:1.04rem;margin:0 0 5px;color:var(--text)}
 .stepitem p{margin:0;font-size:.93rem;color:var(--mute);line-height:1.55}
-.media{position:sticky;top:96px}
+.media{position:sticky;top:140px}  /* kelegaan di bawah .atas-lekat (110px) */
 .device{background:var(--ink);border-radius:26px;padding:12px;box-shadow:0 26px 54px -28px rgba(0,0,0,.6)}
 .device .notch{width:56px;height:5px;border-radius:99px;background:rgba(255,255,255,.22);margin:2px auto 10px}
 .screen{background:#120A0F;border-radius:16px;overflow:hidden;aspect-ratio:9/16;display:grid;place-items:center;position:relative}
@@ -608,14 +616,16 @@ footer .tagline{font-family:var(--hand);color:var(--gold);margin-bottom:22px}
 </head>
 <body>
 
-<div class="promo">✦ PROMOSI MUSIM KAHWIN — HARGA LAMA KEMBALI SELEPAS SLOT BULAN INI PENUH ✦</div>
+<div class="atas-lekat">
+  <div class="promo">✦ PROMOSI MUSIM KAHWIN — HARGA LAMA KEMBALI SELEPAS SLOT BULAN INI PENUH ✦</div>
 
-<header>
-  <div class="wrap nav">
-    <a class="brand" href="#atas"><span class="mark"><span class="stripe"><i></i><i></i><i></i><i></i><i></i></span></span><b>JOMSNAP</b></a>
-    <a class="btn btn-cta" href="#tempah">TEMPAH SEKARANG</a>
-  </div>
-</header>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#atas"><span class="mark"><span class="stripe"><i></i><i></i><i></i><i></i><i></i></span></span><b>JOMSNAP</b></a>
+      <a class="btn btn-cta" href="#tempah">TEMPAH SEKARANG</a>
+    </div>
+  </header>
+</div>
 
 <!-- HERO -->
 <section class="hero" id="atas">
